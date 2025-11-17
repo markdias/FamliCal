@@ -1,0 +1,172 @@
+//
+//  SettingsView.swift
+//  FamliCal
+//
+//  Created by Codex on 20/11/2025.
+//
+
+import SwiftUI
+import CoreData
+
+struct SettingsView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingFamilyMembers = false
+    @State private var showingVisibleCalendars = false
+    @State private var showingAppSettings = false
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 12) {
+                        SettingsRowView(
+                            iconName: "person.2.fill",
+                            iconColor: Color.blue,
+                            title: "Family Members",
+                            subtitle: "Manage members and linked calendars",
+                            action: { showingFamilyMembers = true }
+                        )
+
+                        SettingsRowView(
+                            iconName: "calendar",
+                            iconColor: Color.green,
+                            title: "Visible Calendars",
+                            subtitle: "Choose which calendars appear",
+                            action: { showingVisibleCalendars = true }
+                        )
+
+                        SettingsRowView(
+                            iconName: "paintbrush",
+                            iconColor: Color.purple,
+                            title: "Theme",
+                            subtitle: "Customize the look and feel",
+                            action: {}
+                        )
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Layout & Localization")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.gray)
+
+                        HStack(spacing: 16) {
+                            Button(action: { showingAppSettings = true }) {
+                                SettingsCardView(
+                                    iconName: "square.grid.2x2",
+                                    title: "App Settings",
+                                    subtitle: "Calendar grid, week start, events"
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            SettingsCardView(
+                                iconName: "rectangle.grid.2x2",
+                                title: "Widget Settings",
+                                subtitle: "Header placement, density, grid"
+                            )
+                        }
+                    }
+                }
+                .padding(24)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingFamilyMembers) {
+            FamilySettingsView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingVisibleCalendars) {
+            VisibleCalendarsView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingAppSettings) {
+            AppSettingsView()
+        }
+    }
+}
+
+private struct SettingsRowView: View {
+    let iconName: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: iconName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(iconColor)
+                    .cornerRadius(12)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SettingsCardView: View {
+    let iconName: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: iconName)
+                .font(.system(size: 24))
+                .foregroundColor(.blue)
+                .frame(width: 44, height: 44)
+                .background(Color(.systemBlue).opacity(0.1))
+                .cornerRadius(16)
+
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.primary)
+
+            Text(subtitle)
+                .font(.system(size: 13))
+                .foregroundColor(.gray)
+                .lineLimit(2)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
+    }
+}
+
+#Preview {
+    SettingsView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+}
