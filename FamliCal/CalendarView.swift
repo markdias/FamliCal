@@ -34,7 +34,11 @@ struct CalendarView: View {
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
 
-    private let calendar = Calendar.current
+    private let calendar: Calendar = {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday as first day
+        return calendar
+    }()
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     private static let monthFormatter: DateFormatter = {
@@ -64,12 +68,9 @@ struct CalendarView: View {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("Calendar")
-                                        .font(.system(size: 28, weight: .bold))
-
                                     Text(Self.monthFormatter.string(from: currentMonth))
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.gray)
+                                        .font(.system(size: 28, weight: .bold))
+                                        .foregroundColor(.primary)
                                 }
 
                                 Spacer()
@@ -110,9 +111,9 @@ struct CalendarView: View {
 
                         // Calendar grid
                         VStack(spacing: 8) {
-                            // Day headers (Sun, Mon, Tue, etc.)
+                            // Day headers (Mon ... Sun)
                             HStack(spacing: 0) {
-                                ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+                                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
                                     Text(day)
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(.gray)
@@ -384,7 +385,8 @@ struct CalendarView: View {
         components.day = 1
         let firstOfMonth = calendar.date(from: components)!
 
-        let firstWeekday = calendar.component(.weekday, from: firstOfMonth) - 1 // 0-indexed (Sunday = 0)
+        let weekday = calendar.component(.weekday, from: firstOfMonth)
+        let firstWeekday = (weekday + 5) % 7 // shift so Monday = 0
 
         var days: [Date] = []
 

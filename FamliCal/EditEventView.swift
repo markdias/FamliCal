@@ -76,6 +76,7 @@ struct EditEventView: View {
                             displayedComponents: .date
                         )
                         .datePickerStyle(.graphical)
+                        .environment(\.calendar, calendarWithMondayAsFirstDay)
                     }
 
                     HStack {
@@ -382,6 +383,12 @@ struct EditEventView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
+    }
+    
+    private var calendarWithMondayAsFirstDay: Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday
+        return calendar
     }
 }
 

@@ -7,6 +7,158 @@ The Events View displays upcoming calendar events for family members in two dist
 
 ---
 
+## Implementation Snapshot
+
+### Swift Data Types
+```swift
+struct MemberEventGroup: Identifiable {
+    let id: NSManagedObjectID
+    let memberName: String
+    let memberColor: Color
+    let nextEvent: GroupedEvent?
+    let upcomingEvents: [GroupedEvent]   // limited by eventsPerPerson
+}
+
+struct GroupedEvent: Identifiable {
+    let id: String
+    let title: String
+    let timeRange: String?
+    let location: String?
+    let startDate: Date
+    let endDate: Date
+    var memberNames: [String]
+    let memberColor: UIColor
+    let calendarTitle: String
+    let hasRecurrence: Bool
+    let recurrenceRule: EKRecurrenceRule?
+    var memberColors: [UIColor]
+    var recurrenceChips: [RecurrenceChip]
+}
+
+struct RecurrenceChip: Identifiable {
+    let id = UUID()
+    let date: Date
+    let label: String   // "Tue 19 Nov"
+}
+```
+
+### View Hierarchy
+- `FamilyView`
+  - `Next Events` section → 2-column `LazyVGrid` where each `MemberEventGroup` renders a tile via `nextEventCard`
+  - `Upcoming Events` section → stacked list of per-member headers with `eventCard` rows (chips included when `groupedEvent.recurrenceChips` is non-empty)
+
+### Event Selection Pseudocode
+```pseudocode
+FUNCTION buildMemberEventGroup(member, calendarIDs, eventsPerPerson):
+    rawEvents = fetchEvents(for: calendarIDs, limit: 100)
+    eventItems = map rawEvents -> EventItem(timeRangeString, recurrenceRule, etc)
+    groupedEvents = groupEventsByDetails(eventItems) // merges simultaneous shared events
+
+    // Next Events requirement
+    futureEvents = groupedEvents.filter(event.endDate >= now)
+
+    // Upcoming Events requirement (chips)
+    decoratedEvents = attachRecurringChips(
+        groupedEvents: futureEvents,
+        upcomingEvents: rawEvents,
+        chipLimit: 5,
+        boundary: nextDifferentEvent(from: rawEvents)
+    )
+
+    return MemberEventGroup(
+        id: member.id,
+        memberName: member.name,
+        memberColor: member.color,
+        nextEvent: decoratedEvents.first,
+        upcomingEvents: decoratedEvents.prefix(eventsPerPerson)
+    )
+END FUNCTION
+```
+
+### Example Input / Output
+```json
+{
+  "members": [
+    { "id": "m1", "name": "Annabelle", "color": "#007AFF" },
+    { "id": "m2", "name": "Mark", "color": "#FF9500" }
+  ],
+  "memberCalendars": {
+    "m1": ["cal_school", "cal_shared"],
+    "m2": ["cal_mark"]
+  },
+  "events": [
+    {
+      "id": "evt_school_mon",
+      "title": "School",
+      "calendarId": "cal_school",
+      "startDate": "2025-11-17T08:45:00Z",
+      "endDate": "2025-11-17T15:15:00Z",
+      "location": "Ridgeway",
+      "hasRecurrence": true,
+      "recurrenceRule": "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR"
+    },
+    {
+      "id": "evt_checkup",
+      "title": "Knee Op",
+      "calendarId": "cal_mark",
+      "startDate": "2025-11-19T12:30:00Z",
+      "endDate": "2025-11-19T17:30:00Z",
+      "location": "City Hospital",
+      "hasRecurrence": false
+    }
+  ],
+  "eventsPerPerson": 3
+}
+```
+
+```json
+{
+  "memberEventGroups": [
+    {
+      "memberName": "Annabelle",
+      "nextEvent": {
+        "title": "School",
+        "startDate": "2025-11-17T08:45:00Z",
+        "endDate": "2025-11-17T15:15:00Z",
+        "timeRange": "08:45 – 15:15",
+        "calendarTitle": "School",
+        "hasRecurrence": true
+      },
+      "upcomingEvents": [
+        {
+          "title": "School",
+          "startDate": "2025-11-17T08:45:00Z",
+          "recurrenceChips": [
+            { "date": "2025-11-18", "label": "Tue 18 Nov" },
+            { "date": "2025-11-19", "label": "Wed 19 Nov" },
+            { "date": "2025-11-20", "label": "Thu 20 Nov" }
+          ]
+        }
+      ]
+    },
+    {
+      "memberName": "Mark",
+      "nextEvent": {
+        "title": "Knee Op",
+        "startDate": "2025-11-19T12:30:00Z",
+        "endDate": "2025-11-19T17:30:00Z",
+        "timeRange": "12:30 – 17:30",
+        "hasRecurrence": false
+      },
+      "upcomingEvents": [
+        {
+          "title": "Knee Op",
+          "startDate": "2025-11-19T12:30:00Z",
+          "recurrenceChips": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
 ## Section 1: Next Events
 
 ### Purpose

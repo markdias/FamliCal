@@ -37,7 +37,7 @@ struct VisibleCalendarsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header
-                    Text("Visible Calendars")
+                    Text("Visible")
                         .font(.system(size: 28, weight: .bold, design: .default))
                         .padding(.horizontal, 16)
                         .padding(.top, 16)

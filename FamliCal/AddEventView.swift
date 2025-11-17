@@ -94,6 +94,7 @@ struct AddEventView: View {
                             displayedComponents: .date
                         )
                         .datePickerStyle(.graphical)
+                        .environment(\.calendar, calendarWithMondayAsFirstDay)
                     }
 
                     HStack {
@@ -537,6 +538,12 @@ struct AddEventView: View {
         combinedComponents.second = timeComponents.second
 
         return calendar.date(from: combinedComponents) ?? date
+    }
+    
+    private var calendarWithMondayAsFirstDay: Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday
+        return calendar
     }
 }
 
