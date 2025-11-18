@@ -61,30 +61,24 @@ struct CalendarView: View {
         return formatter
     }()
 
+    private static let fullDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d, yyyy"
+        return formatter
+    }()
+
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomLeading) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Header with month navigation
-                        HStack {
+                        // Header with centered month/year
+                        VStack(spacing: 12) {
                             Text(Self.monthFormatter.string(from: currentMonth))
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.primary)
-
-                            Spacer()
-
-                            Button(action: { currentMonth = Date() }) {
-                                Text("Today")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.blue)
-                                    .cornerRadius(6)
-                            }
                         }
-                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
 
                         // Calendar grid
@@ -123,12 +117,31 @@ struct CalendarView: View {
                                 }
                         )
 
+                        // Today button
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                currentMonth = Date()
+                                selectedDate = Date()
+                            }) {
+                                Text("Today")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+
                         // Selected day details
                         if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {
                             dayDetailsView(for: events)
                         } else {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Events")
+                                Text(Self.fullDateFormatter.string(from: selectedDate))
                                     .font(.system(size: 16, weight: .semibold))
                                     .padding(.horizontal, 2)
 
@@ -169,7 +182,7 @@ struct CalendarView: View {
     @ViewBuilder
     private func dayDetailsView(for events: [DayEventItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Events")
+            Text(Self.fullDateFormatter.string(from: selectedDate))
                 .font(.system(size: 16, weight: .semibold))
                 .padding(.horizontal, 2)
 
@@ -418,11 +431,32 @@ struct CalendarView: View {
     }
 
     private func previousMonth() {
-        currentMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+        if let newMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) {
+            currentMonth = newMonth
+            updateSelectedDateForMonth(newMonth)
+        }
     }
 
     private func nextMonth() {
-        currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+        if let newMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) {
+            currentMonth = newMonth
+            updateSelectedDateForMonth(newMonth)
+        }
+    }
+
+    private func updateSelectedDateForMonth(_ month: Date) {
+        let today = Date()
+        if calendar.isDate(month, equalTo: today, toGranularity: .month) {
+            // Current month: select today
+            selectedDate = today
+        } else {
+            // Other months: select the 1st
+            var components = calendar.dateComponents([.year, .month], from: month)
+            components.day = 1
+            if let firstOfMonth = calendar.date(from: components) {
+                selectedDate = firstOfMonth
+            }
+        }
     }
 
     private func loadEvents() {

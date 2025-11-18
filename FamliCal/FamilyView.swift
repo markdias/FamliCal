@@ -79,7 +79,6 @@ struct FamilyView: View {
     private var mainScrollView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                headerView
                 contentView
             }
             .padding(.horizontal, 16)
@@ -97,11 +96,6 @@ struct FamilyView: View {
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
         .onChange(of: currentTime) { _, _ in /* Trigger re-render for status updates */ }
         .onDisappear(perform: cleanupView)
-    }
-
-    private var headerView: some View {
-        Text("Next Events")
-            .font(.system(size: 28, weight: .bold, design: .default))
     }
 
     @ViewBuilder
