@@ -291,16 +291,16 @@ struct FamilyView: View {
     private func eventCard(_ groupedEvent: GroupedEvent) -> some View {
         HStack(alignment: .top, spacing: 14) {
             // Left side: Date box with color
-            VStack(spacing: 2) {
+            VStack(spacing: 1) {
                 Text(Self.dayFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
 
                 Text(Self.dayOfWeekFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.white.opacity(0.9))
             }
-            .frame(width: 70, height: 90)
+            .frame(width: 60, height: 70)
             .background {
                 if groupedEvent.memberColors.count > 1 {
                     // Gradient fade between multiple colors
@@ -316,7 +316,7 @@ struct FamilyView: View {
             .cornerRadius(8)
 
             // Right side: Event details
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 // Title
                 Text(groupedEvent.title)
                     .font(.system(size: 16, weight: .semibold))
@@ -358,9 +358,9 @@ struct FamilyView: View {
 
             Spacer()
         }
-        .frame(minHeight: 100)
+        .frame(minHeight: 70)
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(uiColor: .systemBackground))
