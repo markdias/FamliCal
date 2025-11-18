@@ -15,7 +15,6 @@ struct EditFamilyMemberView: View {
     let member: FamilyMember
 
     @State private var name = ""
-    @State private var selectedColor = Color.blue
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var matchedCalendar: AvailableCalendar? = nil
     @State private var isLoading = false
@@ -40,28 +39,6 @@ struct EditFamilyMemberView: View {
                             .onChange(of: name) { oldValue, newValue in
                                 updateCalendarMatch()
                             }
-                    }
-
-                    // Color picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Color")
-                            .font(.system(size: 14, weight: .semibold, design: .default))
-                            .foregroundColor(.gray)
-
-                        HStack(spacing: 12) {
-                            ForEach(Color.familyColors, id: \.self) { color in
-                                Circle()
-                                    .fill(color)
-                                    .frame(width: 48, height: 48)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(selectedColor == color ? Color.blue : Color.clear, lineWidth: 3)
-                                    )
-                                    .onTapGesture {
-                                        selectedColor = color
-                                    }
-                            }
-                        }
                     }
 
                     // Calendar preview
@@ -183,7 +160,6 @@ struct EditFamilyMemberView: View {
         }
         .onAppear {
             name = member.name ?? ""
-            selectedColor = Color.fromHex(member.colorHex ?? "#007AFF")
             loadAvailableCalendars()
         }
     }
@@ -209,7 +185,6 @@ struct EditFamilyMemberView: View {
 
     private func saveMember() {
         member.name = name
-        member.colorHex = selectedColor.toHex()
         member.avatarInitials = getInitials(from: name)
         member.linkedCalendarID = matchedCalendar?.id
 

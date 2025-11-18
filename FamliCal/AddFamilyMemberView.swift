@@ -13,7 +13,6 @@ struct AddFamilyMemberView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var name = ""
-    @State private var selectedColor = Color.blue
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var matchedCalendar: AvailableCalendar? = nil
     @State private var isLoading = false
@@ -38,28 +37,6 @@ struct AddFamilyMemberView: View {
                             .onChange(of: name) { oldValue, newValue in
                                 updateCalendarMatch()
                             }
-                    }
-
-                    // Color picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Color")
-                            .font(.system(size: 14, weight: .semibold, design: .default))
-                            .foregroundColor(.gray)
-
-                        HStack(spacing: 12) {
-                            ForEach(Color.familyColors, id: \.self) { color in
-                                Circle()
-                                    .fill(color)
-                                    .frame(width: 48, height: 48)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(selectedColor == color ? Color.blue : Color.clear, lineWidth: 3)
-                                    )
-                                    .onTapGesture {
-                                        selectedColor = color
-                                    }
-                            }
-                        }
                     }
 
                     // Calendar preview
@@ -207,7 +184,7 @@ struct AddFamilyMemberView: View {
         let newMember = FamilyMember(context: viewContext)
         newMember.id = UUID()
         newMember.name = name
-        newMember.colorHex = selectedColor.toHex()
+        newMember.colorHex = getRandomColor().toHex()
         newMember.avatarInitials = getInitials(from: name)
         newMember.linkedCalendarID = matchedCalendar?.id
 
@@ -229,6 +206,10 @@ struct AddFamilyMemberView: View {
             let nsError = error as NSError
             print("Error saving member: \(nsError), \(nsError.userInfo)")
         }
+    }
+
+    private func getRandomColor() -> Color {
+        Color.familyColors.randomElement() ?? Color.blue
     }
 
     private func getInitials(from name: String) -> String {

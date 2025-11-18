@@ -20,22 +20,19 @@ struct FamilySettingsView: View {
 
     @State private var showingAddMember = false
     @State private var editingMember: FamilyMember? = nil
+    @State private var spotlightMember: FamilyMember? = nil
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    VStack(spacing: 0) {
-                        Text("Family Members")
-                            .font(.system(size: 28, weight: .bold, design: .default))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-
+                VStack(alignment: .leading, spacing: 24) {
                     // Family Members Section
                     VStack(alignment: .leading, spacing: 12) {
+                        Text("Family Members")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 16)
+
                         if familyMembers.isEmpty {
                             VStack(spacing: 12) {
                                 Image(systemName: "person.2.circle")
@@ -48,15 +45,18 @@ struct FamilySettingsView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 32)
-                            .background(Color(.systemGray6))
+                            .background(Color(.systemBackground))
                             .cornerRadius(12)
                             .padding(.horizontal, 16)
+                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                         } else {
                             VStack(spacing: 0) {
                                 ForEach(familyMembers.filter { ($0.memberCalendars?.count ?? 0) > 0 }, id: \.self) { member in
-                                    FamilyMemberRow(member: member, onEdit: {
-                                        editingMember = member
-                                    })
+                                    FamilyMemberRow(
+                                        member: member,
+                                        onEdit: { editingMember = member },
+                                        onSpotlight: { spotlightMember = member }
+                                    )
 
                                     if member.id != familyMembers.last?.id {
                                         Divider()
@@ -64,30 +64,28 @@ struct FamilySettingsView: View {
                                     }
                                 }
                             }
-                            .background(Color(.systemGray6))
+                            .background(Color(.systemBackground))
                             .cornerRadius(12)
                             .padding(.horizontal, 16)
+                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                         }
                     }
 
                     // Add button
                     Button(action: { showingAddMember = true }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))
-
-                            Text("Add Family Member")
-                                .font(.system(size: 16, weight: .semibold, design: .default))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                        Text("Add Family Member")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.blue)
+                            .cornerRadius(12)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
+
+                    Spacer()
                 }
+                .padding(.vertical, 16)
             }
             .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
@@ -113,6 +111,10 @@ struct FamilySettingsView: View {
             EditFamilyMemberView(member: member)
                 .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(item: $spotlightMember) { member in
+            SpotlightView(member: member)
+                .environment(\.managedObjectContext, viewContext)
+        }
     }
 
     private func deleteMembers(at offsets: IndexSet) {
@@ -133,58 +135,58 @@ struct FamilySettingsView: View {
 struct FamilyMemberRow: View {
     let member: FamilyMember
     let onEdit: () -> Void
+    let onSpotlight: () -> Void
 
     var body: some View {
-        Button(action: onEdit) {
-            HStack(spacing: 12) {
-                // Avatar
-                Circle()
-                    .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Text(member.avatarInitials ?? "?")
-                            .font(.system(size: 18, weight: .semibold, design: .default))
-                            .foregroundColor(.white)
-                    )
+        HStack(spacing: 12) {
+            // Member info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(member.name ?? "Unknown")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
 
-                // Member info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(member.name ?? "Unknown")
-                        .font(.system(size: 16, weight: .semibold, design: .default))
-                        .foregroundColor(.primary)
+                if let memberCals = member.memberCalendars, memberCals.count > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.green)
 
-                    if let memberCals = member.memberCalendars, memberCals.count > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.green)
+                        Text("\(memberCals.count) calendar\(memberCals.count != 1 ? "s" : "") linked")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                    }
+                } else {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.circle")
+                            .font(.system(size: 12))
+                            .foregroundColor(.orange)
 
-                            Text("\(memberCals.count) calendar\(memberCals.count != 1 ? "s" : "") linked")
-                                .font(.system(size: 13, weight: .regular, design: .default))
-                                .foregroundColor(.gray)
-                        }
-                    } else {
-                        HStack(spacing: 4) {
-                            Image(systemName: "exclamationmark.circle")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-
-                            Text("No calendars linked")
-                                .font(.system(size: 13, weight: .regular, design: .default))
-                                .foregroundColor(.gray)
-                        }
+                        Text("No calendars linked")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
                     }
                 }
+            }
 
-                Spacer()
+            Spacer()
 
+            // Spotlight button
+            Button(action: onSpotlight) {
+                Image(systemName: "spotlight")
+                    .font(.system(size: 16))
+                    .foregroundColor(.blue)
+            }
+            .padding(.horizontal, 8)
+
+            // Edit button
+            Button(action: onEdit) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.gray)
             }
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
         }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
     }
 }
 

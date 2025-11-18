@@ -1,0 +1,383 @@
+//
+//  SpotlightView.swift
+//  FamliCal
+//
+//  Created by Mark Dias on 18/11/2025.
+//
+
+import SwiftUI
+import CoreData
+import EventKit
+
+struct SpotlightView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
+    @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
+
+    let member: FamilyMember
+
+    @FetchRequest(
+        entity: FamilyMemberCalendar.entity(),
+        sortDescriptors: []
+    )
+    private var memberCalendarLinks: FetchedResults<FamilyMemberCalendar>
+
+    @State private var isLoadingEvents = false
+    @State private var events: [GroupedEvent] = []
+    @State private var selectedEvent: UpcomingCalendarEvent? = nil
+    @State private var showingEventDetail = false
+    @State private var eventStore = EKEventStore()
+    @State private var refreshTimer: Timer? = nil
+
+    private let calendar = Calendar.current
+
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
+
+    private static let dayOfWeekFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter
+    }()
+
+    var body: some View {
+        NavigationView {
+            ZStack(alignment: .bottomLeading) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Header
+                        HStack(spacing: 12) {
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.blue)
+                            }
+
+                            Text(member.name ?? "Unknown")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.primary)
+
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+
+                        // Events list
+                        if isLoadingEvents {
+                            loadingView
+                        } else if events.isEmpty {
+                            emptyStateView
+                        } else {
+                            VStack(alignment: .leading, spacing: 12) {
+                                ForEach(events) { event in
+                                    Button(action: {
+                                        selectedEvent = UpcomingCalendarEvent(
+                                            id: event.id,
+                                            title: event.title,
+                                            location: event.location,
+                                            startDate: event.startDate,
+                                            endDate: event.endDate,
+                                            calendarID: event.calendarID,
+                                            calendarColor: event.memberColor,
+                                            calendarTitle: event.calendarTitle,
+                                            hasRecurrence: false,
+                                            recurrenceRule: nil
+                                        )
+                                        showingEventDetail = true
+                                    }) {
+                                        eventCard(event)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.bottom, 120)
+                }
+                .background(Color(.systemGroupedBackground))
+            }
+            .navigationBarHidden(true)
+            .sheet(isPresented: $showingEventDetail) {
+                if let event = selectedEvent {
+                    EventDetailView(event: event)
+                }
+            }
+        }
+        .onAppear(perform: setupView)
+        .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
+        .onDisappear(perform: cleanupView)
+    }
+
+    // MARK: - Views
+
+    private var loadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .tint(.blue)
+
+            Text("Loading events...")
+                .font(.system(size: 15))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 48))
+                .foregroundColor(.gray)
+
+            Text("No events scheduled")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+
+            Text("No upcoming events for \(member.name ?? "this member")")
+                .font(.system(size: 14))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+    }
+
+    private func eventCard(_ event: GroupedEvent) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            // Left side: Date box with color
+            VStack(spacing: 1) {
+                Text(Self.dayFormatter.string(from: event.startDate))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text(Self.dayOfWeekFormatter.string(from: event.startDate))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+            }
+            .frame(width: 60, height: 70)
+            .background(Color(uiColor: event.memberColor))
+            .cornerRadius(8)
+
+            // Right side: Event details
+            VStack(alignment: .leading, spacing: 4) {
+                // Title
+                Text(event.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+
+                // Time
+                HStack(spacing: 8) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                    Text(event.timeRange ?? "All Day")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+
+                // Location (first line only)
+                if let location = event.location {
+                    let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                        Text(firstLine)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            Spacer()
+        }
+        .frame(minHeight: 70)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(uiColor: .systemBackground))
+        )
+    }
+
+    // MARK: - Private Methods
+
+    private func loadEvents() {
+        isLoadingEvents = true
+
+        var memberEvents: [GroupedEvent] = []
+        let now = Date()
+
+        // Get all calendar IDs for this member
+        var calendarIDs = Set<String>()
+
+        // Personal calendars
+        if let memberCals = member.memberCalendars as? Set<FamilyMemberCalendar> {
+            for cal in memberCals {
+                if let calID = cal.calendarID {
+                    calendarIDs.insert(calID)
+                }
+            }
+        }
+
+        // Shared calendars
+        if let sharedCals = member.sharedCalendars as? Set<SharedCalendar> {
+            for cal in sharedCals {
+                if let calID = cal.calendarID {
+                    calendarIDs.insert(calID)
+                }
+            }
+        }
+
+        guard !calendarIDs.isEmpty else {
+            events = []
+            isLoadingEvents = false
+            return
+        }
+
+        // Fetch events for this member
+        let upcomingEvents = CalendarManager.shared.fetchNextEvents(for: Array(calendarIDs), limit: 100)
+
+        var eventItems: [EventItem] = []
+        for event in upcomingEvents {
+            let timeRange: String? = {
+                guard event.startDate != event.endDate else { return nil }
+                let formatter = DateFormatter()
+                formatter.dateFormat = "HH:mm"
+                return "\(formatter.string(from: event.startDate)) – \(formatter.string(from: event.endDate))"
+            }()
+
+            eventItems.append(EventItem(
+                id: UUID(),
+                title: event.title,
+                location: event.location,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                timeRange: timeRange,
+                memberName: member.name ?? "Unknown",
+                memberColor: event.calendarColor,
+                calendarTitle: event.calendarTitle,
+                calendarID: event.calendarID,
+                hasRecurrence: false,
+                recurrenceRule: nil
+            ))
+        }
+
+        // Sort by start date
+        eventItems.sort { $0.startDate < $1.startDate }
+
+        // Filter to future events
+        let futureEvents = eventItems.filter { $0.endDate > now }
+
+        // Group events
+        let grouped = groupEventsByDetails(futureEvents)
+        let sorted = grouped.sorted { $0.startDate < $1.startDate }
+
+        events = Array(sorted.prefix(eventsPerPerson))
+        isLoadingEvents = false
+    }
+
+    private func groupEventsByDetails(_ events: [EventItem]) -> [GroupedEvent] {
+        var grouped: [String: GroupedEvent] = [:]
+
+        for event in events {
+            let startKey = String(event.startDate.timeIntervalSinceReferenceDate)
+            let key = "\(event.title)|\(startKey)|\(event.timeRange ?? "all-day")|\(event.location ?? "")"
+
+            if let _ = grouped[key] {
+                grouped[key]?.memberNames.append(event.memberName)
+            } else {
+                grouped[key] = GroupedEvent(
+                    id: event.id.uuidString,
+                    title: event.title,
+                    timeRange: event.timeRange,
+                    location: event.location,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    memberNames: [event.memberName],
+                    memberColor: event.memberColor,
+                    calendarTitle: event.calendarTitle,
+                    calendarID: event.calendarID,
+                    memberColors: [event.memberColor]
+                )
+            }
+        }
+
+        return grouped.values.sorted { $0.startDate < $1.startDate }
+    }
+
+    // MARK: - View Lifecycle
+
+    private func setupView() {
+        loadEvents()
+        startRefreshTimer()
+    }
+
+    private func cleanupView() {
+        stopRefreshTimer()
+    }
+
+    private func startRefreshTimer() {
+        stopRefreshTimer()
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: Double(autoRefreshInterval * 60), repeats: true) { _ in
+            loadEvents()
+        }
+    }
+
+    private func stopRefreshTimer() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
+}
+
+// MARK: - Data Models
+
+private struct EventItem: Identifiable {
+    let id: UUID
+    let title: String
+    let location: String?
+    let startDate: Date
+    let endDate: Date
+    let timeRange: String?
+    let memberName: String
+    let memberColor: UIColor
+    let calendarTitle: String
+    let calendarID: String
+    let hasRecurrence: Bool
+    let recurrenceRule: Any?
+}
+
+private struct GroupedEvent: Identifiable {
+    let id: String
+    let title: String
+    let timeRange: String?
+    let location: String?
+    let startDate: Date
+    let endDate: Date
+    var memberNames: [String]
+    let memberColor: UIColor
+    let calendarTitle: String
+    let calendarID: String
+    let memberColors: [UIColor]
+}
+
+#Preview {
+    let context = PersistenceController.preview.container.viewContext
+    let member = FamilyMember(context: context)
+    member.id = UUID()
+    member.name = "John Doe"
+    member.colorHex = "#007AFF"
+    member.avatarInitials = "JD"
+
+    return SpotlightView(member: member)
+        .environment(\.managedObjectContext, context)
+}
