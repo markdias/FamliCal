@@ -671,7 +671,7 @@ struct FamilyView: View {
 
         let currentSegmentEndDate = currentSegmentStartDate.addingTimeInterval(eventDuration)
 
-        // If the next occurrence is still in the future, we have a valid occurrence to show
+        // If the next occurrence is in the past, no valid future occurrence exists
         guard currentSegmentEndDate > now else {
             return []
         }
@@ -694,12 +694,7 @@ struct FamilyView: View {
             // Filter to only future dates
             let chipDates = allChipDates.filter { $0 > now }
 
-            // If no future chips were found, we're done
-            if chipDates.isEmpty {
-                break
-            }
-
-            // Create a segment with the current start date and chips up to next interruption
+            // Create a segment with the current start date and chips (if any)
             let segment = GroupedEvent(
                 id: event.id,
                 title: event.title,
@@ -724,6 +719,11 @@ struct FamilyView: View {
 
             segments.append(segment)
 
+            // If no future chips, we're done with this segment
+            if chipDates.isEmpty {
+                break
+            }
+
             // Find the next interruption (different event)
             let lastChipEnd = (chipDates.last ?? currentSegmentStartDate).addingTimeInterval(eventDuration)
             let nextInterruption = upcomingEvents.filter {
@@ -745,7 +745,7 @@ struct FamilyView: View {
             }
         }
 
-        return segments.isEmpty ? [event] : segments
+        return segments
     }
 
     private func findNextRecurringOccurrence(after date: Date, from startDate: Date, duration: TimeInterval, rule: EKRecurrenceRule) -> Date {
