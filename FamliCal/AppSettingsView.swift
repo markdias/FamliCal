@@ -13,6 +13,9 @@ struct AppSettingsView: View {
     @AppStorage("eventsPastDays") private var eventsPastDays: Int = 0
     @AppStorage("eventsFutureDays") private var eventsFutureDays: Int = 180
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
+    @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
+
+    private let mapsAppOptions = ["Apple Maps", "Google Maps", "Waze"]
 
     var body: some View {
         NavigationView {
@@ -39,32 +42,12 @@ struct AppSettingsView: View {
 
                                 Spacer()
 
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        if eventsPerPerson > 1 {
-                                            eventsPerPerson -= 1
-                                        }
-                                    }) {
-                                        Image(systemName: "minus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
-
-                                    Text("\(eventsPerPerson)")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                        .frame(width: 40, alignment: .center)
-
-                                    Button(action: {
-                                        if eventsPerPerson < 10 {
-                                            eventsPerPerson += 1
-                                        }
-                                    }) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
+                                Picker("Events", selection: $eventsPerPerson) {
+                                    ForEach(1...10, id: \.self) { number in
+                                        Text("\(number)").tag(number)
                                     }
                                 }
+                                .pickerStyle(.menu)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -97,32 +80,15 @@ struct AppSettingsView: View {
 
                                 Spacer()
 
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        if eventsPastDays > 0 {
-                                            eventsPastDays -= 30
-                                        }
-                                    }) {
-                                        Image(systemName: "minus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
-
-                                    Text("\(eventsPastDays)d")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                        .frame(width: 50, alignment: .center)
-
-                                    Button(action: {
-                                        if eventsPastDays < 365 {
-                                            eventsPastDays += 30
-                                        }
-                                    }) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
+                                Picker("Past Days", selection: $eventsPastDays) {
+                                    Text("None").tag(0)
+                                    Text("1 Month").tag(30)
+                                    Text("2 Months").tag(60)
+                                    Text("3 Months").tag(90)
+                                    Text("6 Months").tag(180)
+                                    Text("1 Year").tag(365)
                                 }
+                                .pickerStyle(.menu)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -144,32 +110,14 @@ struct AppSettingsView: View {
 
                                 Spacer()
 
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        if eventsFutureDays > 30 {
-                                            eventsFutureDays -= 30
-                                        }
-                                    }) {
-                                        Image(systemName: "minus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
-
-                                    Text("\(eventsFutureDays)d")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                        .frame(width: 50, alignment: .center)
-
-                                    Button(action: {
-                                        if eventsFutureDays < 730 {
-                                            eventsFutureDays += 30
-                                        }
-                                    }) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
+                                Picker("Future Days", selection: $eventsFutureDays) {
+                                    Text("1 Month").tag(30)
+                                    Text("3 Months").tag(90)
+                                    Text("6 Months").tag(180)
+                                    Text("1 Year").tag(365)
+                                    Text("2 Years").tag(730)
                                 }
+                                .pickerStyle(.menu)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -237,6 +185,43 @@ struct AppSettingsView: View {
                         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
+                    // Default Maps App Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Maps")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 16)
+
+                        VStack(spacing: 0) {
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Default maps app")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    Text("App to use for location links")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.gray)
+                                }
+
+                                Spacer()
+
+                                Picker("Maps App", selection: $defaultMapsApp) {
+                                    ForEach(mapsAppOptions, id: \.self) { app in
+                                        Text(app).tag(app)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    }
+
                     Spacer()
                 }
                 .padding(.vertical, 16)
@@ -244,7 +229,7 @@ struct AppSettingsView: View {
             .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .principal) {
                     Text("App Settings")
                         .font(.system(size: 16, weight: .semibold))
                 }

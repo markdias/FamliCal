@@ -9,10 +9,12 @@ import SwiftUI
 import CoreData
 import EventKit
 import Combine
+import MapKit
 
 struct CalendarView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
+    @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
 
     @FetchRequest(
         entity: FamilyMember.entity(),
@@ -177,17 +179,22 @@ struct CalendarView: View {
             VStack(spacing: 4) {
                 ForEach(Array(groupedEvents.enumerated()), id: \.element.id) { _, groupedEvent in
                     HStack(spacing: 16) {
-                        // Left side: Colored square with date
+                        // Left side: Colored square with start time
                         VStack(spacing: 2) {
-                            Text(Self.dayFormatter.string(from: selectedDate))
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.white)
-
-                            Text(Self.dayOfWeekFormatter.string(from: selectedDate))
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.9))
+                            if let startTime = groupedEvent.startTime {
+                                Text(startTime)
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.white)
+                            } else {
+                                Text("All")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text("Day")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
                         }
-                        .frame(width: 70, height: 90)
+                        .frame(width: 90, height: 70)
                         .background {
                             if groupedEvent.memberColors.count > 1 {
                                 // Gradient fade between multiple colors
@@ -237,16 +244,19 @@ struct CalendarView: View {
                                 }
                             }
 
-                            // Location
+                            // Location (first line only) - tappable to open maps
                             if let location = groupedEvent.location {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "location.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                    Text(location)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                        .lineLimit(2)
+                                let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                                Button(action: { openLocationInMaps(firstLine) }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "location.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                        Text(firstLine)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.gray)
+                                            .lineLimit(1)
+                                    }
                                 }
                             }
 
@@ -255,7 +265,7 @@ struct CalendarView: View {
 
                         Spacer()
                     }
-                    .frame(minHeight: 90)
+                    .frame(minHeight: 70)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
                     .background(Color.white.opacity(0.85))
@@ -525,6 +535,31 @@ struct CalendarView: View {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
+
+    private func openLocationInMaps(_ location: String) {
+        let encodedLocation = location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
+
+        switch defaultMapsApp {
+        case "Google Maps":
+            if let googleMapsURL = URL(string: "comgooglemaps://?q=\(encodedLocation)"),
+               UIApplication.shared.canOpenURL(googleMapsURL) {
+                UIApplication.shared.open(googleMapsURL)
+            } else if let webURL = URL(string: "https://maps.google.com/?q=\(encodedLocation)") {
+                UIApplication.shared.open(webURL)
+            }
+        case "Waze":
+            if let wazeURL = URL(string: "waze://?q=\(encodedLocation)"),
+               UIApplication.shared.canOpenURL(wazeURL) {
+                UIApplication.shared.open(wazeURL)
+            } else if let webURL = URL(string: "https://www.waze.com/ul?q=\(encodedLocation)") {
+                UIApplication.shared.open(webURL)
+            }
+        default: // Apple Maps
+            if let appleURL = URL(string: "maps://?q=\(encodedLocation)") {
+                UIApplication.shared.open(appleURL)
+            }
+        }
+    }
 }
 
 // MARK: - Data Models
@@ -538,6 +573,11 @@ struct DayEventItem: Identifiable {
     let memberInitials: String
     let memberColor: UIColor
     let color: UIColor
+
+    var startTime: String? {
+        guard let timeRange = timeRange else { return nil }
+        return timeRange.split(separator: "–").first?.trimmingCharacters(in: .whitespaces)
+    }
 }
 
 struct GroupedDayEvent: Identifiable {
@@ -550,6 +590,11 @@ struct GroupedDayEvent: Identifiable {
     let memberColor: UIColor
     let color: UIColor
     var memberColors: [UIColor] = []  // Store all colors for gradient
+
+    var startTime: String? {
+        guard let timeRange = timeRange else { return nil }
+        return timeRange.split(separator: "–").first?.trimmingCharacters(in: .whitespaces)
+    }
 }
 
 #Preview {

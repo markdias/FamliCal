@@ -12,7 +12,6 @@ struct MainTabView: View {
     private enum ActiveView: String {
         case events
         case calendar
-        case timeline
 
         var title: String {
             switch self {
@@ -20,8 +19,6 @@ struct MainTabView: View {
                 return "Events"
             case .calendar:
                 return "Calendar"
-            case .timeline:
-                return "Day View"
             }
         }
     }
@@ -40,8 +37,6 @@ struct MainTabView: View {
                     FamilyView()
                 case .calendar:
                     CalendarView()
-                case .timeline:
-                    DayTimelineView()
                 }
             }
 
@@ -122,8 +117,6 @@ struct MainTabView: View {
             case .events:
                 return ("calendar", "Open calendar view", "Switch to calendar grid")
             case .calendar:
-                return ("clock.fill", "Open day timeline view", "Switch to day timeline")
-            case .timeline:
                 return ("list.bullet.rectangle", "Return to event list", "Switch to events list")
             }
         }()
@@ -154,8 +147,6 @@ struct MainTabView: View {
             case .events:
                 return .calendar
             case .calendar:
-                return .timeline
-            case .timeline:
                 return .events
             }
         }()

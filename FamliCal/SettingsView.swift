@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var showingFamilyMembers = false
     @State private var showingVisibleCalendars = false
     @State private var showingAppSettings = false
+    @State private var showingPermissions = false
 
     var body: some View {
         NavigationView {
@@ -67,6 +68,19 @@ struct SettingsView: View {
                             )
                         }
                     }
+
+                    VStack(spacing: 12) {
+                        Button(action: { showingPermissions = true }) {
+                            SettingsRowView(
+                                iconName: "lock.fill",
+                                iconColor: Color.orange,
+                                title: "Permissions",
+                                subtitle: "Manage app access and permissions",
+                                action: { showingPermissions = true }
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(24)
             }
@@ -91,6 +105,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingAppSettings) {
             AppSettingsView()
+        }
+        .sheet(isPresented: $showingPermissions) {
+            PermissionsView()
         }
     }
 }
