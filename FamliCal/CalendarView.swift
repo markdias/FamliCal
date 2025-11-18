@@ -65,45 +65,21 @@ struct CalendarView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         // Header with month navigation
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(Self.monthFormatter.string(from: currentMonth))
-                                        .font(.system(size: 28, weight: .bold))
-                                        .foregroundColor(.primary)
-                                }
+                        HStack {
+                            Text(Self.monthFormatter.string(from: currentMonth))
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.primary)
 
-                                Spacer()
+                            Spacer()
 
-                                HStack(spacing: 8) {
-                                    Button(action: { previousMonth() }) {
-                                        Image(systemName: "chevron.left")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 36, height: 36)
-                                            .background(Color.blue)
-                                            .cornerRadius(8)
-                                    }
-
-                                    Button(action: { currentMonth = Date() }) {
-                                        Text("Today")
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 8)
-                                            .background(Color.blue)
-                                            .cornerRadius(8)
-                                    }
-
-                                    Button(action: { nextMonth() }) {
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 36, height: 36)
-                                            .background(Color.blue)
-                                            .cornerRadius(8)
-                                    }
-                                }
+                            Button(action: { currentMonth = Date() }) {
+                                Text("Today")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -134,6 +110,16 @@ struct CalendarView: View {
                         .padding(.vertical, 16)
                         .background(Color(.systemBackground))
                         .cornerRadius(12)
+                        .gesture(
+                            DragGesture()
+                                .onEnded { value in
+                                    if value.translation.width > 50 {
+                                        previousMonth()
+                                    } else if value.translation.width < -50 {
+                                        nextMonth()
+                                    }
+                                }
+                        )
 
                         // Selected day details
                         if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {
@@ -321,9 +307,9 @@ struct CalendarView: View {
         let hasEvents = dayEvents[formatDateKey(date)] != nil && !dayEvents[formatDateKey(date)]!.isEmpty
         let eventCount = dayEvents[formatDateKey(date)]?.count ?? 0
 
-        return VStack(alignment: .leading, spacing: 4) {
+        return VStack(alignment: .leading, spacing: 2) {
             Text(Self.dayFormatter.string(from: date))
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(
                     isSelected ? .white
                     : !isCurrentMonth ? .gray.opacity(0.5)
@@ -335,15 +321,15 @@ struct CalendarView: View {
 
             // Event indicators (dots)
             if hasEvents {
-                HStack(spacing: 2) {
-                    ForEach(0..<min(4, eventCount), id: \.self) { index in
+                HStack(spacing: 1) {
+                    ForEach(0..<min(3, eventCount), id: \.self) { index in
                         Circle()
                             .fill(Color(uiColor: dayEvents[formatDateKey(date)]![index].color))
-                            .frame(width: 4, height: 4)
+                            .frame(width: 3, height: 3)
                     }
-                    if eventCount > 4 {
+                    if eventCount > 3 {
                         Text("+")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 7, weight: .bold))
                             .foregroundColor(.gray)
                     }
                     Spacer()
@@ -351,8 +337,8 @@ struct CalendarView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .frame(minHeight: 70)
+        .padding(6)
+        .frame(minHeight: 52)
         .background(
             isSelected ? Color.blue
             : !isCurrentMonth ? Color(.systemGray5).opacity(0.3)
@@ -360,9 +346,9 @@ struct CalendarView: View {
             : hasEvents ? Color.blue.opacity(0.06)
             : Color(.systemGray6)
         )
-        .cornerRadius(10)
+        .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(
                     isToday && !isSelected ? Color.blue.opacity(0.3) : Color.clear,
                     lineWidth: 2
