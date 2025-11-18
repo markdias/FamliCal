@@ -145,9 +145,6 @@ struct FamilyView: View {
         VStack(alignment: .leading, spacing: 24) {
             // MARK: Next Events Section
             VStack(alignment: .leading, spacing: 16) {
-                Text("Next Events")
-                    .font(.system(size: 16, weight: .semibold))
-                    .padding(.horizontal, 16)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach($memberEvents) { $memberGroup in

@@ -72,13 +72,28 @@ struct CalendarView: View {
             ZStack(alignment: .bottomLeading) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Header with centered month/year
-                        VStack(spacing: 12) {
+                        // Header with month/year and Today button
+                        HStack {
+                            Spacer()
                             Text(Self.monthFormatter.string(from: currentMonth))
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.primary)
+                            Spacer()
+
+                            Button(action: {
+                                currentMonth = Date()
+                                selectedDate = Date()
+                            }) {
+                                Text("Today")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 12)
 
                         // Calendar grid
@@ -116,25 +131,6 @@ struct CalendarView: View {
                                     }
                                 }
                         )
-
-                        // Today button
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                currentMonth = Date()
-                                selectedDate = Date()
-                            }) {
-                                Text("Today")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.blue)
-                                    .cornerRadius(6)
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
 
                         // Selected day details
                         if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {

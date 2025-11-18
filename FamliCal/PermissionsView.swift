@@ -130,6 +130,10 @@ struct PermissionsView: View {
             calendarPermissionStatus = "Restricted"
         case .notDetermined:
             calendarPermissionStatus = "Not Determined"
+        case .fullAccess:
+            calendarPermissionStatus = "Full Access"
+        case .writeOnly:
+            calendarPermissionStatus = "Write Only"
         @unknown default:
             calendarPermissionStatus = "Unknown"
         }
