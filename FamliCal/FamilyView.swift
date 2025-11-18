@@ -150,7 +150,11 @@ struct FamilyView: View {
     private var eventsListView: some View {
         VStack(alignment: .leading, spacing: 24) {
             // MARK: Next Events Section
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Next Events")
+                    .font(.system(size: 16, weight: .semibold))
+                    .padding(.horizontal, 16)
+
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach($memberEvents) { $memberGroup in
                         if let nextEvent = memberGroup.nextEvent, nextEvent.endDate > Date() {
@@ -229,12 +233,8 @@ struct FamilyView: View {
         let (statusText, _) = getEventStatus(event)
         let barColor = Color(uiColor: event.memberColor)
 
-        return ZStack(alignment: .leading) {
-            // Background with rounded corners
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(uiColor: .systemBackground))
-
-            // Left color bar (curved by the rounded rectangle)
+        return HStack(spacing: 0) {
+            // Left color bar with rounded corners
             barColor
                 .frame(width: 4)
 
@@ -267,8 +267,9 @@ struct FamilyView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
             .padding(12)
-            .padding(.leading, 4) // Account for the bar width
         }
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(uiColor: .systemBackground)))
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 

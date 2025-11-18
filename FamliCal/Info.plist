@@ -5,10 +5,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>fetch</string>
 	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>FamliCal needs access to your calendars to display and manage your family events.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>FamliCal needs your location to provide directions to events and show relevant location-based information.</string>
 </dict>
 </plist>
