@@ -23,6 +23,7 @@ struct UpcomingCalendarEvent {
     let location: String?
     let startDate: Date
     let endDate: Date
+    let calendarID: String
     let calendarColor: UIColor
     let calendarTitle: String
     let hasRecurrence: Bool
@@ -84,6 +85,7 @@ final class CalendarManager {
                 location: event.location,
                 startDate: event.startDate,
                 endDate: event.endDate,
+                calendarID: event.calendar.calendarIdentifier,
                 calendarColor: UIColor(cgColor: event.calendar.cgColor),
                 calendarTitle: event.calendar.title,
                 hasRecurrence: event.hasRecurrenceRules,

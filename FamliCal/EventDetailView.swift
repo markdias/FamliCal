@@ -178,6 +178,7 @@ struct EventDetailView: View {
         location: "Conference Room A",
         startDate: Date().addingTimeInterval(3600),
         endDate: Date().addingTimeInterval(7200),
+        calendarID: "work-calendar",
         calendarColor: UIColor.blue,
         calendarTitle: "Work",
         hasRecurrence: true,

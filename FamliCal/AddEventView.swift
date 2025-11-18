@@ -59,10 +59,33 @@ struct AddEventView: View {
     @State private var showingPeoplePicker = false
     @State private var isSaving = false
     @State private var showingSuccessMessage = false
+    @State private var selectedCalendarID: String = ""
+    @State private var availableCalendars: [CalendarOption] = []
+    @State private var showingCalendarPicker = false
 
     var isFormValid: Bool {
         !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (!selectEveryone && !selectedMembers.isEmpty || selectEveryone)
+        (!selectEveryone && !selectedMembers.isEmpty || selectEveryone) &&
+        !selectedCalendarID.isEmpty
+    }
+
+    struct CalendarOption: Identifiable {
+        let id = UUID()
+        let calendarID: String
+        let calendarName: String
+        let color: UIColor
+    }
+
+    var attendeesSummary: String {
+        if selectEveryone {
+            return "Everyone"
+        }
+        if selectedMembers.isEmpty {
+            return "None"
+        }
+        let selected = familyMembers.filter { selectedMembers.contains($0.objectID) }
+        let names = selected.map { $0.name ?? "Unknown" }
+        return names.joined(separator: ", ")
     }
 
     var body: some View {
@@ -138,9 +161,127 @@ struct AddEventView: View {
                     }
                 }
 
+                // People Section
+                Section {
+                    HStack {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 24)
+                        Text("Attendees")
+                            .font(.system(size: 16, weight: .regular))
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                showingPeoplePicker.toggle()
+                            }
+                        }) {
+                            Text(attendeesSummary)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(.blue)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    if showingPeoplePicker {
+                        Toggle(isOn: $selectEveryone.animation()) {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 32, height: 32)
+                                    .overlay(Text("👥").font(.system(size: 18)))
+                                Text("Everyone")
+                                    .font(.system(size: 16, weight: .regular))
+                            }
+                        }
+
+                        if !selectEveryone {
+                            ForEach(familyMembers, id: \.objectID) { member in
+                                Toggle(isOn: Binding(
+                                    get: { selectedMembers.contains(member.objectID) },
+                                    set: { isSelected in
+                                        if isSelected {
+                                            selectedMembers.insert(member.objectID)
+                                        } else {
+                                            selectedMembers.remove(member.objectID)
+                                        }
+                                    }
+                                )) {
+                                    HStack(spacing: 12) {
+                                        Circle()
+                                            .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                            .frame(width: 32, height: 32)
+                                            .overlay(Text(member.avatarInitials ?? "?").font(.system(size: 14, weight: .semibold)).foregroundColor(.white))
+                                        Text(member.name ?? "Unknown")
+                                            .font(.system(size: 16, weight: .regular))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Calendar Section
+                Section {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 24)
+                        Text("Calendar")
+                            .font(.system(size: 16, weight: .regular))
+                        Spacer()
+                        Button(action: { showingCalendarPicker.toggle() }) {
+                            if let calendar = availableCalendars.first(where: { $0.calendarID == selectedCalendarID }) {
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(Color(uiColor: calendar.color))
+                                        .frame(width: 12, height: 12)
+                                    Text(calendar.calendarName)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.blue)
+                                        .lineLimit(1)
+                                }
+                            } else {
+                                Text("Select calendar")
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+
+                    if showingCalendarPicker {
+                        ForEach(availableCalendars) { calendar in
+                            Button(action: {
+                                selectedCalendarID = calendar.calendarID
+                                showingCalendarPicker = false
+                            }) {
+                                HStack {
+                                    Circle()
+                                        .fill(Color(uiColor: calendar.color))
+                                        .frame(width: 16, height: 16)
+                                    Text(calendar.calendarName)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    if selectedCalendarID == calendar.calendarID {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Repeat Section
                 Section {
                     HStack {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 24)
                         Text("Repeat")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
@@ -161,6 +302,10 @@ struct AddEventView: View {
                 // Alert Section
                 Section {
                     HStack {
+                        Image(systemName: "bell")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 24)
                         Text("Alert")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
@@ -212,51 +357,6 @@ struct AddEventView: View {
                         .font(.system(size: 16, weight: .regular))
                         .frame(height: 100)
                 }
-
-                // People Section
-                Section(header: Text("Who's attending?")) {
-                    Toggle(isOn: $selectEveryone) {
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(Color.blue)
-                                .frame(width: 32, height: 32)
-                                .overlay(
-                                    Text("👥")
-                                        .font(.system(size: 18))
-                                )
-                            Text("Everyone")
-                                .font(.system(size: 16, weight: .regular))
-                        }
-                    }
-
-                    if !selectEveryone {
-                        ForEach(familyMembers, id: \.objectID) { member in
-                            Toggle(isOn: Binding(
-                                get: { selectedMembers.contains(member.objectID) },
-                                set: { isSelected in
-                                    if isSelected {
-                                        selectedMembers.insert(member.objectID)
-                                    } else {
-                                        selectedMembers.remove(member.objectID)
-                                    }
-                                }
-                            )) {
-                                HStack(spacing: 12) {
-                                    Circle()
-                                        .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                                        .frame(width: 32, height: 32)
-                                        .overlay(
-                                            Text(member.avatarInitials ?? "?")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.white)
-                                        )
-                                    Text(member.name ?? "Unknown")
-                                        .font(.system(size: 16, weight: .regular))
-                                }
-                            }
-                        }
-                    }
-                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -297,6 +397,15 @@ struct AddEventView: View {
                 endTime = calendar.date(from: components) ?? startTime.addingTimeInterval(3600)
 
                 eventDate = now
+
+                // Build available calendars list
+                updateAvailableCalendars()
+            }
+            .onChange(of: selectEveryone) { _, _ in
+                updateAvailableCalendars()
+            }
+            .onChange(of: selectedMembers) { _, _ in
+                updateAvailableCalendars()
             }
             .alert("Calendar Access Required", isPresented: $showingPermissionAlert) {
                 Button("OK") { }
@@ -310,6 +419,62 @@ struct AddEventView: View {
             } message: {
                 Text("Your event has been added successfully!")
             }
+        }
+    }
+
+    private func updateAvailableCalendars() {
+        availableCalendars = []
+        var calendarSet = Set<String>() // To avoid duplicates
+
+        if selectEveryone {
+            // Show shared calendars for "Everyone"
+            for calendar in sharedCalendars {
+                if let calendarID = calendar.calendarID, !calendarSet.contains(calendarID) {
+                    calendarSet.insert(calendarID)
+                    let color = UIColor(displayP3Red: CGFloat.random(in: 0...1),
+                                       green: CGFloat.random(in: 0...1),
+                                       blue: CGFloat.random(in: 0...1),
+                                       alpha: 1)
+                    if let colorHex = calendar.calendarColorHex {
+                        let parseColor = UIColor(named: colorHex) ?? UIColor(displayP3Red: 0.5, green: 0.5, blue: 1, alpha: 1)
+                        availableCalendars.append(CalendarOption(
+                            calendarID: calendarID,
+                            calendarName: calendar.calendarName ?? "Shared Calendar",
+                            color: parseColor
+                        ))
+                    } else {
+                        availableCalendars.append(CalendarOption(
+                            calendarID: calendarID,
+                            calendarName: calendar.calendarName ?? "Shared Calendar",
+                            color: color
+                        ))
+                    }
+                }
+            }
+        } else {
+            // Show selected members' calendars
+            for memberID in selectedMembers {
+                if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                    if let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar> {
+                        for memberCal in memberCalendars {
+                            if let calendarID = memberCal.calendarID, !calendarSet.contains(calendarID) {
+                                calendarSet.insert(calendarID)
+                                let color = UIColor(named: memberCal.calendarColorHex ?? "#007AFF") ?? .blue
+                                availableCalendars.append(CalendarOption(
+                                    calendarID: calendarID,
+                                    calendarName: memberCal.calendarName ?? (member.name ?? "Unknown"),
+                                    color: color
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Set default selection if not already set
+        if selectedCalendarID.isEmpty && !availableCalendars.isEmpty {
+            selectedCalendarID = availableCalendars.first?.calendarID ?? ""
         }
     }
 
@@ -358,110 +523,52 @@ struct AddEventView: View {
         let eventStartDate = combineDateAndTime(date: eventDate, time: startTime)
         let eventEndDate = combineDateAndTime(date: eventDate, time: endTime)
 
-        // Determine which calendars to write to
-        let targetMembers: [FamilyMember]
-        let isSharedCalendarEvent: Bool
-
-        if selectEveryone {
-            // Get shared calendar
-            targetMembers = []
-            isSharedCalendarEvent = true
-        } else {
-            // Get selected family members
-            targetMembers = familyMembers.filter { selectedMembers.contains($0.objectID) }
-            isSharedCalendarEvent = false
-        }
-
         // Create recurrence rule if needed
         let recurrenceRule: EKRecurrenceRule? = createRecurrenceRule(from: repeatOption)
 
         var createdEventIds: [String] = []
 
-        if isSharedCalendarEvent {
-            // Create event in shared calendar
-            if let sharedCalendar = sharedCalendars.first,
-               let calendarID = sharedCalendar.calendarID {
-                var eventId: String?
-                if let recurrenceRule = recurrenceRule {
-                    eventId = CalendarManager.shared.createRecurringEvent(
-                        title: title,
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        location: locationAddress.isEmpty ? nil : locationAddress,
-                        notes: notes.isEmpty ? nil : notes,
-                        recurrenceRule: recurrenceRule,
-                        in: calendarID
-                    )
-                } else {
-                    eventId = CalendarManager.shared.createEvent(
-                        title: title,
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        location: locationAddress.isEmpty ? nil : locationAddress,
-                        notes: notes.isEmpty ? nil : notes,
-                        in: calendarID
-                    )
-                }
+        // Create event in the selected calendar
+        let calendarID = selectedCalendarID
+        var eventId: String?
 
-                if let eventId = eventId {
-                    createdEventIds.append(eventId)
-
-                    // Store in CoreData
-                    let familyEvent = FamilyEvent(context: viewContext)
-                    familyEvent.id = eventGroupId
-                    familyEvent.eventGroupId = eventGroupId
-                    familyEvent.eventIdentifier = eventId
-                    familyEvent.calendarId = sharedCalendar.calendarID
-                    familyEvent.createdAt = Date()
-                    familyEvent.isSharedCalendarEvent = true
-                }
-            }
+        if let recurrenceRule = recurrenceRule {
+            eventId = CalendarManager.shared.createRecurringEvent(
+                title: title,
+                startDate: eventStartDate,
+                endDate: eventEndDate,
+                location: locationAddress.isEmpty ? nil : locationAddress,
+                notes: notes.isEmpty ? nil : notes,
+                recurrenceRule: recurrenceRule,
+                in: calendarID
+            )
         } else {
-            // Create event for each selected member
-            for member in targetMembers {
-                guard let calendarID = member.linkedCalendarID else { continue }
+            eventId = CalendarManager.shared.createEvent(
+                title: title,
+                startDate: eventStartDate,
+                endDate: eventEndDate,
+                location: locationAddress.isEmpty ? nil : locationAddress,
+                notes: notes.isEmpty ? nil : notes,
+                in: calendarID
+            )
+        }
 
-                if let recurrenceRule = recurrenceRule {
-                    if let eventId = CalendarManager.shared.createRecurringEvent(
-                        title: title,
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        location: locationAddress.isEmpty ? nil : locationAddress,
-                        notes: notes.isEmpty ? nil : notes,
-                        recurrenceRule: recurrenceRule,
-                        in: calendarID
-                    ) {
-                        createdEventIds.append(eventId)
+        if let eventId = eventId {
+            createdEventIds.append(eventId)
 
-                        // Store in CoreData
-                        let familyEvent = FamilyEvent(context: viewContext)
-                        familyEvent.id = UUID()
-                        familyEvent.eventGroupId = eventGroupId
-                        familyEvent.eventIdentifier = eventId
-                        familyEvent.calendarId = calendarID
-                        familyEvent.createdAt = Date()
-                        familyEvent.isSharedCalendarEvent = false
-                        familyEvent.addToAttendees(member)
-                    }
-                } else {
-                    if let eventId = CalendarManager.shared.createEvent(
-                        title: title,
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        location: locationAddress.isEmpty ? nil : locationAddress,
-                        notes: notes.isEmpty ? nil : notes,
-                        in: calendarID
-                    ) {
-                        createdEventIds.append(eventId)
+            // Store in CoreData
+            let familyEvent = FamilyEvent(context: viewContext)
+            familyEvent.id = eventGroupId
+            familyEvent.eventGroupId = eventGroupId
+            familyEvent.eventIdentifier = eventId
+            familyEvent.calendarId = calendarID
+            familyEvent.createdAt = Date()
+            familyEvent.isSharedCalendarEvent = selectEveryone
 
-                        // Store in CoreData
-                        let familyEvent = FamilyEvent(context: viewContext)
-                        familyEvent.id = UUID()
-                        familyEvent.eventGroupId = eventGroupId
-                        familyEvent.eventIdentifier = eventId
-                        familyEvent.calendarId = calendarID
-                        familyEvent.createdAt = Date()
-                        familyEvent.isSharedCalendarEvent = false
+            // Add attendees for non-shared events
+            if !selectEveryone {
+                for memberID in selectedMembers {
+                    if let member = familyMembers.first(where: { $0.objectID == memberID }) {
                         familyEvent.addToAttendees(member)
                     }
                 }

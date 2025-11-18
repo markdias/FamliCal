@@ -399,6 +399,7 @@ struct EditEventView: View {
         location: "Conference Room",
         startDate: Date().addingTimeInterval(3600),
         endDate: Date().addingTimeInterval(7200),
+        calendarID: "demo-calendar",
         calendarColor: UIColor.blue,
         calendarTitle: "Work",
         hasRecurrence: false, recurrenceRule: nil

@@ -34,6 +34,7 @@ struct FamilyView: View {
     @State private var showingEventDetail = false
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
+    @State private var currentTime = Date()
 
     private let calendar = Calendar.current
     private let recurrenceChipLimit = 5
@@ -101,6 +102,7 @@ struct FamilyView: View {
         .onChange(of: memberCalendarLinks.count) { _, _ in loadNextEvents() }
         .onChange(of: eventsPerPerson) { _, _ in loadNextEvents() }
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
+        .onChange(of: currentTime) { _, _ in /* Trigger re-render for status updates */ }
         .onDisappear(perform: cleanupView)
     }
 
@@ -173,6 +175,7 @@ struct FamilyView: View {
                                     location: nextEvent.location,
                                     startDate: nextEvent.startDate,
                                     endDate: nextEvent.endDate,
+                                    calendarID: nextEvent.calendarID,
                                     calendarColor: nextEvent.memberColor,
                                     calendarTitle: nextEvent.calendarTitle,
                                     hasRecurrence: nextEvent.hasRecurrence,
@@ -215,6 +218,7 @@ struct FamilyView: View {
                                                 location: groupedEvent.location,
                                                 startDate: groupedEvent.startDate,
                                                 endDate: groupedEvent.endDate,
+                                                calendarID: groupedEvent.calendarID,
                                                 calendarColor: groupedEvent.memberColor,
                                                 calendarTitle: groupedEvent.calendarTitle,
                                                 hasRecurrence: groupedEvent.hasRecurrence,
@@ -236,76 +240,49 @@ struct FamilyView: View {
     }
 
     private func nextEventCard(for memberGroup: MemberEventGroup, event: GroupedEvent) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Text(memberGroup.memberName.prefix(1).uppercased())
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(memberGroup.memberColor)
-                    .clipShape(Circle())
+        let (statusText, _) = getEventStatus(event)
+        let barColor = Color(uiColor: event.memberColor)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(memberGroup.memberName)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    Text(event.calendarTitle)
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
-                }
+        return HStack(spacing: 0) {
+            // Left color bar
+            barColor
+                .frame(width: 4)
 
-                Spacer()
-            }
+            // Card content
+            VStack(alignment: .leading, spacing: 6) {
+                // Member name
+                Text(memberGroup.memberName)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
 
-            VStack(alignment: .leading, spacing: 4) {
+                // Event title
                 Text(event.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(2)
 
-                if let location = event.location, !location.isEmpty {
-                    Text(location)
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
-                }
+                Spacer(minLength: 0)
 
-                Text(Self.dateFormatter.string(from: event.startDate))
-                    .font(.system(size: 13, weight: .semibold))
+                // Date and time on one line
+                Text("\(Self.dateFormatter.string(from: event.startDate)) • \(event.timeRange ?? "All Day")")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.gray)
+                    .lineLimit(1)
 
-                Text(event.timeRange ?? "All Day")
-                    .font(.system(size: 13))
+                // Status on separate line
+                Text(statusText)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.gray)
             }
-
-            Spacer()
-
-            HStack {
-                Text(getTimeUntilEvent(event.startDate))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.blue.opacity(0.15))
-                    .cornerRadius(14)
-
-                Spacer()
-
-                Circle()
-                    .fill(Color(uiColor: event.memberColor))
-                    .frame(width: 10, height: 10)
-            }
+            .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
+            .padding(12)
         }
-        .frame(maxWidth: .infinity, minHeight: 170)
-        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(uiColor: .systemBackground))
         )
-        .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
     private func getTimeUntilEvent(_ eventDate: Date) -> String {
@@ -443,9 +420,16 @@ struct FamilyView: View {
 
     private func startRefreshTimer() {
         stopRefreshTimer()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: Double(autoRefreshInterval * 60), repeats: true) { _ in
-            loadNextEvents()
+        // Update current time every minute for status indicators
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            currentTime = Date()
+            // Reload events less frequently (at the auto-refresh interval)
+            if Int(Date().timeIntervalSinceReferenceDate) % (autoRefreshInterval * 60) == 0 {
+                loadNextEvents()
+            }
         }
+        // Set initial current time
+        currentTime = Date()
     }
 
     private func stopRefreshTimer() {
@@ -516,6 +500,7 @@ struct FamilyView: View {
                         memberName: member.name ?? "Unknown",
                         memberColor: event.calendarColor,
                         calendarTitle: event.calendarTitle,
+                        calendarID: event.calendarID,
                         hasRecurrence: event.hasRecurrence,
                         recurrenceRule: event.recurrenceRule
                     ))
@@ -528,7 +513,14 @@ struct FamilyView: View {
                 let groupedMemberEvents = groupEventsByDetails(memberEventItems)
 
                 // Keep only future or in-progress events
-                let upcomingMemberEvents = groupedMemberEvents.filter { $0.endDate >= now }
+                // For recurring events, pass them through even if earliest occurrence is past
+                // (calculateRecurrenceSegments will find the next future occurrence)
+                let upcomingMemberEvents = groupedMemberEvents.filter { event in
+                    if event.hasRecurrence {
+                        return true // Let calculateRecurrenceSegments() handle finding future occurrences
+                    }
+                    return event.endDate >= now
+                }
 
                 // Attach recurrence chips to recurring events
                 let decoratedEvents = attachRecurringChips(
@@ -536,7 +528,9 @@ struct FamilyView: View {
                     upcomingEvents: upcomingEvents
                 )
 
-                let limitedEvents = Array(decoratedEvents.prefix(eventsPerPerson))
+                // Sort decorated events by start date (ensure chronological order)
+                let sortedDecoratedEvents = decoratedEvents.sorted { $0.startDate < $1.startDate }
+                let limitedEvents = Array(sortedDecoratedEvents.prefix(eventsPerPerson))
 
                 // Create member event group
                 let memberColor = Color.fromHex(member.colorHex ?? "#007AFF")
@@ -544,7 +538,7 @@ struct FamilyView: View {
                     id: member.objectID,
                     memberName: member.name ?? "Unknown",
                     memberColor: memberColor,
-                    nextEvent: decoratedEvents.first,
+                    nextEvent: sortedDecoratedEvents.first,
                     upcomingEvents: limitedEvents
                 )
 
@@ -566,19 +560,60 @@ struct FamilyView: View {
         var grouped: [String: GroupedEvent] = [:]
 
         for event in events {
-            let startKey = String(event.startDate.timeIntervalSinceReferenceDate)
-            let key = "\(event.title)|\(startKey)|\(event.timeRange ?? "all-day")|\(event.location ?? "")"
+            // For recurring events, don't include startDate in the key so all occurrences merge into one
+            // For non-recurring events, include startDate to keep them separate
+            let key: String
+            if event.hasRecurrence {
+                key = "\(event.title)|\(event.timeRange ?? "all-day")|\(event.location ?? "")|RECURRING"
+            } else {
+                let startKey = String(event.startDate.timeIntervalSinceReferenceDate)
+                key = "\(event.title)|\(startKey)|\(event.timeRange ?? "all-day")|\(event.location ?? "")"
+            }
 
-            if var existing = grouped[key] {
-                // Add member name if not already present
-                if !existing.memberNames.contains(event.memberName) {
-                    existing.memberNames.append(event.memberName)
+            if let existing = grouped[key] {
+                // For recurring events, keep the earliest start date and earliest end date
+                // (so filtering by endTime removes past occurrences correctly)
+                let newStartDate: Date
+                let newEndDate: Date
+
+                if event.hasRecurrence {
+                    newStartDate = min(event.startDate, existing.startDate)
+                    // Use the earliest endDate so past occurrences get filtered
+                    newEndDate = min(event.endDate, existing.endDate)
+                } else {
+                    newStartDate = existing.startDate
+                    newEndDate = existing.endDate
                 }
-                // Add color if it's not already in the list
-                if !existing.memberColors.contains(where: { $0.cgColor == event.memberColor.cgColor }) {
-                    existing.memberColors.append(event.memberColor)
+
+                // Build updated member names list
+                var updatedNames = existing.memberNames
+                if !updatedNames.contains(event.memberName) {
+                    updatedNames.append(event.memberName)
                 }
-                grouped[key] = existing
+
+                // Build updated colors list
+                var updatedColors = existing.memberColors
+                if !updatedColors.contains(where: { $0.cgColor == event.memberColor.cgColor }) {
+                    updatedColors.append(event.memberColor)
+                }
+
+                // Create new merged event
+                grouped[key] = GroupedEvent(
+                    id: existing.id,
+                    title: existing.title,
+                    timeRange: existing.timeRange,
+                    location: existing.location,
+                    startDate: newStartDate,
+                    endDate: newEndDate,
+                    memberNames: updatedNames,
+                    memberColor: existing.memberColor,
+                    calendarTitle: existing.calendarTitle,
+                    calendarID: existing.calendarID,
+                    hasRecurrence: existing.hasRecurrence,
+                    recurrenceRule: existing.recurrenceRule,
+                    memberColors: updatedColors,
+                    recurrenceChips: existing.recurrenceChips
+                )
             } else {
                 grouped[key] = GroupedEvent(
                     id: event.id.uuidString,
@@ -590,6 +625,7 @@ struct FamilyView: View {
                     memberNames: [event.memberName],
                     memberColor: event.memberColor,
                     calendarTitle: event.calendarTitle,
+                    calendarID: event.calendarID,
                     hasRecurrence: event.hasRecurrence,
                     recurrenceRule: event.recurrenceRule,
                     memberColors: [event.memberColor]
@@ -601,33 +637,192 @@ struct FamilyView: View {
     }
 
     private func attachRecurringChips(_ groupedEvents: [GroupedEvent], upcomingEvents: [UpcomingCalendarEvent]) -> [GroupedEvent] {
-        var decoratedEvents = groupedEvents
+        var decoratedEvents: [GroupedEvent] = []
 
-        for index in decoratedEvents.indices {
-            guard decoratedEvents[index].hasRecurrence,
-                  let recurrenceRule = decoratedEvents[index].recurrenceRule else { continue }
+        for event in groupedEvents {
+            var eventToAdd = event
 
-            let occurrenceDates = CalendarManager.shared.calculateRecurringOccurrences(
-                startDate: decoratedEvents[index].startDate,
-                endDate: decoratedEvents[index].endDate,
-                recurrenceRule: recurrenceRule,
-                upcomingEvents: upcomingEvents,
-                currentEventId: decoratedEvents[index].id,
-                eventTitle: decoratedEvents[index].title,
-                limit: recurrenceChipLimit
-            )
+            // For recurring events, add chips showing upcoming occurrences
+            if event.hasRecurrence, event.recurrenceRule != nil {
+                let chipDates = CalendarManager.shared.calculateRecurringOccurrences(
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    recurrenceRule: event.recurrenceRule!,
+                    upcomingEvents: upcomingEvents,
+                    currentEventId: event.id,
+                    eventTitle: event.title,
+                    limit: recurrenceChipLimit
+                )
 
-            let chips = occurrenceDates.map { occurrenceDate in
-                RecurrenceChip(
-                    date: occurrenceDate,
-                    label: Self.recurrenceChipFormatter.string(from: occurrenceDate)
+                eventToAdd = GroupedEvent(
+                    id: event.id,
+                    title: event.title,
+                    timeRange: event.timeRange,
+                    location: event.location,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    memberNames: event.memberNames,
+                    memberColor: event.memberColor,
+                    calendarTitle: event.calendarTitle,
+                    calendarID: event.calendarID,
+                    hasRecurrence: event.hasRecurrence,
+                    recurrenceRule: event.recurrenceRule,
+                    memberColors: event.memberColors,
+                    recurrenceChips: chipDates.map { date in
+                        RecurrenceChip(
+                            date: date,
+                            label: Self.recurrenceChipFormatter.string(from: date)
+                        )
+                    }
                 )
             }
 
-            decoratedEvents[index].recurrenceChips = chips
+            decoratedEvents.append(eventToAdd)
         }
 
         return decoratedEvents
+    }
+
+    private func calculateRecurrenceSegments(_ event: GroupedEvent, upcomingEvents: [UpcomingCalendarEvent]) -> [GroupedEvent] {
+        guard event.hasRecurrence, let rule = event.recurrenceRule else {
+            return [event]
+        }
+
+        let eventDuration = event.endDate.timeIntervalSince(event.startDate)
+        let now = Date()
+
+        // Find the next occurrence that hasn't ended yet
+        var currentSegmentStartDate = event.startDate
+        var foundFutureOccurrence = false
+
+        // If the first occurrence has already ended, find the next one
+        if event.endDate < now {
+            let maxIterations = 365 // Search up to a year ahead
+            let cal = Calendar.current
+            for _ in 0..<maxIterations {
+                let nextOccurrenceEnd = currentSegmentStartDate.addingTimeInterval(eventDuration)
+                if nextOccurrenceEnd >= now {
+                    foundFutureOccurrence = true
+                    break
+                }
+                // Advance to next occurrence manually
+                let interval = rule.interval
+                switch rule.frequency {
+                case .daily:
+                    currentSegmentStartDate = cal.date(byAdding: .day, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
+                case .weekly:
+                    currentSegmentStartDate = cal.date(byAdding: .weekOfYear, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
+                case .monthly:
+                    currentSegmentStartDate = cal.date(byAdding: .month, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
+                case .yearly:
+                    currentSegmentStartDate = cal.date(byAdding: .year, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
+                @unknown default:
+                    currentSegmentStartDate = cal.date(byAdding: .day, value: 7, to: currentSegmentStartDate) ?? currentSegmentStartDate
+                }
+            }
+        } else {
+            foundFutureOccurrence = true
+        }
+
+        // If no future occurrence found, return empty
+        guard foundFutureOccurrence else {
+            return []
+        }
+
+        var segments: [GroupedEvent] = []
+
+        // Keep generating segments until we run out of occurrences
+        while true {
+            // Get chip occurrences starting from this segment
+            let chipDates = CalendarManager.shared.calculateRecurringOccurrences(
+                startDate: currentSegmentStartDate,
+                endDate: event.endDate,
+                recurrenceRule: rule,
+                upcomingEvents: upcomingEvents,
+                currentEventId: event.id,
+                eventTitle: event.title,
+                limit: recurrenceChipLimit
+            )
+
+            // If no chips were found, we're done
+            if chipDates.isEmpty {
+                break
+            }
+
+            // Create a segment with the current start date and chips up to next interruption
+            let segment = GroupedEvent(
+                id: event.id,
+                title: event.title,
+                timeRange: event.timeRange,
+                location: event.location,
+                startDate: currentSegmentStartDate,
+                endDate: currentSegmentStartDate.addingTimeInterval(eventDuration),
+                memberNames: event.memberNames,
+                memberColor: event.memberColor,
+                calendarTitle: event.calendarTitle,
+                calendarID: event.calendarID,
+                hasRecurrence: event.hasRecurrence,
+                recurrenceRule: event.recurrenceRule,
+                memberColors: event.memberColors,
+                recurrenceChips: chipDates.map { date in
+                    RecurrenceChip(
+                        date: date,
+                        label: Self.recurrenceChipFormatter.string(from: date)
+                    )
+                }
+            )
+
+            segments.append(segment)
+
+            // Find the next interruption (different event)
+            let lastChipEnd = (chipDates.last ?? currentSegmentStartDate).addingTimeInterval(eventDuration)
+            let nextInterruption = upcomingEvents.filter {
+                $0.title != event.title && $0.startDate >= lastChipEnd
+            }.min { $0.startDate < $1.startDate }
+
+            // If no next interruption, we're done
+            guard let interruption = nextInterruption else {
+                break
+            }
+
+            // Move to first occurrence after the interruption
+            currentSegmentStartDate = findNextOccurrence(after: interruption.endDate, using: rule, from: currentSegmentStartDate)
+
+            // Safety check: if we didn't advance, break to avoid infinite loop
+            if currentSegmentStartDate <= interruption.endDate {
+                break
+            }
+        }
+
+        return segments.isEmpty ? [event] : segments
+    }
+
+    private func findNextOccurrence(after date: Date, using rule: EKRecurrenceRule, from referenceDate: Date) -> Date {
+        let calendar = Calendar.current
+        let interval = rule.interval
+
+        // Start from reference date and advance until we're past the given date
+        var currentDate = referenceDate
+        var iterations = 0
+        let maxIterations = 1000
+
+        while currentDate <= date && iterations < maxIterations {
+            switch rule.frequency {
+            case .daily:
+                currentDate = calendar.date(byAdding: .day, value: interval, to: currentDate) ?? currentDate
+            case .weekly:
+                currentDate = calendar.date(byAdding: .weekOfYear, value: interval, to: currentDate) ?? currentDate
+            case .monthly:
+                currentDate = calendar.date(byAdding: .month, value: interval, to: currentDate) ?? currentDate
+            case .yearly:
+                currentDate = calendar.date(byAdding: .year, value: interval, to: currentDate) ?? currentDate
+            @unknown default:
+                currentDate = calendar.date(byAdding: .day, value: 7, to: currentDate) ?? currentDate
+            }
+            iterations += 1
+        }
+
+        return currentDate
     }
 
     private func formatTimeRange(_ startDate: Date, _ endDate: Date) -> String? {
@@ -652,6 +847,24 @@ struct FamilyView: View {
         try? await Task.sleep(nanoseconds: 500_000_000)
     }
 
+    private func getEventStatus(_ event: GroupedEvent) -> (status: String, color: Color) {
+        let now = currentTime
+
+        // Check if event is in progress
+        if event.startDate <= now && now < event.endDate {
+            return ("In Progress", .orange)
+        }
+
+        // Check if event is upcoming soon (within 1 hour)
+        let oneHourFromNow = now.addingTimeInterval(3600)
+        if event.startDate > now && event.startDate <= oneHourFromNow {
+            return ("Starting Soon", .blue)
+        }
+
+        // Default to upcoming
+        return ("Upcoming", .gray)
+    }
+
 }
 
 // MARK: - Data Models
@@ -666,6 +879,7 @@ private struct EventItem: Identifiable {
     let memberName: String
     let memberColor: UIColor
     let calendarTitle: String
+    let calendarID: String
     let hasRecurrence: Bool
     let recurrenceRule: EKRecurrenceRule?
 }
@@ -680,6 +894,7 @@ private struct GroupedEvent: Identifiable {
     var memberNames: [String]
     let memberColor: UIColor
     let calendarTitle: String
+    let calendarID: String
     let hasRecurrence: Bool
     let recurrenceRule: EKRecurrenceRule?
     var memberColors: [UIColor] = []
