@@ -21,7 +21,7 @@ struct AppSettingsView: View {
                     // Number of Events Per Person Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Next Events")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 16)
 
@@ -69,15 +69,16 @@ struct AppSettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
-                        .background(Color(.systemGray6))
+                        .background(Color(.systemBackground))
                         .cornerRadius(12)
                         .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
                     // Event Date Range Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Event Date Range")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 16)
 
@@ -173,15 +174,16 @@ struct AppSettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
-                        .background(Color(.systemGray6))
+                        .background(Color(.systemBackground))
                         .cornerRadius(12)
                         .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
                     // Auto Refresh Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Auto Refresh")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 16)
 
@@ -229,9 +231,10 @@ struct AppSettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
-                        .background(Color(.systemGray6))
+                        .background(Color(.systemBackground))
                         .cornerRadius(12)
                         .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
                     Spacer()

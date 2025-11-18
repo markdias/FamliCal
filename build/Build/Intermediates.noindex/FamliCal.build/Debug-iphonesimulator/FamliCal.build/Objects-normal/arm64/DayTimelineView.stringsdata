@@ -7,7 +7,31 @@
         "key": "Today",
         "location": {
           "startingColumn": 38,
-          "startingLine": 67
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "Day",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 99
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 127
         }
       },
       {
@@ -15,7 +39,7 @@
         "key": "Loading events...",
         "location": {
           "startingColumn": 30,
-          "startingLine": 114
+          "startingLine": 181
         }
       },
       {
@@ -23,7 +47,7 @@
         "key": "No events scheduled",
         "location": {
           "startingColumn": 30,
-          "startingLine": 125
+          "startingLine": 192
         }
       },
       {
@@ -31,7 +55,7 @@
         "key": "Enjoy your free time!",
         "location": {
           "startingColumn": 30,
-          "startingLine": 128
+          "startingLine": 195
         }
       },
       {
@@ -39,7 +63,7 @@
         "key": "• %@",
         "location": {
           "startingColumn": 26,
-          "startingLine": 262
+          "startingLine": 420
         }
       }
     ]

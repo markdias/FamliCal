@@ -25,6 +25,7 @@ struct DayTimelineView: View {
     private var memberCalendarLinks: FetchedResults<FamilyMemberCalendar>
 
     @State private var selectedDate = Date()
+    @State private var displayMode: DisplayMode = .singleDay
     @State private var dayEvents: [TimelineEvent] = []
     @State private var selectedMembers: Set<String> = []
     @State private var showMemberFilter = false
@@ -32,6 +33,11 @@ struct DayTimelineView: View {
     @State private var isLoadingEvents = false
     @State private var currentTime = Date()
     @State private var timelineTimer: Timer?
+
+    enum DisplayMode {
+        case singleDay
+        case multiDay
+    }
 
     private let calendar = Calendar.current
     private let hourHeight: CGFloat = 60 // Height per hour in timeline
@@ -47,18 +53,24 @@ struct DayTimelineView: View {
         return formatter
     }()
 
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }()
+
+    private static let dayOfWeekFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter
+    }()
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Header with date and navigation
+                // Header with date navigation and view mode toggle
                 VStack(spacing: 12) {
                     HStack {
-                        Button(action: previousDay) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.blue)
-                        }
-
                         VStack(spacing: 4) {
                             Text(dateHeaderFormatter.string(from: selectedDate))
                                 .font(.system(size: 18, weight: .semibold))
@@ -69,12 +81,67 @@ struct DayTimelineView: View {
                                     .foregroundColor(.gray)
                             }
                         }
-                        .frame(maxWidth: .infinity)
+
+                        Spacer()
+
+                        // View mode toggle
+                        HStack(spacing: 0) {
+                            Button(action: { displayMode = .singleDay }) {
+                                Text("Day")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(displayMode == .singleDay ? .white : .blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                            }
+                            .background(displayMode == .singleDay ? Color.blue : Color.clear)
+
+                            Button(action: { displayMode = .multiDay }) {
+                                Text("Week")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(displayMode == .multiDay ? .white : .blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                            }
+                            .background(displayMode == .multiDay ? Color.blue : Color.clear)
+                        }
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        .frame(width: 100)
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Day navigation buttons
+                    HStack(spacing: 8) {
+                        Button(action: previousDay) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue)
+                                .cornerRadius(6)
+                        }
+
+                        Spacer()
+
+                        Button(action: { selectedDate = Date() }) {
+                            Text("Today")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.blue)
+                                .cornerRadius(6)
+                        }
+
+                        Spacer()
 
                         Button(action: nextDay) {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.white)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue)
+                                .cornerRadius(6)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -106,7 +173,7 @@ struct DayTimelineView: View {
                 .background(Color(.systemBackground))
                 .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
 
-                // Timeline
+                // Content based on display mode
                 if isLoadingEvents {
                     VStack {
                         ProgressView()
@@ -132,7 +199,11 @@ struct DayTimelineView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(.systemGroupedBackground))
                 } else {
-                    timelineView
+                    if displayMode == .singleDay {
+                        timelineView
+                    } else {
+                        multiDayView
+                    }
                 }
             }
         }
@@ -197,6 +268,93 @@ struct DayTimelineView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var multiDayView: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Week days header
+                HStack(spacing: 8) {
+                    ForEach(0..<7, id: \.self) { dayOffset in
+                        let date = calendar.date(byAdding: .day, value: dayOffset, to: calendar.startOfDay(for: selectedDate)) ?? selectedDate
+                        let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
+
+                        VStack(spacing: 4) {
+                            Text(Self.dayOfWeekFormatter.string(from: date).prefix(1).uppercased())
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray)
+
+                            Text(Self.dayFormatter.string(from: date))
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(isSelected ? .white : .primary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(isSelected ? Color.blue : Color(.systemGray6))
+                        .cornerRadius(8)
+                        .onTapGesture {
+                            selectedDate = date
+                            loadEventsForSelectedDate()
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+
+                // Events list
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(dayEvents.sorted { $0.startDate < $1.startDate }, id: \.id) { event in
+                        eventCardMultiDay(event)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+            }
+        }
+    }
+
+    private func eventCardMultiDay(_ event: TimelineEvent) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 12) {
+                // Time indicator
+                Text(timeFormatter.string(from: event.startDate))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 50)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color(uiColor: event.color))
+                    .cornerRadius(4)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    if !event.memberNames.isEmpty {
+                        Text(event.memberNames.joined(separator: ", "))
+                            .font(.system(size: 11))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+
+                    if let location = event.location {
+                        Text(location)
+                            .font(.system(size: 11))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(.systemBackground))
+            .cornerRadius(8)
         }
     }
 

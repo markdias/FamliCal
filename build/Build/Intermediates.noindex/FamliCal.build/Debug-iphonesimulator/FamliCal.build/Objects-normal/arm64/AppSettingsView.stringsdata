@@ -39,7 +39,7 @@
         "key": "Event Date Range",
         "location": {
           "startingColumn": 30,
-          "startingLine": 79
+          "startingLine": 80
         }
       },
       {
@@ -47,7 +47,7 @@
         "key": "Show past events",
         "location": {
           "startingColumn": 42,
-          "startingLine": 88
+          "startingLine": 89
         }
       },
       {
@@ -55,7 +55,7 @@
         "key": "Days to look back in history",
         "location": {
           "startingColumn": 42,
-          "startingLine": 92
+          "startingLine": 93
         }
       },
       {
@@ -63,7 +63,7 @@
         "key": "%lldd",
         "location": {
           "startingColumn": 42,
-          "startingLine": 110
+          "startingLine": 111
         }
       },
       {
@@ -71,7 +71,7 @@
         "key": "Look ahead",
         "location": {
           "startingColumn": 42,
-          "startingLine": 135
+          "startingLine": 136
         }
       },
       {
@@ -79,7 +79,7 @@
         "key": "Days to look forward in the future",
         "location": {
           "startingColumn": 42,
-          "startingLine": 139
+          "startingLine": 140
         }
       },
       {
@@ -87,7 +87,7 @@
         "key": "%lldd",
         "location": {
           "startingColumn": 42,
-          "startingLine": 157
+          "startingLine": 158
         }
       },
       {
@@ -95,7 +95,7 @@
         "key": "Auto Refresh",
         "location": {
           "startingColumn": 30,
-          "startingLine": 183
+          "startingLine": 185
         }
       },
       {
@@ -103,7 +103,7 @@
         "key": "Refresh interval",
         "location": {
           "startingColumn": 42,
-          "startingLine": 191
+          "startingLine": 193
         }
       },
       {
@@ -111,7 +111,7 @@
         "key": "Minutes between auto-refresh",
         "location": {
           "startingColumn": 42,
-          "startingLine": 195
+          "startingLine": 197
         }
       },
       {
@@ -119,7 +119,7 @@
         "key": "%lldm",
         "location": {
           "startingColumn": 42,
-          "startingLine": 213
+          "startingLine": 215
         }
       },
       {
@@ -127,7 +127,7 @@
         "key": "App Settings",
         "location": {
           "startingColumn": 26,
-          "startingLine": 245
+          "startingLine": 248
         }
       }
     ]
