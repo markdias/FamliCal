@@ -165,7 +165,8 @@ struct FamilyView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(memberEvents.filter {
                         guard let event = $0.nextEvent else { return false }
-                        return event.endDate >= Date()
+                        // Show events that are current or future (haven't ended yet)
+                        return event.endDate > Date()
                     }) { memberGroup in
                         if let nextEvent = memberGroup.nextEvent {
                             Button(action: {
@@ -366,16 +367,20 @@ struct FamilyView: View {
                 }
 
                 if !groupedEvent.recurrenceChips.isEmpty {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 8)], spacing: 8) {
-                        ForEach(groupedEvent.recurrenceChips) { chip in
-                            Text(chip.label)
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(groupedEvent.recurrenceChips) { chip in
+                                Text(chip.label)
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(4)
+                                    .lineLimit(1)
+                            }
                         }
+                        .padding(.horizontal, 0)
                     }
                     .padding(.top, 4)
                 }
@@ -519,7 +524,7 @@ struct FamilyView: View {
                     if event.hasRecurrence {
                         return true // Let calculateRecurrenceSegments() handle finding future occurrences
                     }
-                    return event.endDate >= now
+                    return event.endDate > now
                 }
 
                 // Attach recurrence chips to recurring events
@@ -637,95 +642,37 @@ struct FamilyView: View {
     }
 
     private func attachRecurringChips(_ groupedEvents: [GroupedEvent], upcomingEvents: [UpcomingCalendarEvent]) -> [GroupedEvent] {
-        var decoratedEvents: [GroupedEvent] = []
+        let now = Date()
+        var expandedEvents: [GroupedEvent] = []
 
         for event in groupedEvents {
-            var eventToAdd = event
-
-            // For recurring events, add chips showing upcoming occurrences
             if event.hasRecurrence, event.recurrenceRule != nil {
-                let chipDates = CalendarManager.shared.calculateRecurringOccurrences(
-                    startDate: event.startDate,
-                    endDate: event.endDate,
-                    recurrenceRule: event.recurrenceRule!,
-                    upcomingEvents: upcomingEvents,
-                    currentEventId: event.id,
-                    eventTitle: event.title,
-                    limit: recurrenceChipLimit
-                )
-
-                eventToAdd = GroupedEvent(
-                    id: event.id,
-                    title: event.title,
-                    timeRange: event.timeRange,
-                    location: event.location,
-                    startDate: event.startDate,
-                    endDate: event.endDate,
-                    memberNames: event.memberNames,
-                    memberColor: event.memberColor,
-                    calendarTitle: event.calendarTitle,
-                    calendarID: event.calendarID,
-                    hasRecurrence: event.hasRecurrence,
-                    recurrenceRule: event.recurrenceRule,
-                    memberColors: event.memberColors,
-                    recurrenceChips: chipDates.map { date in
-                        RecurrenceChip(
-                            date: date,
-                            label: Self.recurrenceChipFormatter.string(from: date)
-                        )
-                    }
-                )
+                // For recurring events, calculate segments
+                let segments = calculateRecurrenceSegments(event, upcomingEvents: upcomingEvents, now: now)
+                expandedEvents.append(contentsOf: segments)
+            } else {
+                // Non-recurring events stay as-is
+                expandedEvents.append(event)
             }
-
-            decoratedEvents.append(eventToAdd)
         }
 
-        return decoratedEvents
+        return expandedEvents
     }
 
-    private func calculateRecurrenceSegments(_ event: GroupedEvent, upcomingEvents: [UpcomingCalendarEvent]) -> [GroupedEvent] {
+    private func calculateRecurrenceSegments(_ event: GroupedEvent, upcomingEvents: [UpcomingCalendarEvent], now: Date) -> [GroupedEvent] {
         guard event.hasRecurrence, let rule = event.recurrenceRule else {
             return [event]
         }
 
         let eventDuration = event.endDate.timeIntervalSince(event.startDate)
-        let now = Date()
 
         // Find the next occurrence that hasn't ended yet
-        var currentSegmentStartDate = event.startDate
-        var foundFutureOccurrence = false
+        var currentSegmentStartDate = findNextRecurringOccurrence(after: now, from: event.startDate, duration: eventDuration, rule: rule)
 
-        // If the first occurrence has already ended, find the next one
-        if event.endDate < now {
-            let maxIterations = 365 // Search up to a year ahead
-            let cal = Calendar.current
-            for _ in 0..<maxIterations {
-                let nextOccurrenceEnd = currentSegmentStartDate.addingTimeInterval(eventDuration)
-                if nextOccurrenceEnd >= now {
-                    foundFutureOccurrence = true
-                    break
-                }
-                // Advance to next occurrence manually
-                let interval = rule.interval
-                switch rule.frequency {
-                case .daily:
-                    currentSegmentStartDate = cal.date(byAdding: .day, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
-                case .weekly:
-                    currentSegmentStartDate = cal.date(byAdding: .weekOfYear, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
-                case .monthly:
-                    currentSegmentStartDate = cal.date(byAdding: .month, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
-                case .yearly:
-                    currentSegmentStartDate = cal.date(byAdding: .year, value: interval, to: currentSegmentStartDate) ?? currentSegmentStartDate
-                @unknown default:
-                    currentSegmentStartDate = cal.date(byAdding: .day, value: 7, to: currentSegmentStartDate) ?? currentSegmentStartDate
-                }
-            }
-        } else {
-            foundFutureOccurrence = true
-        }
+        let currentSegmentEndDate = currentSegmentStartDate.addingTimeInterval(eventDuration)
 
-        // If no future occurrence found, return empty
-        guard foundFutureOccurrence else {
+        // If the next occurrence is still in the future, we have a valid occurrence to show
+        guard currentSegmentEndDate > now else {
             return []
         }
 
@@ -733,8 +680,8 @@ struct FamilyView: View {
 
         // Keep generating segments until we run out of occurrences
         while true {
-            // Get chip occurrences starting from this segment
-            let chipDates = CalendarManager.shared.calculateRecurringOccurrences(
+            // Get chip occurrences starting from this segment, only up to recurrenceChipLimit
+            let allChipDates = CalendarManager.shared.calculateRecurringOccurrences(
                 startDate: currentSegmentStartDate,
                 endDate: event.endDate,
                 recurrenceRule: rule,
@@ -744,7 +691,10 @@ struct FamilyView: View {
                 limit: recurrenceChipLimit
             )
 
-            // If no chips were found, we're done
+            // Filter to only future dates
+            let chipDates = allChipDates.filter { $0 > now }
+
+            // If no future chips were found, we're done
             if chipDates.isEmpty {
                 break
             }
@@ -756,7 +706,7 @@ struct FamilyView: View {
                 timeRange: event.timeRange,
                 location: event.location,
                 startDate: currentSegmentStartDate,
-                endDate: currentSegmentStartDate.addingTimeInterval(eventDuration),
+                endDate: currentSegmentEndDate,
                 memberNames: event.memberNames,
                 memberColor: event.memberColor,
                 calendarTitle: event.calendarTitle,
@@ -787,14 +737,47 @@ struct FamilyView: View {
 
             // Move to first occurrence after the interruption
             currentSegmentStartDate = findNextOccurrence(after: interruption.endDate, using: rule, from: currentSegmentStartDate)
+            let nextSegmentEnd = currentSegmentStartDate.addingTimeInterval(eventDuration)
 
-            // Safety check: if we didn't advance, break to avoid infinite loop
-            if currentSegmentStartDate <= interruption.endDate {
+            // Safety check: if we didn't advance or segment is in past, break to avoid infinite loop
+            if currentSegmentStartDate <= interruption.endDate || nextSegmentEnd <= now {
                 break
             }
         }
 
         return segments.isEmpty ? [event] : segments
+    }
+
+    private func findNextRecurringOccurrence(after date: Date, from startDate: Date, duration: TimeInterval, rule: EKRecurrenceRule) -> Date {
+        var currentOccurrence = startDate
+        let calendar = Calendar.current
+        var iterations = 0
+        let maxIterations = 730 // Search up to 2 years ahead
+
+        // If the first occurrence is already in the future, return it
+        if currentOccurrence > date {
+            return currentOccurrence
+        }
+
+        // Advance until we find an occurrence that starts after the given date
+        while currentOccurrence.addingTimeInterval(duration) <= date && iterations < maxIterations {
+            let interval = rule.interval
+            switch rule.frequency {
+            case .daily:
+                currentOccurrence = calendar.date(byAdding: .day, value: interval, to: currentOccurrence) ?? currentOccurrence
+            case .weekly:
+                currentOccurrence = calendar.date(byAdding: .weekOfYear, value: interval, to: currentOccurrence) ?? currentOccurrence
+            case .monthly:
+                currentOccurrence = calendar.date(byAdding: .month, value: interval, to: currentOccurrence) ?? currentOccurrence
+            case .yearly:
+                currentOccurrence = calendar.date(byAdding: .year, value: interval, to: currentOccurrence) ?? currentOccurrence
+            @unknown default:
+                currentOccurrence = calendar.date(byAdding: .day, value: 7, to: currentOccurrence) ?? currentOccurrence
+            }
+            iterations += 1
+        }
+
+        return currentOccurrence
     }
 
     private func findNextOccurrence(after date: Date, using rule: EKRecurrenceRule, from referenceDate: Date) -> Date {
