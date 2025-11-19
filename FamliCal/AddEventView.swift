@@ -10,6 +10,7 @@ import CoreData
 import MapKit
 import Combine
 import EventKit
+import CoreLocation
 
 struct AddEventView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -106,7 +107,7 @@ struct AddEventView: View {
 
                         if !searchCompleter.results.isEmpty {
                             VStack(alignment: .leading, spacing: 0) {
-                                ForEach(searchCompleter.results, id: \.self) { result in
+                                ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
                                     Button(action: {
                                         locationName = result.title
                                         locationAddress = result.subtitle
@@ -123,7 +124,9 @@ struct AddEventView: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 8)
                                     }
-                                    Divider()
+                                    if index < searchCompleter.results.count - 1 {
+                                        Divider()
+                                    }
                                 }
                             }
                             .background(Color(.systemGray6))
@@ -135,13 +138,20 @@ struct AddEventView: View {
                 // Date & Time Section
                 Section {
                     HStack {
-                        Text("Date")
+                        Text("Starts")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
-                        Button(action: { showingDatePicker.toggle() }) {
-                            Text(formattedDate(eventDate))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: { showingStartTimePicker.toggle() }) {
+                                Text(formattedTime(startTime))
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
 
@@ -153,17 +163,6 @@ struct AddEventView: View {
                         )
                         .datePickerStyle(.graphical)
                         .environment(\.calendar, calendarWithMondayAsFirstDay)
-                    }
-
-                    HStack {
-                        Text("Starts")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Button(action: { showingStartTimePicker.toggle() }) {
-                            Text(formattedTime(startTime))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
-                        }
                     }
 
                     if showingStartTimePicker {
@@ -179,10 +178,17 @@ struct AddEventView: View {
                         Text("Ends")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
-                        Button(action: { showingEndTimePicker.toggle() }) {
-                            Text(formattedTime(endTime))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: { showingEndTimePicker.toggle() }) {
+                                Text(formattedTime(endTime))
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
 
@@ -698,11 +704,31 @@ class LocationSearchCompleter: NSObject, ObservableObject {
     @Published var results: [MKLocalSearchCompletion] = []
 
     private let searchCompleter = MKLocalSearchCompleter()
+    private let locationManager = CLLocationManager()
 
     override init() {
         super.init()
         searchCompleter.delegate = self
         searchCompleter.resultTypes = [.address, .pointOfInterest]
+
+        // Request location to prioritize nearby results
+        locationManager.requestWhenInUseAuthorization()
+
+        // Set a region focused on user's location (defaults to US if unavailable)
+        if let location = locationManager.location {
+            let region = MKCoordinateRegion(
+                center: location.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            searchCompleter.region = region
+        } else {
+            // Default region centered on US if location unavailable
+            let defaultRegion = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 39.8283, longitude: -98.5795),
+                span: MKCoordinateSpan(latitudeDelta: 25, longitudeDelta: 25)
+            )
+            searchCompleter.region = defaultRegion
+        }
     }
 }
 
