@@ -65,9 +65,11 @@ struct AddEventView: View {
     @State private var showingCalendarPicker = false
 
     var isFormValid: Bool {
-        !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (!selectEveryone && !selectedMembers.isEmpty || selectEveryone) &&
-        !selectedCalendarID.isEmpty
+        let hasTitle = !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty
+        let hasAttendees = (!selectEveryone && !selectedMembers.isEmpty) || selectEveryone
+        let hasCalendar = selectEveryone ? !selectedCalendarID.isEmpty : true
+
+        return hasTitle && hasAttendees && hasCalendar
     }
 
     struct CalendarOption: Identifiable {
@@ -90,7 +92,7 @@ struct AddEventView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 // Title Section
                 Section {
@@ -551,48 +553,67 @@ struct AddEventView: View {
 
         var createdEventIds: [String] = []
 
-        // Create event in the selected calendar
-        let calendarID = selectedCalendarID
-        var eventId: String?
+        // Determine which calendars to add the event to
+        var targetCalendars: [String] = []
 
-        if let recurrenceRule = recurrenceRule {
-            eventId = CalendarManager.shared.createRecurringEvent(
-                title: title,
-                startDate: eventStartDate,
-                endDate: eventEndDate,
-                location: locationAddress.isEmpty ? nil : locationAddress,
-                notes: notes.isEmpty ? nil : notes,
-                recurrenceRule: recurrenceRule,
-                in: calendarID
-            )
+        if selectEveryone {
+            // Everyone selected: use the selected shared calendar
+            targetCalendars = [selectedCalendarID]
         } else {
-            eventId = CalendarManager.shared.createEvent(
-                title: title,
-                startDate: eventStartDate,
-                endDate: eventEndDate,
-                location: locationAddress.isEmpty ? nil : locationAddress,
-                notes: notes.isEmpty ? nil : notes,
-                in: calendarID
-            )
+            // Specific people selected: add to each person's first (main) calendar
+            for memberID in selectedMembers {
+                if let member = familyMembers.first(where: { $0.objectID == memberID }),
+                   let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar>,
+                   let firstCal = memberCalendars.first,
+                   let calendarID = firstCal.calendarID {
+                    targetCalendars.append(calendarID)
+                }
+            }
         }
 
-        if let eventId = eventId {
-            createdEventIds.append(eventId)
+        // Create event in all target calendars
+        for calendarID in targetCalendars {
+            var eventId: String?
 
-            // Store in CoreData
-            let familyEvent = FamilyEvent(context: viewContext)
-            familyEvent.id = eventGroupId
-            familyEvent.eventGroupId = eventGroupId
-            familyEvent.eventIdentifier = eventId
-            familyEvent.calendarId = calendarID
-            familyEvent.createdAt = Date()
-            familyEvent.isSharedCalendarEvent = selectEveryone
+            if let recurrenceRule = recurrenceRule {
+                eventId = CalendarManager.shared.createRecurringEvent(
+                    title: title,
+                    startDate: eventStartDate,
+                    endDate: eventEndDate,
+                    location: locationAddress.isEmpty ? nil : locationAddress,
+                    notes: notes.isEmpty ? nil : notes,
+                    recurrenceRule: recurrenceRule,
+                    in: calendarID
+                )
+            } else {
+                eventId = CalendarManager.shared.createEvent(
+                    title: title,
+                    startDate: eventStartDate,
+                    endDate: eventEndDate,
+                    location: locationAddress.isEmpty ? nil : locationAddress,
+                    notes: notes.isEmpty ? nil : notes,
+                    in: calendarID
+                )
+            }
 
-            // Add attendees for non-shared events
-            if !selectEveryone {
-                for memberID in selectedMembers {
-                    if let member = familyMembers.first(where: { $0.objectID == memberID }) {
-                        familyEvent.addToAttendees(member)
+            if let eventId = eventId {
+                createdEventIds.append(eventId)
+
+                // Store in CoreData
+                let familyEvent = FamilyEvent(context: viewContext)
+                familyEvent.id = eventGroupId
+                familyEvent.eventGroupId = eventGroupId
+                familyEvent.eventIdentifier = eventId
+                familyEvent.calendarId = calendarID
+                familyEvent.createdAt = Date()
+                familyEvent.isSharedCalendarEvent = selectEveryone
+
+                // Add attendees for non-shared events
+                if !selectEveryone {
+                    for memberID in selectedMembers {
+                        if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                            familyEvent.addToAttendees(member)
+                        }
                     }
                 }
             }
@@ -711,24 +732,12 @@ class LocationSearchCompleter: NSObject, ObservableObject {
         searchCompleter.delegate = self
         searchCompleter.resultTypes = [.address, .pointOfInterest]
 
-        // Request location to prioritize nearby results
+        // Request location permission but don't restrict search region
         locationManager.requestWhenInUseAuthorization()
 
-        // Set a region focused on user's location (defaults to US if unavailable)
-        if let location = locationManager.location {
-            let region = MKCoordinateRegion(
-                center: location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-            )
-            searchCompleter.region = region
-        } else {
-            // Default region centered on US if location unavailable
-            let defaultRegion = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 39.8283, longitude: -98.5795),
-                span: MKCoordinateSpan(latitudeDelta: 25, longitudeDelta: 25)
-            )
-            searchCompleter.region = defaultRegion
-        }
+        // Note: Not setting a region allows MapKit to search globally
+        // This enables searching by postcode, address, or location name worldwide
+        // Results will naturally prioritize based on relevance and user location
     }
 }
 
