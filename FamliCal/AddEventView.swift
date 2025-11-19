@@ -95,6 +95,41 @@ struct AddEventView: View {
                 Section {
                     TextField("Event Title", text: $eventTitle)
                         .font(.system(size: 17, weight: .regular))
+
+                    // Location Section (under title)
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Add location", text: $locationName)
+                            .font(.system(size: 16, weight: .regular))
+                            .onChange(of: locationName) { _, newValue in
+                                searchCompleter.query = newValue
+                            }
+
+                        if !searchCompleter.results.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(searchCompleter.results, id: \.self) { result in
+                                    Button(action: {
+                                        locationName = result.title
+                                        locationAddress = result.subtitle
+                                        searchCompleter.results = []
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(result.title)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                            Text(result.subtitle)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 8)
+                                    }
+                                    Divider()
+                                }
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(6)
+                        }
+                    }
                 }
 
                 // Date & Time Section
@@ -208,10 +243,18 @@ struct AddEventView: View {
                                     }
                                 )) {
                                     HStack(spacing: 12) {
-                                        Circle()
-                                            .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                                            .frame(width: 32, height: 32)
-                                            .overlay(Text(member.avatarInitials ?? "?").font(.system(size: 14, weight: .semibold)).foregroundColor(.white))
+                                        // Calendar color dot
+                                        if let memberCals = member.memberCalendars as? Set<FamilyMemberCalendar>,
+                                           let firstCal = memberCals.first,
+                                           let colorHex = firstCal.calendarColorHex {
+                                            Circle()
+                                                .fill(Color.fromHex(colorHex))
+                                                .frame(width: 12, height: 12)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                                .frame(width: 12, height: 12)
+                                        }
                                         Text(member.name ?? "Unknown")
                                             .font(.system(size: 16, weight: .regular))
                                     }
@@ -221,53 +264,55 @@ struct AddEventView: View {
                     }
                 }
 
-                // Calendar Section
-                Section {
-                    HStack {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 24)
-                        Text("Calendar")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Button(action: { showingCalendarPicker.toggle() }) {
-                            if let calendar = availableCalendars.first(where: { $0.calendarID == selectedCalendarID }) {
-                                HStack(spacing: 8) {
-                                    Circle()
-                                        .fill(Color(uiColor: calendar.color))
-                                        .frame(width: 12, height: 12)
-                                    Text(calendar.calendarName)
+                // Calendar Section (only show if more than one calendar available)
+                if availableCalendars.count > 1 {
+                    Section {
+                        HStack {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(width: 24)
+                            Text("Calendar")
+                                .font(.system(size: 16, weight: .regular))
+                            Spacer()
+                            Button(action: { showingCalendarPicker.toggle() }) {
+                                if let calendar = availableCalendars.first(where: { $0.calendarID == selectedCalendarID }) {
+                                    HStack(spacing: 8) {
+                                        Circle()
+                                            .fill(Color(uiColor: calendar.color))
+                                            .frame(width: 12, height: 12)
+                                        Text(calendar.calendarName)
+                                            .font(.system(size: 16, weight: .regular))
+                                            .foregroundColor(.blue)
+                                            .lineLimit(1)
+                                    }
+                                } else {
+                                    Text("Select calendar")
                                         .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(.blue)
-                                        .lineLimit(1)
+                                        .foregroundColor(.gray)
                                 }
-                            } else {
-                                Text("Select calendar")
-                                    .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(.gray)
                             }
                         }
-                    }
 
-                    if showingCalendarPicker {
-                        ForEach(availableCalendars) { calendar in
-                            Button(action: {
-                                selectedCalendarID = calendar.calendarID
-                                showingCalendarPicker = false
-                            }) {
-                                HStack {
-                                    Circle()
-                                        .fill(Color(uiColor: calendar.color))
-                                        .frame(width: 16, height: 16)
-                                    Text(calendar.calendarName)
-                                        .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    if selectedCalendarID == calendar.calendarID {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.blue)
+                        if showingCalendarPicker {
+                            ForEach(availableCalendars) { calendar in
+                                Button(action: {
+                                    selectedCalendarID = calendar.calendarID
+                                    showingCalendarPicker = false
+                                }) {
+                                    HStack {
+                                        Circle()
+                                            .fill(Color(uiColor: calendar.color))
+                                            .frame(width: 16, height: 16)
+                                        Text(calendar.calendarName)
+                                            .font(.system(size: 16, weight: .regular))
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        if selectedCalendarID == calendar.calendarID {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.blue)
+                                        }
                                     }
                                 }
                             }
@@ -319,34 +364,6 @@ struct AddEventView: View {
                             Text(alertOption.rawValue)
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(.blue)
-                        }
-                    }
-                }
-
-                // Location Section
-                Section(header: Text("Location")) {
-                    TextField("Search location", text: $locationName)
-                        .font(.system(size: 16, weight: .regular))
-                        .onChange(of: locationName) { _, newValue in
-                            searchCompleter.query = newValue
-                        }
-
-                    if !searchCompleter.results.isEmpty {
-                        ForEach(searchCompleter.results, id: \.self) { result in
-                            Button(action: {
-                                locationName = result.title
-                                locationAddress = result.subtitle
-                                searchCompleter.results = []
-                            }) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(result.title)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    Text(result.subtitle)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-                            }
                         }
                     }
                 }
