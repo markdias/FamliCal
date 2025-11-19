@@ -264,8 +264,8 @@ struct AddEventView: View {
                     }
                 }
 
-                // Calendar Section (only show if more than one calendar available)
-                if availableCalendars.count > 1 {
+                // Calendar Section (only show if Everyone is selected and multiple shared calendars)
+                if selectEveryone && availableCalendars.count > 1 {
                     Section {
                         HStack {
                             Image(systemName: "calendar")
