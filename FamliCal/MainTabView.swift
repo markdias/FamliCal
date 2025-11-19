@@ -44,27 +44,12 @@ struct MainTabView: View {
             VStack {
                 Spacer()
                 HStack(alignment: .center) {
-                    HStack(spacing: 12) {
-                        settingsButton
-                        searchButton
-                    }
-
-                    Spacer()
-
-                    viewToggleButton
+                    compactControlStack
 
                     Spacer()
 
                     // Add event button in bottom right
-                    Button(action: { showingAddEvent = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color.blue)
-                            .cornerRadius(28)
-                            .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
-                    }
+                    primaryActionButton
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -85,53 +70,59 @@ struct MainTabView: View {
         }
     }
 
-    private var settingsButton: some View {
-        Button(action: { showingSettings = true }) {
-            Image(systemName: "gearshape.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.blue)
-                .frame(width: 56, height: 56)
-                .background(Color(.systemBackground))
-                .cornerRadius(28)
-                .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
-        }
-        .accessibilityLabel("Open settings")
-    }
-
-    private var searchButton: some View {
-        Button(action: { showingSearch = true }) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.blue)
-                .frame(width: 48, height: 48)
-                .background(Color(.systemBackground))
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
-        }
-        .accessibilityLabel("Search events")
-    }
-
-    private var viewToggleButton: some View {
-        let (iconName, label, hint): (String, String, String) = {
-            switch activeView {
-            case .events:
-                return ("calendar", "Open calendar view", "Switch to calendar grid")
-            case .calendar:
-                return ("list.bullet.rectangle", "Return to event list", "Switch to events list")
+    private var compactControlStack: some View {
+        HStack(spacing: 12) {
+            SettingsControlButton(imageName: "gearshape.fill") {
+                showingSettings = true
             }
-        }()
+            .accessibilityLabel("Open settings")
 
-        return Button(action: toggleActiveView) {
-            Image(systemName: iconName)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(.blue)
-                .frame(width: 56, height: 56)
-                .background(Color(.systemBackground))
-                .cornerRadius(28)
-                .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+            SettingsControlButton(imageName: "magnifyingglass") {
+                showingSearch = true
+            }
+            .accessibilityLabel("Search events")
+
+            SettingsControlButton(imageName: activeView == .events ? "calendar" : "list.bullet.rectangle") {
+                toggleActiveView()
+            }
+            .accessibilityLabel(activeView == .events ? "Open calendar view" : "Return to event list")
+            .accessibilityHint(activeView == .events ? "Switch to calendar grid" : "Switch to events list")
         }
-        .accessibilityLabel(label)
-        .accessibilityHint(hint)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(.systemBackground).opacity(0.95))
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+    }
+
+    private var primaryActionButton: some View {
+        Button(action: { showingAddEvent = true }) {
+            Image(systemName: "plus")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 48, height: 48)
+                .background(Color.blue)
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 5)
+        }
+        .accessibilityLabel("Add event")
+    }
+
+    private struct SettingsControlButton: View {
+        let imageName: String
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                Image(systemName: imageName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private func switchToView(_ target: ActiveView) {

@@ -28,6 +28,7 @@ struct EditEventView: View {
 
     // Location search
     @StateObject private var searchCompleter = LocationSearchCompleter()
+    @State private var isApplyingLocationSelection = false
 
     // Calendar info for updating
     @State private var calendarId: String? = nil
@@ -40,6 +41,7 @@ struct EditEventView: View {
     @State private var showingError = false
     @State private var errorMessage = ""
     @State private var showingDeleteConfirmation = false
+    @State private var showingRecurringDeleteOptions = false
     @State private var showingSuccessMessage = false
     @State private var showingDeleteSuccess = false
 
@@ -48,24 +50,78 @@ struct EditEventView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 // Title Section
                 Section {
                     TextField("Event Title", text: $eventTitle)
                         .font(.system(size: 17, weight: .regular))
+
+                    // Location Section (under title, matching AddEventView)
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Add location", text: $locationName)
+                            .font(.system(size: 16, weight: .regular))
+                            .onChange(of: locationName) { _, newValue in
+                                if isApplyingLocationSelection {
+                                    isApplyingLocationSelection = false
+                                    return
+                                }
+
+                                searchCompleter.query = newValue
+                                if newValue.isEmpty {
+                                    locationAddress = ""
+                                }
+                            }
+
+                        if !searchCompleter.results.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
+                                    Button(action: {
+                                        isApplyingLocationSelection = true
+                                        locationName = result.title
+                                        locationAddress = result.subtitle
+                                        searchCompleter.query = ""
+                                        searchCompleter.results = []
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(result.title)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                            Text(result.subtitle)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 8)
+                                    }
+                                    if index < searchCompleter.results.count - 1 {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(6)
+                        }
+                    }
                 }
 
-                // Date & Time Section
+                // Date & Time Section (matching AddEventView)
                 Section {
                     HStack {
-                        Text("Date")
+                        Text("Starts")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
-                        Button(action: { showingDatePicker.toggle() }) {
-                            Text(formattedDate(eventDate))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: { showingStartTimePicker.toggle() }) {
+                                Text(formattedTime(startTime))
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
 
@@ -77,17 +133,6 @@ struct EditEventView: View {
                         )
                         .datePickerStyle(.graphical)
                         .environment(\.calendar, calendarWithMondayAsFirstDay)
-                    }
-
-                    HStack {
-                        Text("Starts")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Button(action: { showingStartTimePicker.toggle() }) {
-                            Text(formattedTime(startTime))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
-                        }
                     }
 
                     if showingStartTimePicker {
@@ -103,10 +148,17 @@ struct EditEventView: View {
                         Text("Ends")
                             .font(.system(size: 16, weight: .regular))
                         Spacer()
-                        Button(action: { showingEndTimePicker.toggle() }) {
-                            Text(formattedTime(endTime))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: { showingEndTimePicker.toggle() }) {
+                                Text(formattedTime(endTime))
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
 
@@ -117,34 +169,6 @@ struct EditEventView: View {
                             displayedComponents: .hourAndMinute
                         )
                         .datePickerStyle(.wheel)
-                    }
-                }
-
-                // Location Section
-                Section(header: Text("Location")) {
-                    TextField("Search location", text: $locationName)
-                        .font(.system(size: 16, weight: .regular))
-                        .onChange(of: locationName) { _, newValue in
-                            searchCompleter.query = newValue
-                        }
-
-                    if !searchCompleter.results.isEmpty {
-                        ForEach(searchCompleter.results, id: \.self) { result in
-                            Button(action: {
-                                locationName = result.title
-                                locationAddress = result.subtitle
-                                searchCompleter.results = []
-                            }) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(result.title)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    Text(result.subtitle)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -165,7 +189,7 @@ struct EditEventView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
-                        Button(action: { showingDeleteConfirmation = true }) {
+                        Button(action: handleDeleteTap) {
                             Image(systemName: "trash")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.red)
@@ -185,14 +209,22 @@ struct EditEventView: View {
                     }
                 }
             }
-            .confirmationDialog("Delete Event", isPresented: $showingDeleteConfirmation) {
+            .confirmationDialog("Delete Event", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
                 Button("Delete", role: .destructive) {
-                    Task {
-                        await deleteEvent()
-                    }
+                    Task { await deleteEvent() }
                 }
+                Button("Cancel", role: .cancel) { }
             } message: {
                 Text("Are you sure you want to delete this event? This cannot be undone.")
+            }
+            .confirmationDialog("Delete Recurring Event?", isPresented: $showingRecurringDeleteOptions, titleVisibility: .visible) {
+                Button("Delete Only This Event", role: .destructive) {
+                    Task { await deleteEvent(span: .thisEvent) }
+                }
+                Button("Delete This and Future Events", role: .destructive) {
+                    Task { await deleteEvent(span: .futureEvents) }
+                }
+                Button("Cancel", role: .cancel) { }
             }
             .onAppear {
                 // Populate fields from existing event
@@ -201,6 +233,7 @@ struct EditEventView: View {
                 endTime = upcomingEvent.endDate
                 eventDate = upcomingEvent.startDate
                 locationAddress = upcomingEvent.location ?? ""
+                isApplyingLocationSelection = true
                 locationName = upcomingEvent.location ?? ""
 
                 // Fetch calendar ID from CoreData
@@ -229,45 +262,47 @@ struct EditEventView: View {
     }
 
     private func fetchCalendarId() {
-        let fetchRequest = FamilyEvent.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", upcomingEvent.id)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let familyEvent = results.first {
-                calendarId = familyEvent.calendarId
-            } else {
-                // If not found in FamilyEvent, it might be an event not created by us
-                errorMessage = "Could not find event details. This event may not have been created through FamliCal."
-                showingError = true
-            }
-        } catch {
-            errorMessage = "Failed to fetch event: \(error.localizedDescription)"
-            showingError = true
-        }
+        // Use the calendar ID directly from the event (it comes from EventKit)
+        calendarId = upcomingEvent.calendarID
     }
 
     private func saveEvent() async {
         await MainActor.run {
-        isSaving = true
+            isSaving = true
+            print("📝 Starting save event for: \(upcomingEvent.title)")
+            print("   Event ID: \(upcomingEvent.id)")
+            print("   Calendar ID: \(upcomingEvent.calendarID)")
         }
 
         // Ensure we have the calendar ID
         guard let calId = calendarId, !calId.isEmpty else {
-            errorMessage = "Unable to determine which calendar this event is in. Please try again."
-            showingError = true
-            isSaving = false
+            await MainActor.run {
+                errorMessage = "Unable to determine which calendar this event is in. Please try again."
+                showingError = true
+                isSaving = false
+            }
             return
         }
 
         let title = eventTitle.trimmingCharacters(in: .whitespaces)
 
+        // Combine date and time components properly
+        let eventStartDate = combineDateAndTime(date: eventDate, time: startTime)
+        let eventEndDate = combineDateAndTime(date: eventDate, time: endTime)
+
+        print("📝 Event details:")
+        print("   Title: \(title)")
+        print("   Start: \(eventStartDate)")
+        print("   End: \(eventEndDate)")
+        print("   Location: \(locationAddress.isEmpty ? "(none)" : locationAddress)")
+
         let success = CalendarManager.shared.updateEvent(
             withIdentifier: upcomingEvent.id,
+            occurrenceStartDate: upcomingEvent.startDate,
             in: calId,
             title: title,
-            startDate: startTime,
-            endDate: endTime,
+            startDate: eventStartDate,
+            endDate: eventEndDate,
             location: locationAddress.isEmpty ? nil : locationAddress,
             notes: notes.isEmpty ? nil : notes
         )
@@ -276,12 +311,12 @@ struct EditEventView: View {
             // Update CoreData record if needed
             updateFamilyEvent()
 
-            // Trigger haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
-
-            // Show success message and auto-dismiss
             await MainActor.run {
+                // Trigger haptic feedback
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+
+                // Show success message and auto-dismiss
                 showingSuccessMessage = true
             }
 
@@ -291,9 +326,11 @@ struct EditEventView: View {
                 dismiss()
             }
         } else {
-            errorMessage = "Failed to update event. Please try again."
-            showingError = true
-            isSaving = false
+            await MainActor.run {
+                errorMessage = "Failed to update event. The event may have been deleted or the calendar is no longer accessible. Please try refreshing and creating a new event."
+                showingError = true
+                isSaving = false
+            }
         }
     }
 
@@ -314,34 +351,50 @@ struct EditEventView: View {
         }
     }
 
-    private func deleteEvent() async {
+    private func handleDeleteTap() {
+        if upcomingEvent.hasRecurrence {
+            showingRecurringDeleteOptions = true
+        } else {
+            showingDeleteConfirmation = true
+        }
+    }
+
+    private func deleteEvent(span: EKSpan = .thisEvent) async {
         await MainActor.run {
-        isSaving = true
+            isSaving = true
+            print("🗑️  Starting delete event for: \(upcomingEvent.title)")
+            print("   Event ID: \(upcomingEvent.id)")
+            print("   Calendar ID: \(upcomingEvent.calendarID)")
         }
 
         // Ensure we have the calendar ID
-        guard let calId = calendarId, !calId.isEmpty else {
-            errorMessage = "Unable to determine which calendar this event is in. Please try again."
-            showingError = true
-            isSaving = false
+        let calId = calendarId ?? upcomingEvent.calendarID
+        guard !calId.isEmpty else {
+            await MainActor.run {
+                errorMessage = "Unable to determine which calendar this event is in. Please try again."
+                showingError = true
+                isSaving = false
+            }
             return
         }
 
         let success = CalendarManager.shared.deleteEvent(
             withIdentifier: upcomingEvent.id,
-            from: calId
+            occurrenceStartDate: upcomingEvent.startDate,
+            from: calId,
+            span: span
         )
 
         if success {
             // Delete from CoreData
             deleteFamilyEvent()
 
-            // Trigger haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
-
-            // Show success message and auto-dismiss
             await MainActor.run {
+                // Trigger haptic feedback
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+
+                // Show success message and auto-dismiss
                 showingDeleteSuccess = true
             }
 
@@ -351,9 +404,11 @@ struct EditEventView: View {
                 dismiss()
             }
         } else {
-            errorMessage = "Failed to delete event. Please try again."
-            showingError = true
-            isSaving = false
+            await MainActor.run {
+                errorMessage = "Failed to delete event. The event may have already been deleted or the calendar is no longer accessible."
+                showingError = true
+                isSaving = false
+            }
         }
     }
 
@@ -384,7 +439,23 @@ struct EditEventView: View {
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
     }
-    
+
+    private func combineDateAndTime(date: Date, time: Date) -> Date {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        let timeComponents = calendar.dateComponents([.hour, .minute, .second], from: time)
+
+        var combinedComponents = DateComponents()
+        combinedComponents.year = dateComponents.year
+        combinedComponents.month = dateComponents.month
+        combinedComponents.day = dateComponents.day
+        combinedComponents.hour = timeComponents.hour
+        combinedComponents.minute = timeComponents.minute
+        combinedComponents.second = timeComponents.second
+
+        return calendar.date(from: combinedComponents) ?? date
+    }
+
     private var calendarWithMondayAsFirstDay: Calendar {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Monday
@@ -402,7 +473,7 @@ struct EditEventView: View {
         calendarID: "demo-calendar",
         calendarColor: UIColor.blue,
         calendarTitle: "Work",
-        hasRecurrence: false, recurrenceRule: nil
+        hasRecurrence: false, recurrenceRule: nil, isAllDay: false
     )
 
     EditEventView(upcomingEvent: testEvent)

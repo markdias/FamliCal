@@ -45,6 +45,7 @@ struct AddEventView: View {
 
     // Location search
     @StateObject private var searchCompleter = LocationSearchCompleter()
+    @State private var isApplyingLocationSelection = false
 
     // Permissions
     @State private var calendarAccessGranted = false
@@ -104,15 +105,25 @@ struct AddEventView: View {
                         TextField("Add location", text: $locationName)
                             .font(.system(size: 16, weight: .regular))
                             .onChange(of: locationName) { _, newValue in
+                                if isApplyingLocationSelection {
+                                    isApplyingLocationSelection = false
+                                    return
+                                }
+
                                 searchCompleter.query = newValue
+                                if newValue.isEmpty {
+                                    locationAddress = ""
+                                }
                             }
 
                         if !searchCompleter.results.isEmpty {
                             VStack(alignment: .leading, spacing: 0) {
                                 ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
                                     Button(action: {
+                                        isApplyingLocationSelection = true
                                         locationName = result.title
                                         locationAddress = result.subtitle
+                                        searchCompleter.query = ""
                                         searchCompleter.results = []
                                     }) {
                                         VStack(alignment: .leading, spacing: 4) {

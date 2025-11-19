@@ -33,6 +33,7 @@ struct CalendarView: View {
     @State private var dayEvents: [String: [DayEventItem]] = [:]
     @State private var isLoadingEvents = false
     @State private var showingEventDetail = false
+    @State private var selectedEvent: UpcomingCalendarEvent? = nil
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
 
@@ -167,6 +168,11 @@ struct CalendarView: View {
             }
             .navigationBarHidden(true)
         }
+        .sheet(isPresented: $showingEventDetail) {
+            if let event = selectedEvent {
+                EventDetailView(event: event)
+            }
+        }
         .onAppear(perform: setupView)
         .onChange(of: currentMonth) { _, _ in loadEvents() }
         .onChange(of: familyMembers.count) { _, _ in loadEvents() }
@@ -187,98 +193,116 @@ struct CalendarView: View {
 
             VStack(spacing: 4) {
                 ForEach(Array(groupedEvents.enumerated()), id: \.element.id) { _, groupedEvent in
-                    HStack(spacing: 16) {
-                        // Left side: Colored square with start time
-                        VStack(spacing: 2) {
-                            if let startTime = groupedEvent.startTime {
-                                Text(startTime)
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.white)
-                            } else {
-                                Text("All")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                Text("Day")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        .frame(width: 90, height: 70)
-                        .background {
-                            if groupedEvent.memberColors.count > 1 {
-                                // Gradient fade between multiple colors
-                                LinearGradient(
-                                    gradient: Gradient(colors: groupedEvent.memberColors.map { Color(uiColor: $0) }),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            } else {
-                                Color(uiColor: groupedEvent.memberColor)
-                            }
-                        }
-                        .cornerRadius(8)
-
-                        // Right side: Event details
-                        VStack(alignment: .leading, spacing: 4) {
-                            // Title
-                            Text(groupedEvent.title)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .lineLimit(2)
-
-                            // Member names
-                            Text(groupedEvent.memberNames.joined(separator: ", "))
-                                .font(.system(size: 12, weight: .regular))
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-
-                            // Time
-                            if let timeRange = groupedEvent.timeRange {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                    Text(timeRange)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-                            } else {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                    Text("All Day")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
+                    Button(action: {
+                        selectedEvent = UpcomingCalendarEvent(
+                            id: groupedEvent.eventIdentifier,
+                            title: groupedEvent.title,
+                            location: groupedEvent.location,
+                            startDate: groupedEvent.startDate,
+                            endDate: groupedEvent.endDate,
+                            calendarID: groupedEvent.calendarID,
+                            calendarColor: groupedEvent.calendarColor,
+                            calendarTitle: groupedEvent.calendarTitle,
+                            hasRecurrence: groupedEvent.hasRecurrence,
+                            recurrenceRule: nil,
+                            isAllDay: groupedEvent.isAllDay
+                        )
+                        showingEventDetail = true
+                    }) {
+                        HStack(spacing: 16) {
+                            // Left side: Colored square with start time
+                            VStack(spacing: 2) {
+                                if let startTime = groupedEvent.startTime {
+                                    Text(startTime)
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(.white)
+                                } else {
+                                    Text("All")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("Day")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.white)
                                 }
                             }
+                            .frame(width: 90, height: 70)
+                            .background {
+                                if groupedEvent.memberColors.count > 1 {
+                                    // Gradient fade between multiple colors
+                                    LinearGradient(
+                                        gradient: Gradient(colors: groupedEvent.memberColors.map { Color(uiColor: $0) }),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                } else {
+                                    Color(uiColor: groupedEvent.memberColor)
+                                }
+                            }
+                            .cornerRadius(8)
 
-                            // Location (first line only) - tappable to open maps
-                            if let location = groupedEvent.location {
-                                let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
-                                Button(action: { openLocationInMaps(firstLine) }) {
+                            // Right side: Event details
+                            VStack(alignment: .leading, spacing: 4) {
+                                // Title
+                                Text(groupedEvent.title)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(2)
+
+                                // Member names
+                                Text(groupedEvent.memberNames.joined(separator: ", "))
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+
+                                // Time
+                                if let timeRange = groupedEvent.timeRange {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "location.fill")
+                                        Image(systemName: "clock")
                                             .font(.system(size: 12))
                                             .foregroundColor(.gray)
-                                        Text(firstLine)
+                                        Text(timeRange)
                                             .font(.system(size: 13))
                                             .foregroundColor(.gray)
-                                            .lineLimit(1)
+                                    }
+                                } else {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "clock")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                        Text("All Day")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.gray)
                                     }
                                 }
+
+                                // Location (first line only) - tappable to open maps
+                                if let location = groupedEvent.location {
+                                    let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                                    Button(action: { MapsUtility.openLocation(firstLine, in: defaultMapsApp) }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "location.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                            Text(firstLine)
+                                                .font(.system(size: 13))
+                                                .foregroundColor(.gray)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                }
+
+                                Spacer()
                             }
 
                             Spacer()
                         }
-
-                        Spacer()
+                        .frame(minHeight: 70)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(Color.white.opacity(0.85))
+                        .cornerRadius(12)
                     }
-                    .frame(minHeight: 70)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.85))
-                    .cornerRadius(12)
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -307,7 +331,15 @@ struct CalendarView: View {
                     memberInitials: event.memberInitials,
                     memberColor: event.memberColor,
                     color: event.color,
-                    memberColors: [event.memberColor]
+                    memberColors: [event.memberColor],
+                    eventIdentifier: event.eventIdentifier,
+                    calendarID: event.calendarID,
+                    calendarColor: event.calendarColor,
+                    calendarTitle: event.calendarTitle,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    hasRecurrence: event.hasRecurrence,
+                    isAllDay: event.isAllDay
                 )
             }
         }
@@ -516,7 +548,15 @@ struct CalendarView: View {
                         memberName: member.name ?? "Unknown",
                         memberInitials: initials,
                         memberColor: event.calendarColor,
-                        color: event.calendarColor
+                        color: event.calendarColor,
+                        eventIdentifier: event.id,
+                        calendarID: event.calendarID,
+                        calendarColor: event.calendarColor,
+                        calendarTitle: event.calendarTitle,
+                        startDate: event.startDate,
+                        endDate: event.endDate,
+                        hasRecurrence: event.hasRecurrence,
+                        isAllDay: event.isAllDay
                     )
 
                     if eventsDict[dateKey] == nil {
@@ -565,31 +605,6 @@ struct CalendarView: View {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
-
-    private func openLocationInMaps(_ location: String) {
-        let encodedLocation = location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
-
-        switch defaultMapsApp {
-        case "Google Maps":
-            if let googleMapsURL = URL(string: "comgooglemaps://?q=\(encodedLocation)"),
-               UIApplication.shared.canOpenURL(googleMapsURL) {
-                UIApplication.shared.open(googleMapsURL)
-            } else if let webURL = URL(string: "https://maps.google.com/?q=\(encodedLocation)") {
-                UIApplication.shared.open(webURL)
-            }
-        case "Waze":
-            if let wazeURL = URL(string: "waze://?q=\(encodedLocation)"),
-               UIApplication.shared.canOpenURL(wazeURL) {
-                UIApplication.shared.open(wazeURL)
-            } else if let webURL = URL(string: "https://www.waze.com/ul?q=\(encodedLocation)") {
-                UIApplication.shared.open(webURL)
-            }
-        default: // Apple Maps
-            if let appleURL = URL(string: "maps://?q=\(encodedLocation)") {
-                UIApplication.shared.open(appleURL)
-            }
-        }
-    }
 }
 
 // MARK: - Data Models
@@ -603,6 +618,14 @@ struct DayEventItem: Identifiable {
     let memberInitials: String
     let memberColor: UIColor
     let color: UIColor
+    let eventIdentifier: String
+    let calendarID: String
+    let calendarColor: UIColor
+    let calendarTitle: String
+    let startDate: Date
+    let endDate: Date
+    let hasRecurrence: Bool
+    let isAllDay: Bool
 
     var startTime: String? {
         guard let timeRange = timeRange else { return nil }
@@ -620,6 +643,14 @@ struct GroupedDayEvent: Identifiable {
     let memberColor: UIColor
     let color: UIColor
     var memberColors: [UIColor] = []  // Store all colors for gradient
+    let eventIdentifier: String
+    let calendarID: String
+    let calendarColor: UIColor
+    let calendarTitle: String
+    let startDate: Date
+    let endDate: Date
+    let hasRecurrence: Bool
+    let isAllDay: Bool
 
     var startTime: String? {
         guard let timeRange = timeRange else { return nil }

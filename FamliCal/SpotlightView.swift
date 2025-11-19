@@ -12,7 +12,7 @@ import EventKit
 struct SpotlightView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
+    @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
 
     let member: FamilyMember
@@ -41,6 +41,12 @@ struct SpotlightView: View {
     private static let dayOfWeekFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
+        return formatter
+    }()
+
+    private static let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
         return formatter
     }()
 
@@ -76,7 +82,7 @@ struct SpotlightView: View {
                                 ForEach(events) { event in
                                     Button(action: {
                                         selectedEvent = UpcomingCalendarEvent(
-                                            id: event.id,
+                                            id: event.eventIdentifier,
                                             title: event.title,
                                             location: event.location,
                                             startDate: event.startDate,
@@ -84,8 +90,9 @@ struct SpotlightView: View {
                                             calendarID: event.calendarID,
                                             calendarColor: event.memberColor,
                                             calendarTitle: event.calendarTitle,
-                                            hasRecurrence: false,
-                                            recurrenceRule: nil
+                                            hasRecurrence: event.hasRecurrence,
+                                            recurrenceRule: nil,
+                                            isAllDay: event.isAllDay
                                         )
                                         showingEventDetail = true
                                     }) {
@@ -150,13 +157,17 @@ struct SpotlightView: View {
     private func eventCard(_ event: GroupedEvent) -> some View {
         HStack(alignment: .top, spacing: 14) {
             // Left side: Date box with color
-            VStack(spacing: 1) {
+            VStack(spacing: 2) {
+                Text(Self.dayOfWeekFormatter.string(from: event.startDate))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+
                 Text(Self.dayFormatter.string(from: event.startDate))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
 
-                Text(Self.dayOfWeekFormatter.string(from: event.startDate))
-                    .font(.system(size: 10, weight: .semibold))
+                Text(Self.monthFormatter.string(from: event.startDate))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white.opacity(0.9))
             }
             .frame(width: 60, height: 70)
@@ -214,7 +225,6 @@ struct SpotlightView: View {
     private func loadEvents() {
         isLoadingEvents = true
 
-        var memberEvents: [GroupedEvent] = []
         let now = Date()
 
         // Get all calendar IDs for this member
@@ -256,8 +266,10 @@ struct SpotlightView: View {
                 return "\(formatter.string(from: event.startDate)) – \(formatter.string(from: event.endDate))"
             }()
 
+            let displayID = "\(event.id)|\(event.startDate.timeIntervalSince1970)"
             eventItems.append(EventItem(
-                id: UUID(),
+                id: displayID,
+                eventIdentifier: event.id,
                 title: event.title,
                 location: event.location,
                 startDate: event.startDate,
@@ -267,8 +279,9 @@ struct SpotlightView: View {
                 memberColor: event.calendarColor,
                 calendarTitle: event.calendarTitle,
                 calendarID: event.calendarID,
-                hasRecurrence: false,
-                recurrenceRule: nil
+                hasRecurrence: event.hasRecurrence,
+                recurrenceRule: nil,
+                isAllDay: event.isAllDay
             ))
         }
 
@@ -282,7 +295,7 @@ struct SpotlightView: View {
         let grouped = groupEventsByDetails(futureEvents)
         let sorted = grouped.sorted { $0.startDate < $1.startDate }
 
-        events = Array(sorted.prefix(eventsPerPerson))
+        events = Array(sorted.prefix(spotlightEventsPerPerson))
         isLoadingEvents = false
     }
 
@@ -293,11 +306,30 @@ struct SpotlightView: View {
             let startKey = String(event.startDate.timeIntervalSinceReferenceDate)
             let key = "\(event.title)|\(startKey)|\(event.timeRange ?? "all-day")|\(event.location ?? "")"
 
-            if let _ = grouped[key] {
-                grouped[key]?.memberNames.append(event.memberName)
+            if let existing = grouped[key] {
+                var updatedNames = existing.memberNames
+                updatedNames.append(event.memberName)
+
+                grouped[key] = GroupedEvent(
+                    id: existing.id,
+                    eventIdentifier: existing.eventIdentifier,
+                    title: existing.title,
+                    timeRange: existing.timeRange,
+                    location: existing.location,
+                    startDate: existing.startDate,
+                    endDate: existing.endDate,
+                    memberNames: updatedNames,
+                    memberColor: existing.memberColor,
+                    calendarTitle: existing.calendarTitle,
+                    calendarID: existing.calendarID,
+                    memberColors: existing.memberColors,
+                    hasRecurrence: existing.hasRecurrence || event.hasRecurrence,
+                    isAllDay: existing.isAllDay
+                )
             } else {
                 grouped[key] = GroupedEvent(
-                    id: event.id.uuidString,
+                    id: event.id,
+                    eventIdentifier: event.eventIdentifier,
                     title: event.title,
                     timeRange: event.timeRange,
                     location: event.location,
@@ -307,7 +339,9 @@ struct SpotlightView: View {
                     memberColor: event.memberColor,
                     calendarTitle: event.calendarTitle,
                     calendarID: event.calendarID,
-                    memberColors: [event.memberColor]
+                    memberColors: [event.memberColor],
+                    hasRecurrence: event.hasRecurrence,
+                    isAllDay: event.isAllDay
                 )
             }
         }
@@ -342,7 +376,8 @@ struct SpotlightView: View {
 // MARK: - Data Models
 
 private struct EventItem: Identifiable {
-    let id: UUID
+    let id: String
+    let eventIdentifier: String
     let title: String
     let location: String?
     let startDate: Date
@@ -354,10 +389,12 @@ private struct EventItem: Identifiable {
     let calendarID: String
     let hasRecurrence: Bool
     let recurrenceRule: Any?
+    let isAllDay: Bool
 }
 
 private struct GroupedEvent: Identifiable {
     let id: String
+    let eventIdentifier: String
     let title: String
     let timeRange: String?
     let location: String?
@@ -368,6 +405,8 @@ private struct GroupedEvent: Identifiable {
     let calendarTitle: String
     let calendarID: String
     let memberColors: [UIColor]
+    let hasRecurrence: Bool
+    let isAllDay: Bool
 }
 
 #Preview {

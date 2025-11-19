@@ -28,6 +28,7 @@ struct UpcomingCalendarEvent {
     let calendarTitle: String
     let hasRecurrence: Bool
     let recurrenceRule: EKRecurrenceRule?
+    let isAllDay: Bool
 }
 @MainActor
 final class CalendarManager {
@@ -62,6 +63,72 @@ final class CalendarManager {
         }
     }
 
+    // MARK: - Private Helper Method for Robust Event Lookup
+
+    private func findEvent(withIdentifier identifier: String, occurrenceStartDate: Date? = nil) -> EKEvent? {
+        let calendars = eventStore.calendars(for: .event)
+
+        if let occurrenceDate = occurrenceStartDate {
+            // Tight search window around the specific occurrence start time
+            let searchStart = occurrenceDate.addingTimeInterval(-300) // 5 min before
+            let searchEnd = occurrenceDate.addingTimeInterval(300) // 5 min after
+            let predicate = eventStore.predicateForEvents(
+                withStart: searchStart,
+                end: searchEnd,
+                calendars: calendars
+            )
+            let matches = eventStore.events(matching: predicate)
+            if let occurrence = matches.first(where: {
+                $0.eventIdentifier == identifier &&
+                abs($0.startDate.timeIntervalSince(occurrenceDate)) < 1
+            }) {
+                return occurrence
+            }
+        }
+
+        // The event(withIdentifier:) method doesn't always work reliably, but try it next
+        if let event = eventStore.event(withIdentifier: identifier) {
+            // If we were looking for a specific occurrence, make sure the dates match before returning
+            if let occurrenceDate = occurrenceStartDate {
+                if abs(event.startDate.timeIntervalSince(occurrenceDate)) < 1 {
+                    return event
+                }
+            } else {
+                return event
+            }
+        }
+
+        // Fallback: search through all event calendars
+        // Wrap in try-catch to handle EventKit errors gracefully
+        for calendar in calendars {
+            do {
+                let predicate = eventStore.predicateForEvents(withStart: Date(timeIntervalSince1970: 0),
+                                                               end: Date(timeIntervalSince1970: Date().timeIntervalSince1970 + 86400 * 365 * 2),
+                                                               calendars: [calendar])
+                let events = eventStore.events(matching: predicate)
+                if let event = events.first(where: {
+                    guard $0.eventIdentifier == identifier else { return false }
+                    if let occurrenceDate = occurrenceStartDate {
+                        return abs($0.startDate.timeIntervalSince(occurrenceDate)) < 1
+                    }
+                    return true
+                }) {
+                    return event
+                }
+            } catch {
+                // If we can't access this calendar, log and skip it
+                print("⚠️ Could not search calendar '\(calendar.title)': \(error.localizedDescription)")
+                continue
+            }
+        }
+
+        return nil
+    }
+
+    func fetchEventDetails(withIdentifier identifier: String, occurrenceStartDate: Date? = nil) -> EKEvent? {
+        return findEvent(withIdentifier: identifier, occurrenceStartDate: occurrenceStartDate)
+    }
+
     func fetchNextEvents(for calendarIDs: [String], limit: Int) -> [UpcomingCalendarEvent] {
         let calendars = eventStore.calendars(for: .event).filter { calendarIDs.contains($0.calendarIdentifier) }
         guard !calendars.isEmpty else { return [] }
@@ -74,24 +141,45 @@ final class CalendarManager {
         let startDate = calendar.date(byAdding: .day, value: -pastDays, to: Date()) ?? Date()
         let endDate = calendar.date(byAdding: .day, value: futureDays, to: Date()) ?? Date()
 
-        let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
+        var results: [UpcomingCalendarEvent] = []
 
-        let events = eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+        do {
+            let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
+            let events = eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
 
-        return events.prefix(limit).map { event in
-            UpcomingCalendarEvent(
-                id: event.eventIdentifier,
-                title: event.title,
-                location: event.location,
-                startDate: event.startDate,
-                endDate: event.endDate,
-                calendarID: event.calendar.calendarIdentifier,
-                calendarColor: UIColor(cgColor: event.calendar.cgColor),
-                calendarTitle: event.calendar.title,
-                hasRecurrence: event.hasRecurrenceRules,
-                recurrenceRule: event.recurrenceRules?.first
-            )
+            // Map events with error handling for each event
+            for event in events.prefix(limit) {
+                do {
+                    // Safely access event calendar properties
+                    let calendarColor = event.calendar.cgColor.map { UIColor(cgColor: $0) } ?? .systemBlue
+
+                    let upcomingEvent = UpcomingCalendarEvent(
+                        id: event.eventIdentifier,
+                        title: event.title,
+                        location: event.location,
+                        startDate: event.startDate,
+                        endDate: event.endDate,
+                        calendarID: event.calendar.calendarIdentifier,
+                        calendarColor: calendarColor,
+                        calendarTitle: event.calendar.title,
+                        hasRecurrence: event.hasRecurrenceRules,
+                        recurrenceRule: event.recurrenceRules?.first,
+                        isAllDay: event.isAllDay
+                    )
+                    results.append(upcomingEvent)
+                } catch {
+                    // If we can't access a specific event's details, log and skip it
+                    print("⚠️ Could not access event '\(event.title)': \(error.localizedDescription)")
+                    continue
+                }
+            }
+        } catch {
+            // If predicate search fails, return empty array with error log
+            print("⚠️ Error fetching events from calendars: \(error.localizedDescription)")
+            return []
         }
+
+        return results
     }
 
     func calculateRecurringOccurrences(startDate: Date, endDate: Date, recurrenceRule: EKRecurrenceRule?, upcomingEvents: [UpcomingCalendarEvent], currentEventId: String, eventTitle: String, limit: Int) -> [Date] {
@@ -193,8 +281,46 @@ final class CalendarManager {
         }
     }
 
-    func updateEvent(withIdentifier identifier: String, in calendarID: String, title: String, startDate: Date, endDate: Date, location: String?, notes: String?) -> Bool {
-        guard let event = eventStore.event(withIdentifier: identifier) else { return false }
+    func updateEvent(withIdentifier identifier: String,
+                     occurrenceStartDate: Date?,
+                     in calendarID: String,
+                     title: String,
+                     startDate: Date,
+                     endDate: Date,
+                     location: String?,
+                     notes: String?) -> Bool {
+        // First, find the specific calendar
+        guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
+            print("❌ Could not find calendar with ID: \(calendarID)")
+            return false
+        }
+
+        print("📍 Searching for event in calendar: \(calendar.title)")
+
+        // Try to find the event using robust lookup (direct + fallback search)
+        guard let event = findEvent(withIdentifier: identifier, occurrenceStartDate: occurrenceStartDate) else {
+            print("❌ Could not find event with identifier: \(identifier) in calendar: \(calendar.title)")
+            // List available calendars for debugging
+            let allCals = eventStore.calendars(for: .event)
+            print("   Available calendars: \(allCals.map { "\($0.title) (\($0.calendarIdentifier))" }.joined(separator: ", "))")
+            return false
+        }
+
+        // Verify the event is in the correct calendar (safely access event.calendar)
+        do {
+            let eventCalendarID = event.calendar.calendarIdentifier
+            guard eventCalendarID == calendarID else {
+                print("❌ Event found but in wrong calendar!")
+                print("   Expected calendar: \(calendarID)")
+                print("   Actual calendar: \(eventCalendarID)")
+                return false
+            }
+
+            print("✅ Found event: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
+        } catch {
+            print("❌ Error accessing event calendar: \(error.localizedDescription)")
+            return false
+        }
 
         event.title = title
         event.startDate = startDate
@@ -204,21 +330,65 @@ final class CalendarManager {
 
         do {
             try eventStore.save(event, span: .thisEvent)
+            print("✅ Event updated successfully")
             return true
         } catch {
-            print("Error updating event: \(error.localizedDescription)")
+            print("❌ Error updating event: \(error.localizedDescription)")
+            // Log the underlying error details
+            if let ekError = error as? EKError {
+                print("   EKError code: \(ekError.errorCode)")
+            }
             return false
         }
     }
 
-    func deleteEvent(withIdentifier identifier: String, from calendarID: String) -> Bool {
-        guard let event = eventStore.event(withIdentifier: identifier) else { return false }
+    func deleteEvent(withIdentifier identifier: String,
+                     occurrenceStartDate: Date?,
+                     from calendarID: String,
+                     span: EKSpan = .thisEvent) -> Bool {
+        // First, find the specific calendar
+        guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
+            print("❌ Could not find calendar with ID: \(calendarID)")
+            return false
+        }
+
+        print("📍 Searching for event to delete in calendar: \(calendar.title)")
+
+        // Try to find the event using robust lookup (direct + fallback search)
+        guard let event = findEvent(withIdentifier: identifier, occurrenceStartDate: occurrenceStartDate) else {
+            print("❌ Could not find event to delete with identifier: \(identifier) in calendar: \(calendar.title)")
+            // List available calendars for debugging
+            let allCals = eventStore.calendars(for: .event)
+            print("   Available calendars: \(allCals.map { "\($0.title) (\($0.calendarIdentifier))" }.joined(separator: ", "))")
+            return false
+        }
+
+        // Verify the event is in the correct calendar (safely access event.calendar)
+        do {
+            let eventCalendarID = event.calendar.calendarIdentifier
+            guard eventCalendarID == calendarID else {
+                print("❌ Event found but in wrong calendar!")
+                print("   Expected calendar: \(calendarID)")
+                print("   Actual calendar: \(eventCalendarID)")
+                return false
+            }
+
+            print("✅ Found event to delete: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
+        } catch {
+            print("❌ Error accessing event calendar: \(error.localizedDescription)")
+            return false
+        }
 
         do {
-            try eventStore.remove(event, span: .thisEvent)
+            try eventStore.remove(event, span: span)
+            print("✅ Event deleted successfully")
             return true
         } catch {
-            print("Error deleting event: \(error.localizedDescription)")
+            print("❌ Error deleting event: \(error.localizedDescription)")
+            // Log the underlying error details
+            if let ekError = error as? EKError {
+                print("   EKError code: \(ekError.errorCode)")
+            }
             return false
         }
     }

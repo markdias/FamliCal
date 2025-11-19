@@ -10,12 +10,14 @@ import SwiftUI
 struct AppSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
+    @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("eventsPastDays") private var eventsPastDays: Int = 0
     @AppStorage("eventsFutureDays") private var eventsFutureDays: Int = 180
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
 
     private let mapsAppOptions = ["Apple Maps", "Google Maps", "Waze"]
+    private let refreshIntervalOptions: [Int] = [1, 5, 10, 15, 30, 60]
 
     var body: some View {
         NavigationView {
@@ -44,6 +46,32 @@ struct AppSettingsView: View {
 
                                 Picker("Events", selection: $eventsPerPerson) {
                                     ForEach(1...10, id: \.self) { number in
+                                        Text("\(number)").tag(number)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            Divider()
+                                .padding(.horizontal, 16)
+
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Spotlight events")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    Text("How many events to show in spotlight view")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.gray)
+                                }
+
+                                Spacer()
+
+                                Picker("Spotlight", selection: $spotlightEventsPerPerson) {
+                                    ForEach(1...15, id: \.self) { number in
                                         Text("\(number)").tag(number)
                                     }
                                 }
@@ -149,32 +177,13 @@ struct AppSettingsView: View {
 
                                 Spacer()
 
-                                HStack(spacing: 12) {
-                                    Button(action: {
-                                        if autoRefreshInterval > 1 {
-                                            autoRefreshInterval -= 1
-                                        }
-                                    }) {
-                                        Image(systemName: "minus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
-                                    }
-
-                                    Text("\(autoRefreshInterval)m")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                        .frame(width: 40, alignment: .center)
-
-                                    Button(action: {
-                                        if autoRefreshInterval < 60 {
-                                            autoRefreshInterval += 1
-                                        }
-                                    }) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.blue)
+                                Picker("Refresh Interval", selection: $autoRefreshInterval) {
+                                    ForEach(refreshIntervalOptions, id: \.self) { option in
+                                        Text(option == 1 ? "1 minute" : "\(option) minutes")
+                                            .tag(option)
                                     }
                                 }
+                                .pickerStyle(.menu)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)

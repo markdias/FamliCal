@@ -13,6 +13,7 @@ import Combine
 struct FamilyView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
+    @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
 
     @FetchRequest(
@@ -32,6 +33,7 @@ struct FamilyView: View {
     @State private var eventsTask: Task<Void, Never>? = nil
     @State private var selectedEvent: UpcomingCalendarEvent? = nil
     @State private var showingEventDetail = false
+    @State private var spotlightMemberName: String? = nil
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
     @State private var currentTime = Date()
@@ -47,6 +49,12 @@ struct FamilyView: View {
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMM"
+        return formatter
+    }()
+
+    private static let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
         return formatter
     }()
 
@@ -69,6 +77,21 @@ struct FamilyView: View {
                 .sheet(isPresented: $showingEventDetail) {
                     if let event = selectedEvent {
                         EventDetailView(event: event)
+                    }
+                }
+                .sheet(isPresented: Binding(
+                    get: { spotlightMemberName != nil },
+                    set: { if !$0 { spotlightMemberName = nil } }
+                )) {
+                    if let memberName = spotlightMemberName,
+                       let member = familyMembers.first(where: { $0.name == memberName }) {
+                        NavigationView {
+                            SpotlightView(member: member)
+                                .environment(\.managedObjectContext, viewContext)
+                                .onAppear {
+                                    UserDefaults.standard.set(spotlightEventsPerPerson, forKey: "spotlightEventsPerPerson")
+                                }
+                        }
                     }
                 }
         }
@@ -148,21 +171,12 @@ struct FamilyView: View {
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach($memberEvents) { $memberGroup in
-                        if let nextEvent = memberGroup.nextEvent, nextEvent.endDate > Date() {
+                        if let nextEvent = memberGroup.nextEvent,
+                           !nextEvent.isAllDay,
+                           nextEvent.timeRange != nil,
+                           nextEvent.endDate > Date() {
                             Button(action: {
-                                selectedEvent = UpcomingCalendarEvent(
-                                    id: nextEvent.id,
-                                    title: nextEvent.title,
-                                    location: nextEvent.location,
-                                    startDate: nextEvent.startDate,
-                                    endDate: nextEvent.endDate,
-                                    calendarID: nextEvent.calendarID,
-                                    calendarColor: nextEvent.memberColor,
-                                    calendarTitle: nextEvent.calendarTitle,
-                                    hasRecurrence: false,
-                                    recurrenceRule: nil
-                                )
-                                showingEventDetail = true
+                                spotlightMemberName = memberGroup.memberName
                             }) {
                                 nextEventCard(for: memberGroup, event: nextEvent)
                             }
@@ -194,7 +208,7 @@ struct FamilyView: View {
                                     ForEach(memberGroup.upcomingEvents, id: \.id) { groupedEvent in
                                         Button(action: {
                                             selectedEvent = UpcomingCalendarEvent(
-                                                id: groupedEvent.id,
+                                                id: groupedEvent.eventIdentifier,
                                                 title: groupedEvent.title,
                                                 location: groupedEvent.location,
                                                 startDate: groupedEvent.startDate,
@@ -202,8 +216,9 @@ struct FamilyView: View {
                                                 calendarID: groupedEvent.calendarID,
                                                 calendarColor: groupedEvent.memberColor,
                                                 calendarTitle: groupedEvent.calendarTitle,
-                                                hasRecurrence: false,
-                                                recurrenceRule: nil
+                                                hasRecurrence: groupedEvent.hasRecurrence,
+                                                recurrenceRule: nil,
+                                                isAllDay: groupedEvent.isAllDay
                                             )
                                             showingEventDetail = true
                                         }) {
@@ -233,7 +248,7 @@ struct FamilyView: View {
             VStack(alignment: .leading, spacing: 6) {
                 // Member name
                 Text(memberGroup.memberName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
@@ -245,11 +260,17 @@ struct FamilyView: View {
 
                 Spacer(minLength: 0)
 
-                // Date and time on one line
-                Text("\(Self.dateFormatter.string(from: event.startDate)) • \(event.timeRange ?? "All Day")")
+                // Day name and date
+                Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.gray)
-                    .lineLimit(1)
+
+                // Time on its own line to avoid truncation
+                if let timeRange = event.timeRange {
+                    Text(timeRange)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.gray)
+                }
 
                 // Status on separate line
                 Text(statusText)
@@ -283,13 +304,17 @@ struct FamilyView: View {
     private func eventCard(_ groupedEvent: GroupedEvent) -> some View {
         HStack(alignment: .top, spacing: 14) {
             // Left side: Date box with color
-            VStack(spacing: 1) {
+            VStack(spacing: 2) {
+                Text(Self.dayOfWeekFormatter.string(from: groupedEvent.startDate))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+
                 Text(Self.dayFormatter.string(from: groupedEvent.startDate))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
 
-                Text(Self.dayOfWeekFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 10, weight: .semibold))
+                Text(Self.monthFormatter.string(from: groupedEvent.startDate))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white.opacity(0.9))
             }
             .frame(width: 60, height: 70)
@@ -466,9 +491,11 @@ struct FamilyView: View {
                         )
 
                         for occurrence in occurrences {
+                            let displayID = "\(occurrence.id)|\(occurrence.startDate.timeIntervalSince1970)"
                             let occurrenceTimeRange = formatTimeRange(occurrence.startDate, occurrence.endDate)
                             memberEventItems.append(EventItem(
-                                id: UUID(),
+                                id: displayID,
+                                eventIdentifier: occurrence.id,
                                 title: occurrence.title,
                                 location: occurrence.location,
                                 startDate: occurrence.startDate,
@@ -478,14 +505,17 @@ struct FamilyView: View {
                                 memberColor: event.calendarColor,
                                 calendarTitle: event.calendarTitle,
                                 calendarID: event.calendarID,
-                                hasRecurrence: false, // Each occurrence is treated as a non-recurring event
-                                recurrenceRule: nil
+                                hasRecurrence: event.hasRecurrence,
+                                recurrenceRule: event.recurrenceRule,
+                                isAllDay: occurrence.isAllDay
                             ))
                         }
                     } else {
+                        let displayID = "\(event.id)|\(event.startDate.timeIntervalSince1970)"
                         // Non-recurring events
                         memberEventItems.append(EventItem(
-                            id: UUID(),
+                            id: displayID,
+                            eventIdentifier: event.id,
                             title: event.title,
                             location: event.location,
                             startDate: event.startDate,
@@ -495,8 +525,9 @@ struct FamilyView: View {
                             memberColor: event.calendarColor,
                             calendarTitle: event.calendarTitle,
                             calendarID: event.calendarID,
-                            hasRecurrence: false,
-                            recurrenceRule: nil
+                            hasRecurrence: event.hasRecurrence,
+                            recurrenceRule: event.recurrenceRule,
+                            isAllDay: event.isAllDay
                         ))
                     }
                 }
@@ -516,11 +547,13 @@ struct FamilyView: View {
 
                 // Create member event group
                 let memberColor = Color.fromHex(member.colorHex ?? "#007AFF")
+                // Get next non-all-day event for spotlight
+                let nextNonAllDayEvent = sortedGroupedEvents.first { !$0.isAllDay && $0.timeRange != nil }
                 let memberGroup = MemberEventGroup(
                     id: member.objectID,
                     memberName: member.name ?? "Unknown",
                     memberColor: memberColor,
-                    nextEvent: sortedGroupedEvents.first,
+                    nextEvent: nextNonAllDayEvent,
                     upcomingEvents: limitedEvents
                 )
 
@@ -560,6 +593,7 @@ struct FamilyView: View {
                 // Create new merged event
                 grouped[key] = GroupedEvent(
                     id: existing.id,
+                    eventIdentifier: existing.eventIdentifier,
                     title: existing.title,
                     timeRange: existing.timeRange,
                     location: existing.location,
@@ -569,11 +603,14 @@ struct FamilyView: View {
                     memberColor: existing.memberColor,
                     calendarTitle: existing.calendarTitle,
                     calendarID: existing.calendarID,
-                    memberColors: updatedColors
+                    memberColors: updatedColors,
+                    hasRecurrence: existing.hasRecurrence || event.hasRecurrence,
+                    isAllDay: existing.isAllDay
                 )
             } else {
                 grouped[key] = GroupedEvent(
-                    id: event.id.uuidString,
+                    id: event.id,
+                    eventIdentifier: event.eventIdentifier,
                     title: event.title,
                     timeRange: event.timeRange,
                     location: event.location,
@@ -583,7 +620,9 @@ struct FamilyView: View {
                     memberColor: event.memberColor,
                     calendarTitle: event.calendarTitle,
                     calendarID: event.calendarID,
-                    memberColors: [event.memberColor]
+                    memberColors: [event.memberColor],
+                    hasRecurrence: event.hasRecurrence,
+                    isAllDay: event.isAllDay
                 )
             }
         }
@@ -622,8 +661,9 @@ struct FamilyView: View {
                     calendarID: event.calendarID,
                     calendarColor: event.calendarColor,
                     calendarTitle: event.calendarTitle,
-                    hasRecurrence: false,
-                    recurrenceRule: nil
+                    hasRecurrence: event.hasRecurrence,
+                    recurrenceRule: event.recurrenceRule,
+                    isAllDay: event.isAllDay
                 )
                 occurrences.append(occurrence)
             }
@@ -696,7 +736,8 @@ struct FamilyView: View {
 // MARK: - Data Models
 
 private struct EventItem: Identifiable {
-    let id: UUID
+    let id: String
+    let eventIdentifier: String
     let title: String
     let location: String?
     let startDate: Date
@@ -708,10 +749,12 @@ private struct EventItem: Identifiable {
     let calendarID: String
     let hasRecurrence: Bool
     let recurrenceRule: EKRecurrenceRule?
+    let isAllDay: Bool
 }
 
 private struct GroupedEvent: Identifiable {
     let id: String
+    let eventIdentifier: String
     let title: String
     let timeRange: String?
     let location: String?
@@ -722,6 +765,8 @@ private struct GroupedEvent: Identifiable {
     let calendarTitle: String
     let calendarID: String
     var memberColors: [UIColor] = []
+    let hasRecurrence: Bool
+    let isAllDay: Bool
 }
 
 private struct MemberEventGroup: Identifiable {

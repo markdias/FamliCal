@@ -20,7 +20,7 @@ struct SettingsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 18) {
                         SettingsRowView(
                             iconName: "person.2.fill",
                             iconColor: Color.blue,
@@ -46,12 +46,12 @@ struct SettingsView: View {
                         )
                     }
 
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .center, spacing: 8) {
                         Text("Layout & Localization")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.gray)
 
-                        HStack(spacing: 16) {
+                        HStack(spacing: 12) {
                             Button(action: { showingAppSettings = true }) {
                                 SettingsCardView(
                                     iconName: "square.grid.2x2",
@@ -123,7 +123,7 @@ private struct SettingsRowView: View {
         Button(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: iconName)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
                     .background(iconColor)
@@ -131,11 +131,11 @@ private struct SettingsRowView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
 
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(.system(size: 11))
                         .foregroundColor(.gray)
                 }
 
@@ -145,9 +145,13 @@ private struct SettingsRowView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.gray)
             }
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(16)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -159,20 +163,20 @@ private struct SettingsCardView: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Image(systemName: iconName)
-                .font(.system(size: 24))
+                .font(.system(size: 20))
                 .foregroundColor(.blue)
                 .frame(width: 44, height: 44)
                 .background(Color(.systemBlue).opacity(0.1))
                 .cornerRadius(16)
 
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.primary)
 
             Text(subtitle)
-                .font(.system(size: 13))
+                .font(.system(size: 11))
                 .foregroundColor(.gray)
                 .lineLimit(2)
         }
