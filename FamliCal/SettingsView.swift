@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var showingAppSettings = false
     @State private var showingPermissions = false
     @State private var showingThemeSettings = false
+    @State private var showingNotifications = false
 
     var body: some View {
         NavigationView {
@@ -55,6 +56,14 @@ struct SettingsView: View {
                                 title: "Theme",
                                 subtitle: themeManager.selectedTheme.displayName,
                                 action: { showingThemeSettings = true }
+                            )
+
+                            SettingsRowView(
+                                iconName: "bell.fill",
+                                iconColor: Color.blue,
+                                title: "Notifications",
+                                subtitle: "Alerts, morning brief, calendars",
+                                action: { showingNotifications = true }
                             )
                         }
 
@@ -128,6 +137,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingThemeSettings) {
             ThemeSettingsView()
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationSettingsView()
+                .environment(\.managedObjectContext, viewContext)
         }
     }
 }

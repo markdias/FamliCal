@@ -10,6 +10,7 @@ import SwiftUI
 enum OnboardingStep {
     case intro
     case permission
+    case notificationPermission
     case contactsPermission
     case familySetup
     case sharedCalendars
@@ -32,6 +33,13 @@ struct OnboardingView: View {
 
             case .permission:
                 PermissionScreen(onNext: {
+                    withAnimation {
+                        currentStep = .notificationPermission
+                    }
+                })
+
+            case .notificationPermission:
+                NotificationPermissionScreen(onNext: {
                     withAnimation {
                         currentStep = .contactsPermission
                     }

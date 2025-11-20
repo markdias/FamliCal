@@ -955,6 +955,11 @@ struct CalendarView: View {
         )
 
         if success {
+            // Cancel any scheduled notifications for this event
+            Task {
+                await NotificationManager.shared.cancelEventNotifications(for: event.id)
+            }
+
             // Delete from CoreData
             let fetchRequest = FamilyEvent.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", event.id)

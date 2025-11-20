@@ -316,6 +316,25 @@ struct EditEventView: View {
             // Update CoreData record if needed
             updateFamilyEvent()
 
+            // Cancel old notifications and schedule new ones
+            await NotificationManager.shared.cancelEventNotifications(for: upcomingEvent.id)
+
+            if let ekEvent = CalendarManager.shared.getEvent(withIdentifier: upcomingEvent.id) {
+                NotificationManager.shared.scheduleEventNotification(
+                    event: ekEvent,
+                    alertOption: alertOption,
+                    familyMembers: [],
+                    drivers: selectedDriver.flatMap { wrapper -> String? in
+                        switch wrapper {
+                        case .regular(let driver):
+                            return driver.name
+                        case .familyMember(let member):
+                            return member.name
+                        }
+                    }
+                )
+            }
+
             await MainActor.run {
                 // Trigger haptic feedback
                 let notificationFeedback = UINotificationFeedbackGenerator()

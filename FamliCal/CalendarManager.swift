@@ -334,6 +334,10 @@ final class CalendarManager {
         }
     }
 
+    func getEvent(withIdentifier identifier: String) -> EKEvent? {
+        return findEvent(withIdentifier: identifier)
+    }
+
     func deleteEvent(withIdentifier identifier: String,
                      occurrenceStartDate: Date?,
                      from calendarID: String,
