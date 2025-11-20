@@ -11,5 +11,9 @@
 	<string>FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>FamliCal needs access to your calendars to display family events and allow you to create and manage appointments.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>FamliCal needs full calendar access to add new family events, reminders, alerts, and travel time blocks to your calendars.</string>
+	<key>NSCalendarsWriteOnlyUsageDescription</key>
+	<string>FamliCal writes new family events, reminders, alerts, and travel time blocks to your calendars.</string>
 </dict>
 </plist>

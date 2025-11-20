@@ -223,7 +223,7 @@ final class CalendarManager {
         }
     }
 
-    func createEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, isAllDay: Bool = false, in calendarID: String) -> String? {
+    func createEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, isAllDay: Bool = false, in calendarID: String, alertOption: AlertOption? = nil) -> String? {
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else { return nil }
 
         let event = EKEvent(eventStore: eventStore)
@@ -235,6 +235,12 @@ final class CalendarManager {
         event.isAllDay = isAllDay
         event.calendar = calendar
 
+        // Add alarm if alertOption is provided
+        if let alertOption = alertOption {
+            let alarm = createAlarm(from: alertOption)
+            event.addAlarm(alarm)
+        }
+
         do {
             try eventStore.save(event, span: .thisEvent)
             return event.eventIdentifier
@@ -244,7 +250,7 @@ final class CalendarManager {
         }
     }
 
-    func createRecurringEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, recurrenceRule: EKRecurrenceRule, isAllDay: Bool = false, in calendarID: String) -> String? {
+    func createRecurringEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, recurrenceRule: EKRecurrenceRule, isAllDay: Bool = false, in calendarID: String, alertOption: AlertOption? = nil) -> String? {
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else { return nil }
 
         let event = EKEvent(eventStore: eventStore)
@@ -256,6 +262,12 @@ final class CalendarManager {
         event.isAllDay = isAllDay
         event.addRecurrenceRule(recurrenceRule)
         event.calendar = calendar
+
+        // Add alarm if alertOption is provided
+        if let alertOption = alertOption {
+            let alarm = createAlarm(from: alertOption)
+            event.addAlarm(alarm)
+        }
 
         do {
             try eventStore.save(event, span: .futureEvents)
@@ -277,7 +289,8 @@ final class CalendarManager {
                      isAllDay: Bool = false,
                      recurrenceRule: EKRecurrenceRule? = nil,
                      updateRecurrence: Bool = false,
-                     span: EKSpan = .thisEvent) -> Bool {
+                     span: EKSpan = .thisEvent,
+                     alertOption: AlertOption? = nil) -> Bool {
         // First, find the specific calendar
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
             print("❌ Could not find calendar with ID: \(calendarID)")
@@ -320,6 +333,13 @@ final class CalendarManager {
             }
         }
 
+        // Update alarm if alertOption is provided
+        if let alertOption = alertOption {
+            let alarm = createAlarm(from: alertOption)
+            event.alarms?.removeAll()
+            event.addAlarm(alarm)
+        }
+
         do {
             try eventStore.save(event, span: span)
             print("✅ Event updated successfully")
@@ -336,6 +356,27 @@ final class CalendarManager {
 
     func getEvent(withIdentifier identifier: String) -> EKEvent? {
         return findEvent(withIdentifier: identifier)
+    }
+
+    private func createAlarm(from alertOption: AlertOption) -> EKAlarm {
+        let alarm = EKAlarm()
+
+        switch alertOption {
+        case .none:
+            alarm.relativeOffset = 0
+        case .atTime:
+            alarm.relativeOffset = 0
+        case .fifteenMinsBefore:
+            alarm.relativeOffset = -900  // -15 minutes in seconds
+        case .oneHourBefore:
+            alarm.relativeOffset = -3600  // -1 hour in seconds
+        case .oneDayBefore:
+            alarm.relativeOffset = -86400  // -1 day in seconds
+        case .custom:
+            alarm.relativeOffset = 0
+        }
+
+        return alarm
     }
 
     func deleteEvent(withIdentifier identifier: String,

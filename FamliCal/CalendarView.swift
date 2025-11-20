@@ -289,9 +289,7 @@ struct CalendarView: View {
             let timeBoxWidth: CGFloat = 76
             let spacerWidth: CGFloat = 2
             let cardCornerRadius: CGFloat = 16
-            let primaryName = groupedEvent.memberNames.first ?? ""
-            let extraCount = max(0, groupedEvent.memberNames.count - 1)
-            let memberLabel = extraCount > 0 ? "\(primaryName) +\(extraCount)" : primaryName
+            let memberLabel = groupedEvent.memberNames.count > 1 ? "All" : (groupedEvent.memberNames.first ?? "")
             let timeLabel = groupedEvent.isAllDay ? "All day" : (groupedEvent.startTime ?? "")
 
             ZStack(alignment: .leading) {
@@ -345,6 +343,14 @@ struct CalendarView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.primary)
                             .lineLimit(2)
+
+                        // Family members (if more than 1)
+                        if groupedEvent.memberNames.count > 1 {
+                            Text(groupedEvent.memberNames.joined(separator: ", "))
+                                .font(.system(size: 12))
+                                .foregroundColor(secondaryTextColor)
+                                .lineLimit(2)
+                        }
 
                         // Time
                         let timeText = groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-")

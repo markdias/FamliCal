@@ -110,22 +110,7 @@ class NotificationManager: NSObject, ObservableObject {
     ) {
         guard notificationsEnabled else { return }
 
-        // Add alarm to the EventKit event itself
-        let alarm = createAlarm(from: alertOption)
-
-        // Remove any existing alarms and add the new one
-        event.alarms?.removeAll()
-        event.addAlarm(alarm)
-
-        // Save the event back to EventKit
-        do {
-            try eventStore.save(event, span: .thisEvent)
-            print("✅ Alarm added to EventKit event: \(event.title ?? "Unknown")")
-        } catch {
-            print("❌ Failed to save alarm to EventKit: \(error.localizedDescription)")
-        }
-
-        // Also schedule a local notification for immediate feedback
+        // Schedule a local notification for immediate feedback
         let triggerDate = calculateTriggerDate(from: event.startDate, alertOption: alertOption)
 
         // Build notification content
@@ -170,28 +155,6 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
 
-    private func createAlarm(from alertOption: AlertOption) -> EKAlarm {
-        let alarm = EKAlarm()
-
-        switch alertOption {
-        case .none:
-            alarm.relativeOffset = 0
-        case .atTime:
-            alarm.relativeOffset = 0
-        case .fifteenMinsBefore:
-            alarm.relativeOffset = -900  // -15 minutes in seconds
-        case .oneHourBefore:
-            alarm.relativeOffset = -3600  // -1 hour in seconds
-        case .oneDayBefore:
-            alarm.relativeOffset = -86400  // -1 day in seconds
-        case .custom:
-            alarm.relativeOffset = 0
-        }
-
-        return alarm
-    }
-
-    private let eventStore = EKEventStore()
 
     func cancelEventNotifications(for eventIdentifier: String) async {
         let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()

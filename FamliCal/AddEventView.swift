@@ -416,7 +416,8 @@ struct AddEventView: View {
                     notes: notes.isEmpty ? nil : notes,
                     recurrenceRule: recurrenceRule,
                     isAllDay: isAllDay,
-                    in: calendarID
+                    in: calendarID,
+                    alertOption: alertOption
                 )
             } else {
                 eventId = CalendarManager.shared.createEvent(
@@ -426,7 +427,8 @@ struct AddEventView: View {
                     location: locationAddress.isEmpty ? nil : locationAddress,
                     notes: notes.isEmpty ? nil : notes,
                     isAllDay: isAllDay,
-                    in: calendarID
+                    in: calendarID,
+                    alertOption: alertOption
                 )
             }
 
@@ -504,30 +506,6 @@ struct AddEventView: View {
                 print("   - Event: \(event.eventIdentifier ?? "unknown"), Driver: \(event.driver?.name ?? "nil")")
             }
 
-            // Schedule notifications for the created events
-            let calendarManager = CalendarManager.shared
-            for eventId in createdEventIds {
-                if let ekEvent = calendarManager.getEvent(withIdentifier: eventId) {
-                    let memberNames = selectEveryone ? [] : selectedMembers.compactMap { memberID in
-                        familyMembers.first(where: { $0.objectID == memberID })?.name
-                    }
-                    let driverName = selectedDriver.flatMap { wrapper -> String? in
-                        switch wrapper {
-                        case .regular(let driver):
-                            return driver.name
-                        case .familyMember(let member):
-                            return member.name
-                        }
-                    }
-
-                    NotificationManager.shared.scheduleEventNotification(
-                        event: ekEvent,
-                        alertOption: alertOption,
-                        familyMembers: memberNames,
-                        drivers: driverName
-                    )
-                }
-            }
 
             // Trigger haptic feedback
             let notificationFeedback = UINotificationFeedbackGenerator()
