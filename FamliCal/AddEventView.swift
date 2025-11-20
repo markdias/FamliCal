@@ -523,7 +523,7 @@ struct AddEventView: View {
                     NotificationManager.shared.scheduleEventNotification(
                         event: ekEvent,
                         alertOption: alertOption,
-                        familyMembers: memberNames ?? [],
+                        familyMembers: memberNames,
                         drivers: driverName
                     )
                 }
