@@ -28,6 +28,35 @@ struct AddEventView: View {
     )
     private var sharedCalendars: FetchedResults<SharedCalendar>
 
+    @FetchRequest(
+        entity: Driver.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)]
+    )
+    private var drivers: FetchedResults<Driver>
+
+    // Family members who are marked as drivers
+    private var driverFamilyMembers: [FamilyMember] {
+        familyMembers.filter { $0.isDriver }
+    }
+
+    // Combined list of all available drivers (regular + family members)
+    private var allAvailableDrivers: [DriverWrapper] {
+        var combined: [DriverWrapper] = []
+
+        // Add regular drivers
+        for driver in drivers {
+            combined.append(.regular(driver))
+        }
+
+        // Add family members who are marked as drivers
+        for member in driverFamilyMembers {
+            combined.append(.familyMember(member))
+        }
+
+        // Sort by name
+        return combined.sorted { $0.name < $1.name }
+    }
+
     // Event details
     @State private var eventTitle: String = ""
     @State private var eventDate = Date()
@@ -38,10 +67,16 @@ struct AddEventView: View {
     @State private var notes: String = ""
     @State private var locationName: String = ""
     @State private var locationAddress: String = ""
+    @State private var isAllDay: Bool = false
+    @State private var showAsOption: ShowAsOption = .busy
 
     // People selection
     @State private var selectedMembers: Set<NSManagedObjectID> = []
     @State private var selectEveryone = false
+
+    // Driver selection
+    @State private var selectedDriver: DriverWrapper?
+    @State private var driverTravelTimeMinutes: Int = 15
 
     // Location search
     @StateObject private var searchCompleter = LocationSearchCompleter()
@@ -94,305 +129,525 @@ struct AddEventView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                // Title Section
-                Section {
-                    TextField("Event Title", text: $eventTitle)
-                        .font(.system(size: 17, weight: .regular))
-
-                    // Location Section (under title)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Title Section
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("Add location", text: $locationName)
-                            .font(.system(size: 16, weight: .regular))
-                            .onChange(of: locationName) { _, newValue in
-                                if isApplyingLocationSelection {
-                                    isApplyingLocationSelection = false
-                                    return
-                                }
-
-                                searchCompleter.query = newValue
-                                if newValue.isEmpty {
-                                    locationAddress = ""
-                                }
-                            }
-
-                        if !searchCompleter.results.isEmpty {
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
-                                    Button(action: {
-                                        isApplyingLocationSelection = true
-                                        locationName = result.title
-                                        locationAddress = result.subtitle
-                                        searchCompleter.query = ""
-                                        searchCompleter.results = []
-                                    }) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(result.title)
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.primary)
-                                            Text(result.subtitle)
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.gray)
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.vertical, 8)
-                                    }
-                                    if index < searchCompleter.results.count - 1 {
-                                        Divider()
-                                    }
-                                }
-                            }
-                            .background(Color(.systemGray6))
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-
-                // Date & Time Section
-                Section {
-                    HStack {
-                        Text("Starts")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Button(action: { showingDatePicker.toggle() }) {
-                                Text(formattedDate(eventDate))
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(.gray)
-                            }
-                            Button(action: { showingStartTimePicker.toggle() }) {
-                                Text(formattedTime(startTime))
-                                    .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    }
-
-                    if showingDatePicker {
-                        DatePicker(
-                            "Select Date",
-                            selection: $eventDate,
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.graphical)
-                        .environment(\.calendar, calendarWithMondayAsFirstDay)
-                    }
-
-                    if showingStartTimePicker {
-                        DatePicker(
-                            "Start Time",
-                            selection: $startTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                        .datePickerStyle(.wheel)
-                    }
-
-                    HStack {
-                        Text("Ends")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Button(action: { showingDatePicker.toggle() }) {
-                                Text(formattedDate(eventDate))
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(.gray)
-                            }
-                            Button(action: { showingEndTimePicker.toggle() }) {
-                                Text(formattedTime(endTime))
-                                    .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    }
-
-                    if showingEndTimePicker {
-                        DatePicker(
-                            "End Time",
-                            selection: $endTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                        .datePickerStyle(.wheel)
-                    }
-                }
-
-                // People Section
-                Section {
-                    HStack {
-                        Image(systemName: "person.2")
+                        Text("Title")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 24)
-                        Text("Attendees")
+                            .foregroundColor(.black)
+
+                        TextField("Event Title", text: $eventTitle)
                             .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Button(action: {
-                            withAnimation {
-                                showingPeoplePicker.toggle()
-                            }
-                        }) {
-                            Text(attendeesSummary)
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
-                                .lineLimit(1)
-                        }
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                     }
 
-                    if showingPeoplePicker {
-                        Toggle(isOn: $selectEveryone.animation()) {
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 32, height: 32)
-                                    .overlay(Text("👥").font(.system(size: 18)))
-                                Text("Everyone")
-                                    .font(.system(size: 16, weight: .regular))
-                            }
-                        }
+                    // Location Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Location")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
 
-                        if !selectEveryone {
-                            ForEach(familyMembers, id: \.objectID) { member in
-                                Toggle(isOn: Binding(
-                                    get: { selectedMembers.contains(member.objectID) },
-                                    set: { isSelected in
-                                        if isSelected {
-                                            selectedMembers.insert(member.objectID)
-                                        } else {
-                                            selectedMembers.remove(member.objectID)
-                                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Location", text: $locationName)
+                                .font(.system(size: 16, weight: .regular))
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                                .onChange(of: locationName) { _, newValue in
+                                    if isApplyingLocationSelection {
+                                        isApplyingLocationSelection = false
+                                        return
                                     }
-                                )) {
-                                    HStack(spacing: 12) {
-                                        // Calendar color dot
-                                        if let memberCals = member.memberCalendars as? Set<FamilyMemberCalendar>,
-                                           let firstCal = memberCals.first,
-                                           let colorHex = firstCal.calendarColorHex {
-                                            Circle()
-                                                .fill(Color.fromHex(colorHex))
-                                                .frame(width: 12, height: 12)
-                                        } else {
-                                            Circle()
-                                                .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                                                .frame(width: 12, height: 12)
-                                        }
-                                        Text(member.name ?? "Unknown")
-                                            .font(.system(size: 16, weight: .regular))
+
+                                    searchCompleter.query = newValue
+                                    if newValue.isEmpty {
+                                        locationAddress = ""
                                     }
                                 }
+
+                            if !searchCompleter.results.isEmpty {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
+                                        Button(action: {
+                                            isApplyingLocationSelection = true
+                                            locationName = result.title
+                                            locationAddress = result.subtitle
+                                            searchCompleter.query = ""
+                                            searchCompleter.results = []
+                                        }) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(result.title)
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.primary)
+                                                Text(result.subtitle)
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.vertical, 8)
+                                            .padding(.horizontal, 12)
+                                        }
+                                        if index < searchCompleter.results.count - 1 {
+                                            Divider()
+                                        }
+                                    }
+                                }
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                             }
                         }
                     }
-                }
 
-                // Calendar Section (only show if Everyone is selected and multiple shared calendars)
-                if selectEveryone && availableCalendars.count > 1 {
-                    Section {
+                    // Time Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Time")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            // All-day toggle
+                            HStack {
+                                Text("All-day")
+                                    .font(.system(size: 16, weight: .regular))
+                                Spacer()
+                                Toggle("", isOn: $isAllDay)
+                                    .tint(.blue)
+                            }
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+
+                            // Starts
+                            if !isAllDay {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Starts")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.gray)
+
+                                    HStack(spacing: 12) {
+                                        Button(action: { showingDatePicker.toggle() }) {
+                                            Text(formattedDate(eventDate))
+                                                .font(.system(size: 15, weight: .regular))
+                                                .foregroundColor(.black)
+                                                .padding(10)
+                                                .background(Color(.systemGray6))
+                                                .cornerRadius(6)
+                                        }
+
+                                        Button(action: { showingStartTimePicker.toggle() }) {
+                                            Text(formattedTime(startTime))
+                                                .font(.system(size: 15, weight: .regular))
+                                                .foregroundColor(.black)
+                                                .padding(10)
+                                                .background(Color(.systemGray6))
+                                                .cornerRadius(6)
+                                        }
+                                    }
+
+                                    if showingDatePicker {
+                                        DatePicker(
+                                            "Select Date",
+                                            selection: $eventDate,
+                                            displayedComponents: .date
+                                        )
+                                        .datePickerStyle(.graphical)
+                                        .environment(\.calendar, calendarWithMondayAsFirstDay)
+                                    }
+
+                                    if showingStartTimePicker {
+                                        DatePicker(
+                                            "Start Time",
+                                            selection: $startTime,
+                                            displayedComponents: .hourAndMinute
+                                        )
+                                        .datePickerStyle(.wheel)
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+
+                                // Ends
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Ends")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.gray)
+
+                                    HStack(spacing: 12) {
+                                        Button(action: { showingDatePicker.toggle() }) {
+                                            Text(formattedDate(eventDate))
+                                                .font(.system(size: 15, weight: .regular))
+                                                .foregroundColor(.black)
+                                                .padding(10)
+                                                .background(Color(.systemGray6))
+                                                .cornerRadius(6)
+                                        }
+
+                                        Button(action: { showingEndTimePicker.toggle() }) {
+                                            Text(formattedTime(endTime))
+                                                .font(.system(size: 15, weight: .regular))
+                                                .foregroundColor(.black)
+                                                .padding(10)
+                                                .background(Color(.systemGray6))
+                                                .cornerRadius(6)
+                                        }
+                                    }
+
+                                    if showingEndTimePicker {
+                                        DatePicker(
+                                            "End Time",
+                                            selection: $endTime,
+                                            displayedComponents: .hourAndMinute
+                                        )
+                                        .datePickerStyle(.wheel)
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+
+                    // Show as Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Show as")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+
                         HStack {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.blue)
-                                .frame(width: 24)
-                            Text("Calendar")
+                            Text("Show as")
                                 .font(.system(size: 16, weight: .regular))
                             Spacer()
-                            Button(action: { showingCalendarPicker.toggle() }) {
-                                if let calendar = availableCalendars.first(where: { $0.calendarID == selectedCalendarID }) {
-                                    HStack(spacing: 8) {
-                                        Circle()
-                                            .fill(Color(uiColor: calendar.color))
-                                            .frame(width: 12, height: 12)
-                                        Text(calendar.calendarName)
-                                            .font(.system(size: 16, weight: .regular))
-                                            .foregroundColor(.blue)
-                                            .lineLimit(1)
+                            Menu {
+                                ForEach(ShowAsOption.allCases, id: \.self) { option in
+                                    Button(option.rawValue) {
+                                        showAsOption = option
                                     }
-                                } else {
-                                    Text("Select calendar")
+                                }
+                            } label: {
+                                HStack {
+                                    Text(showAsOption.rawValue)
                                         .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.black)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
                                         .foregroundColor(.gray)
                                 }
                             }
                         }
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
 
-                        if showingCalendarPicker {
-                            ForEach(availableCalendars) { calendar in
-                                Button(action: {
-                                    selectedCalendarID = calendar.calendarID
-                                    showingCalendarPicker = false
-                                }) {
-                                    HStack {
-                                        Circle()
-                                            .fill(Color(uiColor: calendar.color))
-                                            .frame(width: 16, height: 16)
-                                        Text(calendar.calendarName)
-                                            .font(.system(size: 16, weight: .regular))
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        if selectedCalendarID == calendar.calendarID {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.blue)
+                    // Repeat Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Repeat")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        HStack {
+                            Text("Repeat")
+                                .font(.system(size: 16, weight: .regular))
+                            Spacer()
+                            Menu {
+                                ForEach(RepeatOption.allCases, id: \.self) { option in
+                                    Button(option.rawValue) {
+                                        repeatOption = option
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(repeatOption.rawValue)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.black)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+
+                    // Alert Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Alert")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        HStack {
+                            Text("Alert")
+                                .font(.system(size: 16, weight: .regular))
+                            Spacer()
+                            Menu {
+                                ForEach(AlertOption.allCases, id: \.self) { option in
+                                    Button(option.rawValue) {
+                                        alertOption = option
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(alertOption.rawValue)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.black)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+
+                    // Calendar Section (only show if Everyone is selected and multiple shared calendars)
+                    if selectEveryone && availableCalendars.count > 1 {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Calendar")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black)
+
+                            HStack {
+                                Text("Calendar")
+                                    .font(.system(size: 16, weight: .regular))
+                                Spacer()
+                                Menu {
+                                    ForEach(availableCalendars) { calendar in
+                                        Button(action: {
+                                            selectedCalendarID = calendar.calendarID
+                                        }) {
+                                            HStack {
+                                                Circle()
+                                                    .fill(Color(uiColor: calendar.color))
+                                                    .frame(width: 12, height: 12)
+                                                Text(calendar.calendarName)
+                                                    .font(.system(size: 16, weight: .regular))
+                                                    .foregroundColor(.primary)
+                                                if selectedCalendarID == calendar.calendarID {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(.blue)
+                                                }
+                                            }
                                         }
+                                    }
+                                } label: {
+                                    HStack {
+                                        if let calendar = availableCalendars.first(where: { $0.calendarID == selectedCalendarID }) {
+                                            Circle()
+                                                .fill(Color(uiColor: calendar.color))
+                                                .frame(width: 12, height: 12)
+                                            Text(calendar.calendarName)
+                                                .font(.system(size: 16, weight: .regular))
+                                                .foregroundColor(.black)
+                                        }
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.gray)
                                     }
                                 }
                             }
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                         }
                     }
-                }
 
-                // Repeat Section
-                Section {
-                    HStack {
-                        Image(systemName: "repeat")
+                    // Notes Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Notes")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 24)
-                        Text("Repeat")
+                            .foregroundColor(.black)
+
+                        TextEditor(text: $notes)
                             .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Menu {
-                            ForEach(RepeatOption.allCases, id: \.self) { option in
-                                Button(option.rawValue) {
-                                    repeatOption = option
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                            .frame(height: 120)
+                    }
+
+                    // People Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Attendees")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "person.2")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.gray)
+                                Text("Attendees")
+                                    .font(.system(size: 16, weight: .regular))
+                                Spacer()
+                                Button(action: {
+                                    withAnimation {
+                                        showingPeoplePicker.toggle()
+                                    }
+                                }) {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
                                 }
                             }
-                        } label: {
-                            Text(repeatOption.rawValue)
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+
+                            if showingPeoplePicker {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Toggle(isOn: $selectEveryone.animation()) {
+                                        HStack(spacing: 12) {
+                                            Circle()
+                                                .fill(Color.blue)
+                                                .frame(width: 32, height: 32)
+                                                .overlay(Text("👥").font(.system(size: 18)))
+                                            Text("Everyone")
+                                                .font(.system(size: 16, weight: .regular))
+                                        }
+                                    }
+
+                                    if !selectEveryone {
+                                        ForEach(familyMembers, id: \.objectID) { member in
+                                            Toggle(isOn: Binding(
+                                                get: { selectedMembers.contains(member.objectID) },
+                                                set: { isSelected in
+                                                    if isSelected {
+                                                        selectedMembers.insert(member.objectID)
+                                                    } else {
+                                                        selectedMembers.remove(member.objectID)
+                                                    }
+                                                }
+                                            )) {
+                                                HStack(spacing: 12) {
+                                                    if let memberCals = member.memberCalendars as? Set<FamilyMemberCalendar>,
+                                                       let firstCal = memberCals.first,
+                                                       let colorHex = firstCal.calendarColorHex {
+                                                        Circle()
+                                                            .fill(Color.fromHex(colorHex))
+                                                            .frame(width: 12, height: 12)
+                                                    } else {
+                                                        Circle()
+                                                            .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                                            .frame(width: 12, height: 12)
+                                                    }
+                                                    Text(member.name ?? "Unknown")
+                                                        .font(.system(size: 16, weight: .regular))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
                         }
                     }
-                }
 
-                // Alert Section
-                Section {
-                    HStack {
-                        Image(systemName: "bell")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(width: 24)
-                        Text("Alert")
-                            .font(.system(size: 16, weight: .regular))
-                        Spacer()
-                        Menu {
-                            ForEach(AlertOption.allCases, id: \.self) { option in
-                                Button(option.rawValue) {
-                                    alertOption = option
+                    // Driver Section
+                    if !allAvailableDrivers.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Driver")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black)
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Image(systemName: "car.fill")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.gray)
+                                    Text("Driver")
+                                        .font(.system(size: 16, weight: .regular))
+                                    Spacer()
+                                    Menu {
+                                        Button(action: { selectedDriver = nil }) {
+                                            HStack {
+                                                Text("None")
+                                                if selectedDriver == nil {
+                                                    Image(systemName: "checkmark")
+                                                }
+                                            }
+                                        }
+
+                                        Divider()
+
+                                        ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
+                                            Button(action: { selectedDriver = driverWrapper }) {
+                                                HStack {
+                                                    Text(driverWrapper.name)
+                                                    if selectedDriver?.id == driverWrapper.id {
+                                                        Image(systemName: "checkmark")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(selectedDriver?.name ?? "None")
+                                                .font(.system(size: 16, weight: .regular))
+                                                .foregroundColor(.black)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+
+                                if let driver = selectedDriver, driver.isFamilyMember {
+                                    HStack {
+                                        Image(systemName: "clock.fill")
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(.gray)
+                                        Text("Travel Time")
+                                            .font(.system(size: 16, weight: .regular))
+                                        Spacer()
+                                        Menu {
+                                            ForEach([5, 10, 15, 20, 25, 30, 45, 60], id: \.self) { minutes in
+                                                Button(action: { driverTravelTimeMinutes = minutes }) {
+                                                    HStack {
+                                                        Text("\(minutes) min")
+                                                        if driverTravelTimeMinutes == minutes {
+                                                            Image(systemName: "checkmark")
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text("\(driverTravelTimeMinutes) min")
+                                                    .font(.system(size: 16, weight: .regular))
+                                                    .foregroundColor(.black)
+                                                Image(systemName: "chevron.right")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.gray)
+                                            }
+                                        }
+                                    }
+                                    .padding(12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
                                 }
                             }
-                        } label: {
-                            Text(alertOption.rawValue)
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.blue)
                         }
                     }
-                }
 
-                // Notes Section
-                Section(header: Text("Notes")) {
-                    TextEditor(text: $notes)
-                        .font(.system(size: 16, weight: .regular))
-                        .frame(height: 100)
+                    Spacer()
+                        .frame(height: 20)
                 }
+                .padding(16)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -409,7 +664,7 @@ struct AddEventView: View {
                         if isSaving {
                             ProgressView()
                         } else {
-                            Text("Save")
+                            Image(systemName: "checkmark")
                                 .font(.system(size: 16, weight: .semibold))
                         }
                     }
@@ -540,6 +795,45 @@ struct AddEventView: View {
         }
     }
 
+    private func createTravelEvent(
+        for familyMember: FamilyMember,
+        eventName: String,
+        eventStartTime: Date,
+        travelTimeMinutes: Int
+    ) -> String? {
+        // Get the family member's linked personal calendar
+        guard let memberCalendars = familyMember.memberCalendars as? Set<FamilyMemberCalendar>,
+              let personalCalendar = memberCalendars.first(where: { $0.isAutoLinked }),
+              let calendarID = personalCalendar.calendarID else {
+            print("❌ Travel Event: Could not find linked calendar for family member \(familyMember.name ?? "Unknown")")
+            return nil
+        }
+
+        // Calculate travel event timing
+        let travelEventStartTime = eventStartTime.addingTimeInterval(-Double(travelTimeMinutes) * 60)
+        let travelEventEndTime = eventStartTime // Travel event ends when main event starts
+
+        let travelEventTitle = "Travel to \(eventName)"
+
+        // Create the travel event
+        let travelEventId = CalendarManager.shared.createEvent(
+            title: travelEventTitle,
+            startDate: travelEventStartTime,
+            endDate: travelEventEndTime,
+            location: nil,
+            notes: "Travel time to \(eventName)",
+            in: calendarID
+        )
+
+        if let eventId = travelEventId {
+            print("✈️ Travel event created: '\(travelEventTitle)' on \(personalCalendar.calendarName ?? "Personal Calendar"), duration: \(travelTimeMinutes) min, event ID: \(eventId)")
+        } else {
+            print("❌ Failed to create travel event for family member \(familyMember.name ?? "Unknown")")
+        }
+
+        return travelEventId
+    }
+
     private func saveEvent() async {
         // Check permissions first
         guard calendarAccessGranted else {
@@ -563,6 +857,8 @@ struct AddEventView: View {
         let recurrenceRule: EKRecurrenceRule? = createRecurrenceRule(from: repeatOption)
 
         var createdEventIds: [String] = []
+
+        print("🚗 DEBUG: About to save event. selectedDriver = \(selectedDriver?.name ?? "nil")")
 
         // Determine which calendars to add the event to
         var targetCalendars: [String] = []
@@ -607,6 +903,8 @@ struct AddEventView: View {
                 )
             }
 
+            print("📅 Created event with ID: \(eventId ?? "nil") in calendar: \(calendarID)")
+
             if let eventId = eventId {
                 createdEventIds.append(eventId)
 
@@ -618,6 +916,41 @@ struct AddEventView: View {
                 familyEvent.calendarId = calendarID
                 familyEvent.createdAt = Date()
                 familyEvent.isSharedCalendarEvent = selectEveryone
+
+                // Add driver information
+                if let driverWrapper = selectedDriver {
+                    switch driverWrapper {
+                    case .regular(let driver):
+                        familyEvent.driver = driver
+                        print("🚗 Added regular driver: \(driver.name ?? "Unknown")")
+
+                    case .familyMember(let member):
+                        // Create a new Driver record for this family member
+                        let driver = Driver(context: viewContext)
+                        driver.id = UUID()
+                        driver.name = member.name ?? "Unknown"
+                        driver.familyMemberId = member.id
+                        familyEvent.driver = driver
+
+                        // Create travel event for family member driver
+                        let travelEventId = createTravelEvent(
+                            for: member,
+                            eventName: title,
+                            eventStartTime: eventStartDate,
+                            travelTimeMinutes: driverTravelTimeMinutes
+                        )
+
+                        // Update driver with travel event info
+                        driver.travelEventIdentifier = travelEventId
+                        driver.travelTimeMinutes = Int16(driverTravelTimeMinutes)
+                        print("🚗 Created travel event for family member driver: \(member.name ?? "Unknown"), travel time: \(driverTravelTimeMinutes) min")
+                    }
+                }
+
+                print("📝 Saving FamilyEvent: eventIdentifier=\(eventId), driver=\(familyEvent.driver?.name ?? "None")")
+                print("   Driver object ID: \(familyEvent.driver?.objectID.debugDescription ?? "nil")")
+                print("   Driver is in context: \(familyEvent.driver?.managedObjectContext != nil)")
+                print("   FamilyEvent will have driver: \(familyEvent.driver != nil)")
 
                 // Add attendees for non-shared events
                 if !selectEveryone {
@@ -633,6 +966,16 @@ struct AddEventView: View {
         // Save CoreData changes and show success
         do {
             try viewContext.save()
+            print("✅ CoreData saved successfully. Created \(createdEventIds.count) event(s)")
+
+            // Verify the save by fetching back immediately
+            let fetchRequest = FamilyEvent.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "eventIdentifier IN %@", createdEventIds)
+            let saved = try viewContext.fetch(fetchRequest)
+            print("📋 Verified: \(saved.count) FamilyEvent(s) saved to database")
+            for event in saved {
+                print("   - Event: \(event.eventIdentifier ?? "unknown"), Driver: \(event.driver?.name ?? "nil")")
+            }
 
             // Trigger haptic feedback
             let notificationFeedback = UINotificationFeedbackGenerator()
@@ -709,23 +1052,6 @@ struct AddEventView: View {
     }
 }
 
-enum RepeatOption: String, CaseIterable {
-    case none = "None"
-    case daily = "Daily"
-    case weekly = "Weekly"
-    case monthly = "Monthly"
-    case yearly = "Yearly"
-    case custom = "Custom"
-}
-
-enum AlertOption: String, CaseIterable {
-    case none = "None"
-    case atTime = "At time of event"
-    case fifteenMinsBefore = "15 minutes before"
-    case oneHourBefore = "1 hour before"
-    case oneDayBefore = "1 day before"
-    case custom = "Custom"
-}
 
 class LocationSearchCompleter: NSObject, ObservableObject {
     @Published var query: String = "" {

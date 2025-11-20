@@ -34,27 +34,33 @@ struct MainTabView: View {
             Group {
                 switch activeView {
                 case .events:
-                    FamilyView()
+                    FamilyView(
+                        onSearchRequested: { showingSearch = true },
+                        onAddEventRequested: { showingAddEvent = true },
+                        onChangeViewRequested: { switchToView(.calendar) }
+                    )
                 case .calendar:
                     CalendarView()
                 }
             }
 
             // Floating action buttons
-            VStack {
-                Spacer()
-                HStack(alignment: .center) {
-                    compactControlStack
-
+            if activeView == .calendar {
+                VStack {
                     Spacer()
+                    HStack(alignment: .center) {
+                        compactControlStack
 
-                    // Add event button in bottom right
-                    primaryActionButton
+                        Spacer()
+
+                        // Add event button in bottom right
+                        primaryActionButton
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()

@@ -9,6 +9,7 @@
         <attribute name="linkedCalendarID" optional="YES" attributeType="String"/>
         <attribute name="colorHex" optional="YES" attributeType="String"/>
         <attribute name="avatarInitials" optional="YES" attributeType="String"/>
+        <attribute name="isDriver" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValue="NO"/>
         <relationship name="memberCalendars" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="FamilyMemberCalendar" inverseName="familyMember" inverseEntity="FamilyMemberCalendar"/>
         <relationship name="sharedCalendars" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SharedCalendar" inverseName="members" inverseEntity="SharedCalendar"/>
         <relationship name="familyEvents" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="FamilyEvent" inverseName="attendees" inverseEntity="FamilyEvent"/>
@@ -36,12 +37,25 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isSharedCalendarEvent" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValue="NO"/>
         <relationship name="attendees" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="FamilyMember" inverseName="familyEvents" inverseEntity="FamilyMember"/>
+        <relationship name="driver" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Driver" inverseName="events" inverseEntity="Driver"/>
+    </entity>
+    <entity name="Driver" representedClassName="Driver" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="phone" optional="YES" attributeType="String"/>
+        <attribute name="email" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="travelTimeMinutes" optional="YES" attributeType="Integer 16" usesScalarValueType="YES" defaultValue="0"/>
+        <attribute name="familyMemberId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="travelEventIdentifier" optional="YES" attributeType="String"/>
+        <relationship name="events" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="FamilyEvent" inverseName="driver" inverseEntity="FamilyEvent"/>
     </entity>
     <elements>
         <element name="Item" positionX="-63" positionY="-18" width="128" height="44"/>
         <element name="FamilyMember" positionX="126" positionY="-18" width="128" height="134"/>
         <element name="FamilyMemberCalendar" positionX="126" positionY="100" width="128" height="119"/>
         <element name="SharedCalendar" positionX="216" positionY="-18" width="128" height="103"/>
-        <element name="FamilyEvent" positionX="306" positionY="-18" width="128" height="119"/>
+        <element name="FamilyEvent" positionX="306" positionY="-18" width="128" height="135"/>
+        <element name="Driver" positionX="396" positionY="-18" width="128" height="119"/>
     </elements>
 </model>

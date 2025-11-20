@@ -11,6 +11,9 @@ import EventKit
 import Combine
 
 struct FamilyView: View {
+    var onSearchRequested: (() -> Void)? = nil
+    var onAddEventRequested: (() -> Void)? = nil
+    var onChangeViewRequested: (() -> Void)? = nil
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
     @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
@@ -37,6 +40,10 @@ struct FamilyView: View {
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
     @State private var currentTime = Date()
+    @State private var showingSettings = false
+    @State private var showingSearch = false
+    @State private var showingAddEvent = false
+    @State private var availableCalendars: [EKCalendar] = []
 
     private let calendar = Calendar.current
 
@@ -72,28 +79,45 @@ struct FamilyView: View {
 
     var body: some View {
         NavigationView {
-            mainScrollView
-                .navigationBarHidden(true)
-                .sheet(isPresented: $showingEventDetail) {
-                    if let event = selectedEvent {
-                        EventDetailView(event: event)
-                    }
-                }
-                .sheet(isPresented: Binding(
-                    get: { spotlightMemberName != nil },
-                    set: { if !$0 { spotlightMemberName = nil } }
-                )) {
-                    if let memberName = spotlightMemberName,
-                       let member = familyMembers.first(where: { $0.name == memberName }) {
-                        NavigationView {
-                            SpotlightView(member: member)
-                                .environment(\.managedObjectContext, viewContext)
-                                .onAppear {
-                                    UserDefaults.standard.set(spotlightEventsPerPerson, forKey: "spotlightEventsPerPerson")
-                                }
+            ZStack(alignment: .bottomLeading) {
+                mainScrollView
+                    .navigationBarHidden(true)
+
+                floatingControls
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            }
+        }
+        .sheet(isPresented: $showingEventDetail) {
+            if let event = selectedEvent {
+                EventDetailView(event: event)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { spotlightMemberName != nil },
+            set: { if !$0 { spotlightMemberName = nil } }
+        )) {
+            if let memberName = spotlightMemberName,
+               let member = familyMembers.first(where: { $0.name == memberName }) {
+                NavigationView {
+                    SpotlightView(member: member)
+                        .environment(\.managedObjectContext, viewContext)
+                        .onAppear {
+                            UserDefaults.standard.set(spotlightEventsPerPerson, forKey: "spotlightEventsPerPerson")
                         }
-                    }
                 }
+            }
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingSearch) {
+            EventSearchView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingAddEvent) {
+            AddEventView()
+                .environment(\.managedObjectContext, viewContext)
         }
     }
 
@@ -119,6 +143,82 @@ struct FamilyView: View {
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
         .onChange(of: currentTime) { _, _ in /* Trigger re-render for status updates */ }
         .onDisappear(perform: cleanupView)
+    }
+
+    private var floatingControls: some View {
+        HStack(alignment: .center) {
+            controlStack
+
+            Spacer()
+
+            addEventButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 24)
+    }
+
+    private var controlStack: some View {
+        HStack(spacing: 12) {
+            ControlCircleButton(imageName: "gearshape.fill") {
+                showingSettings = true
+            }
+            .accessibilityLabel("Open settings")
+
+            ControlCircleButton(imageName: "magnifyingglass") {
+                if let action = onSearchRequested {
+                    action()
+                } else {
+                    showingSearch = true
+                }
+            }
+            .accessibilityLabel("Search events")
+
+            ControlCircleButton(imageName: "calendar") {
+                onChangeViewRequested?()
+            }
+            .accessibilityLabel("Switch view")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(.systemBackground).opacity(0.95))
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+    }
+
+    private var addEventButton: some View {
+        Button(action: {
+            if let action = onAddEventRequested {
+                action()
+            } else {
+                showingAddEvent = true
+            }
+        }) {
+            Image(systemName: "plus")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 48, height: 48)
+                .background(Color.blue)
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 5)
+        }
+        .accessibilityLabel("Add event")
+    }
+
+    private struct ControlCircleButton: View {
+        let imageName: String
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                Image(systemName: imageName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     @ViewBuilder
@@ -225,6 +325,63 @@ struct FamilyView: View {
                                             eventCard(groupedEvent)
                                         }
                                         .buttonStyle(.plain)
+                                        .contextMenu {
+                                            let event = UpcomingCalendarEvent(
+                                                id: groupedEvent.eventIdentifier,
+                                                title: groupedEvent.title,
+                                                location: groupedEvent.location,
+                                                startDate: groupedEvent.startDate,
+                                                endDate: groupedEvent.endDate,
+                                                calendarID: groupedEvent.calendarID,
+                                                calendarColor: groupedEvent.memberColor,
+                                                calendarTitle: groupedEvent.calendarTitle,
+                                                hasRecurrence: groupedEvent.hasRecurrence,
+                                                recurrenceRule: nil,
+                                                isAllDay: groupedEvent.isAllDay
+                                            )
+
+                                            Button(action: { duplicateEvent(event) }) {
+                                                Label("Duplicate", systemImage: "doc.on.doc")
+                                            }
+
+                                            // Move to calendar
+                                            Menu {
+                                                ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
+                                                    Button(action: {
+                                                        moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
+                                                    }) {
+                                                        HStack {
+                                                            Text(calendar.title)
+                                                            if calendar.calendarIdentifier == event.calendarID {
+                                                                Image(systemName: "checkmark")
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            } label: {
+                                                Label("Move to Calendar", systemImage: "calendar.badge.plus")
+                                            }
+
+                                            Divider()
+
+                                            // Delete action
+                                            if groupedEvent.hasRecurrence {
+                                                Menu {
+                                                    Button(action: { deleteEvent(event, span: .thisEvent) }) {
+                                                        Label("Delete This Event", systemImage: "trash")
+                                                    }
+                                                    Button(role: .destructive, action: { deleteEvent(event, span: .futureEvents) }) {
+                                                        Label("Delete This & Future Events", systemImage: "trash")
+                                                    }
+                                                } label: {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
+                                            } else {
+                                                Button(role: .destructive, action: { deleteEvent(event, span: .thisEvent) }) {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -370,6 +527,19 @@ struct FamilyView: View {
                     }
                 }
 
+                // Driver (if available)
+                if let driverName = groupedEvent.driverName {
+                    HStack(spacing: 8) {
+                        Image(systemName: "car.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                        Text(driverName)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+
                 Spacer(minLength: 0)
             }
 
@@ -388,6 +558,7 @@ struct FamilyView: View {
 
     private func setupView() {
         loadNextEvents()
+        loadAvailableCalendars()
 
         // Set up notification observer for calendar changes
         NotificationCenter.default.addObserver(
@@ -396,6 +567,7 @@ struct FamilyView: View {
             queue: .main
         ) { _ in
             loadNextEvents()
+            loadAvailableCalendars()
         }
 
         // Set up auto-refresh timer
@@ -473,7 +645,7 @@ struct FamilyView: View {
                 // Fetch events for this member
                 let upcomingEvents = CalendarManager.shared.fetchNextEvents(
                     for: Array(calendarIDs),
-                    limit: 100 // Fetch enough to group and filter
+                    limit: 0 // Unlimited so we don't miss future events
                 )
 
                 // Convert to EventItem and expand recurring events
@@ -493,6 +665,7 @@ struct FamilyView: View {
                         for occurrence in occurrences {
                             let displayID = "\(occurrence.id)|\(occurrence.startDate.timeIntervalSince1970)"
                             let occurrenceTimeRange = formatTimeRange(occurrence.startDate, occurrence.endDate)
+                            let driverName = fetchDriverForEvent(occurrence.id)
                             memberEventItems.append(EventItem(
                                 id: displayID,
                                 eventIdentifier: occurrence.id,
@@ -507,12 +680,14 @@ struct FamilyView: View {
                                 calendarID: event.calendarID,
                                 hasRecurrence: event.hasRecurrence,
                                 recurrenceRule: event.recurrenceRule,
-                                isAllDay: occurrence.isAllDay
+                                isAllDay: occurrence.isAllDay,
+                                driverName: driverName
                             ))
                         }
                     } else {
                         let displayID = "\(event.id)|\(event.startDate.timeIntervalSince1970)"
                         // Non-recurring events
+                        let driverName = fetchDriverForEvent(event.id)
                         memberEventItems.append(EventItem(
                             id: displayID,
                             eventIdentifier: event.id,
@@ -527,7 +702,8 @@ struct FamilyView: View {
                             calendarID: event.calendarID,
                             hasRecurrence: event.hasRecurrence,
                             recurrenceRule: event.recurrenceRule,
-                            isAllDay: event.isAllDay
+                            isAllDay: event.isAllDay,
+                            driverName: driverName
                         ))
                     }
                 }
@@ -569,6 +745,38 @@ struct FamilyView: View {
         }
     }
 
+    private func fetchDriverForEvent(_ eventIdentifier: String) -> String? {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", eventIdentifier)
+
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            if results.isEmpty {
+                print("🚗 No FamilyEvent found for eventIdentifier: \(eventIdentifier)")
+                // Debug: Let's see what FamilyEvents exist
+                let allRequest = FamilyEvent.fetchRequest()
+                let allResults = try viewContext.fetch(allRequest)
+                print("🚗 Total FamilyEvents in database: \(allResults.count)")
+                for event in allResults.prefix(5) {
+                    print("   - \(event.eventIdentifier ?? "unknown"): driver = \(event.driver?.name ?? "nil")")
+                }
+                return nil
+            }
+
+            let driverName = results.first?.driver?.name
+            if let driverName = driverName {
+                print("🚗 Found driver for event \(eventIdentifier): \(driverName)")
+            } else {
+                print("🚗 FamilyEvent found but no driver for event \(eventIdentifier)")
+                print("🚗 FamilyEvent object has driver relationship: \(results.first?.driver != nil)")
+            }
+            return driverName
+        } catch {
+            print("🚗 Error fetching driver for event \(eventIdentifier): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     private func groupEventsByDetails(_ events: [EventItem]) -> [GroupedEvent] {
         var grouped: [String: GroupedEvent] = [:]
 
@@ -605,7 +813,8 @@ struct FamilyView: View {
                     calendarID: existing.calendarID,
                     memberColors: updatedColors,
                     hasRecurrence: existing.hasRecurrence || event.hasRecurrence,
-                    isAllDay: existing.isAllDay
+                    isAllDay: existing.isAllDay,
+                    driverName: existing.driverName ?? event.driverName
                 )
             } else {
                 grouped[key] = GroupedEvent(
@@ -622,7 +831,8 @@ struct FamilyView: View {
                     calendarID: event.calendarID,
                     memberColors: [event.memberColor],
                     hasRecurrence: event.hasRecurrence,
-                    isAllDay: event.isAllDay
+                    isAllDay: event.isAllDay,
+                    driverName: event.driverName
                 )
             }
         }
@@ -731,6 +941,101 @@ struct FamilyView: View {
         return ("Upcoming", .gray)
     }
 
+    // MARK: - Context Menu Actions
+
+    private func loadAvailableCalendars() {
+        let calendars = eventStore.calendars(for: .event)
+        self.availableCalendars = calendars
+    }
+
+    private func moveEventToCalendar(_ event: UpcomingCalendarEvent, calendarID: String) {
+        // Skip if moving to the same calendar
+        if calendarID == event.calendarID {
+            return
+        }
+
+        if let ekEvent = eventStore.event(withIdentifier: event.id) {
+            if let targetCalendar = eventStore.calendar(withIdentifier: calendarID) {
+                do {
+                    ekEvent.calendar = targetCalendar
+                    try eventStore.save(ekEvent, span: .thisEvent, commit: true)
+
+                    // Update CoreData record
+                    let fetchRequest = FamilyEvent.fetchRequest()
+                    fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", event.id)
+                    if let familyEvent = try viewContext.fetch(fetchRequest).first {
+                        familyEvent.calendarId = calendarID
+                        try viewContext.save()
+                    }
+
+                    print("✅ Event moved to calendar: \(targetCalendar.title)")
+                    loadNextEvents()
+                } catch {
+                    print("❌ Failed to move event: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func duplicateEvent(_ event: UpcomingCalendarEvent) {
+        let newTitle = "\(event.title) (copy)"
+        let duration = event.endDate.timeIntervalSince(event.startDate)
+
+        // Create event 1 hour after the original
+        let newStartDate = event.startDate.addingTimeInterval(3600)
+        let newEndDate = newStartDate.addingTimeInterval(duration)
+
+        let newEventId = CalendarManager.shared.createEvent(
+            title: newTitle,
+            startDate: newStartDate,
+            endDate: newEndDate,
+            location: event.location,
+            notes: nil,
+            in: event.calendarID
+        )
+
+        if let newEventId = newEventId {
+            // Create FamilyEvent record if needed
+            let familyEvent = FamilyEvent(context: viewContext)
+            familyEvent.id = UUID()
+            familyEvent.eventGroupId = UUID()
+            familyEvent.eventIdentifier = newEventId
+            familyEvent.calendarId = event.calendarID
+            familyEvent.createdAt = Date()
+            familyEvent.isSharedCalendarEvent = false
+
+            do {
+                try viewContext.save()
+                print("✅ Event duplicated: \(newTitle)")
+                loadNextEvents()
+            } catch {
+                print("❌ Failed to save duplicated event: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func deleteEvent(_ event: UpcomingCalendarEvent, span: EKSpan = .thisEvent) {
+        let success = CalendarManager.shared.deleteEvent(
+            withIdentifier: event.id,
+            occurrenceStartDate: event.startDate,
+            from: event.calendarID,
+            span: span
+        )
+
+        if success {
+            // Delete from CoreData
+            let fetchRequest = FamilyEvent.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", event.id)
+            if let familyEvent = try? viewContext.fetch(fetchRequest).first {
+                viewContext.delete(familyEvent)
+                try? viewContext.save()
+            }
+
+            print("✅ Event deleted successfully")
+            loadNextEvents()
+        }
+    }
+
 }
 
 // MARK: - Data Models
@@ -750,6 +1055,7 @@ private struct EventItem: Identifiable {
     let hasRecurrence: Bool
     let recurrenceRule: EKRecurrenceRule?
     let isAllDay: Bool
+    let driverName: String?
 }
 
 private struct GroupedEvent: Identifiable {
@@ -767,6 +1073,7 @@ private struct GroupedEvent: Identifiable {
     var memberColors: [UIColor] = []
     let hasRecurrence: Bool
     let isAllDay: Bool
+    let driverName: String?
 }
 
 private struct MemberEventGroup: Identifiable {

@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingFamilyMembers = false
     @State private var showingVisibleCalendars = false
+    @State private var showingDrivers = false
     @State private var showingAppSettings = false
     @State private var showingPermissions = false
 
@@ -35,6 +36,14 @@ struct SettingsView: View {
                             title: "Visible Calendars",
                             subtitle: "Choose which calendars appear",
                             action: { showingVisibleCalendars = true }
+                        )
+
+                        SettingsRowView(
+                            iconName: "car.fill",
+                            iconColor: Color.orange,
+                            title: "Drivers",
+                            subtitle: "Manage drivers for events",
+                            action: { showingDrivers = true }
                         )
 
                         SettingsRowView(
@@ -101,6 +110,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingVisibleCalendars) {
             VisibleCalendarsView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingDrivers) {
+            DriversListView()
                 .environment(\.managedObjectContext, viewContext)
         }
         .sheet(isPresented: $showingAppSettings) {

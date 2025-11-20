@@ -282,6 +282,28 @@ Using Settings Layout.png as a design guide for settings
 11. **Modal Selection**: SelectMemberCalendarsView shows personal, shared, and available calendars
 12. **Edit Updates**: EditFamilyMemberView handles auto-linked calendar updates when name changes
 
+### Context Menu Implementation (Nov 20, 2025)
+- **Context Menu Feature**: Long-press actions on events across all screens
+  - Available on CalendarView, FamilyView, and EventDetailView
+  - Three main actions: Duplicate, Move to Calendar, Delete
+  - **Duplicate**: Creates copy of event 1 hour after original
+  - **Move to Calendar**: Submenu showing all available calendars with checkmark on current
+  - **Delete**: Smart options based on event recurrence
+    - For recurring events: Submenu with "Delete This Event" and "Delete This & Future Events"
+    - For single events: Simple delete button
+  - Both EventKit and CoreData are updated when events are moved
+  - Available calendars loaded on view appearance and refreshed via EKEventStoreChanged notifications
+
+- **Implementation Details**:
+  - Added to CalendarView.swift, FamilyView.swift, and EventDetailView.swift
+  - State variables: `availableCalendars`, `showingCalendarPicker`, `contextMenuEvent`
+  - Helper functions in each view:
+    - `loadAvailableCalendars()`: Synchronous fetch of EKEventStore calendars (simple 2-line function)
+    - `moveEventToCalendar()`: Updates EventKit event and CoreData FamilyEvent
+    - `deleteEvent()`: Handles EKSpan.thisEvent or .futureEvents deletion
+    - `duplicateEvent()`: Creates new event with same details, 1 hour later
+  - **Fixed async/await warnings** (Nov 20): Removed unnecessary Task wrapper and await keyword from loadAvailableCalendars() since eventStore.calendars(for:) is synchronous
+
 ## To Do for Future Development
 - [ ] Add calendar event display to FamilyView
 - [ ] Implement event creation functionality

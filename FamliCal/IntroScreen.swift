@@ -9,50 +9,69 @@ import SwiftUI
 
 struct IntroScreen: View {
     var onGetStarted: () -> Void
+    @State private var floatIcon = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Top spacer
-            Spacer()
+        ZStack {
+            OnboardingGradientBackground()
 
-            // Icon/Header area
-            VStack(spacing: 16) {
-                Image(systemName: "calendar.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
+            VStack(spacing: 28) {
+                Spacer(minLength: 40)
 
-                Text("Welcome to FamliCal")
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .tracking(0.5)
+                OnboardingGlassCard {
+                    VStack(spacing: 16) {
+                        Image(systemName: "calendar.circle.fill")
+                            .font(.system(size: 88))
+                            .foregroundStyle(Color.white, Color.white.opacity(0.6))
+                            .scaleEffect(floatIcon ? 1.05 : 0.95)
+                            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 14)
+                            .animation(
+                                .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
+                                value: floatIcon
+                            )
 
-                Text("Keep your family connected, one calendar at a time")
-                    .font(.system(size: 16, weight: .regular, design: .default))
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                        Text("Welcome to FamliCal")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text("Plan carpools, sports, and the everyday chaos with a shared family brain.")
+                            .font(.system(size: 15))
+                            .foregroundColor(.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
+                }
+
+                OnboardingGlassCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Label("Link everyone's calendars instantly", systemImage: "person.3.sequence.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+
+                        Label("Spotlight what's happening today", systemImage: "sparkles")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+
+                        Label("Share focus lists like pickups or practice", systemImage: "list.bullet.rectangle.portrait.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                }
+
+                VStack(spacing: 14) {
+                    OnboardingPrimaryButton(title: "Get Started", action: onGetStarted)
+
+                    Text("Takes less than a minute")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.75))
+                }
+
+                Spacer(minLength: 32)
             }
             .padding(.horizontal, 24)
-
-            // Center spacer
-            Spacer()
-
-            // Bottom section with button
-            VStack(spacing: 16) {
-                Button(action: onGetStarted) {
-                    Text("Get Started")
-                        .font(.system(size: 16, weight: .semibold, design: .default))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 24)
-            }
-            .padding(.bottom, 48)
+            .padding(.bottom, 40)
         }
-        .background(Color(.systemBackground))
-        .ignoresSafeArea(edges: .bottom)
+        .onAppear { floatIcon = true }
     }
 }
 

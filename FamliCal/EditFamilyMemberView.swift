@@ -15,6 +15,7 @@ struct EditFamilyMemberView: View {
     let member: FamilyMember
 
     @State private var name = ""
+    @State private var isDriver = false
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var matchedCalendar: AvailableCalendar? = nil
     @State private var isLoading = false
@@ -40,6 +41,35 @@ struct EditFamilyMemberView: View {
                                 updateCalendarMatch()
                             }
                     }
+
+                    // Driver toggle
+                    HStack {
+                        HStack(spacing: 12) {
+                            Image(systemName: "car.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(width: 24)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Can be a driver")
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.primary)
+
+                                Text("Allow as event driver")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+
+                        Spacer()
+
+                        Toggle("", isOn: $isDriver)
+                            .labelsHidden()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
 
                     // Calendar preview
                     if isLoading {
@@ -160,6 +190,7 @@ struct EditFamilyMemberView: View {
         }
         .onAppear {
             name = member.name ?? ""
+            isDriver = member.isDriver
             loadAvailableCalendars()
         }
     }
@@ -185,6 +216,7 @@ struct EditFamilyMemberView: View {
 
     private func saveMember() {
         member.name = name
+        member.isDriver = isDriver
         member.avatarInitials = getInitials(from: name)
         member.linkedCalendarID = matchedCalendar?.id
 

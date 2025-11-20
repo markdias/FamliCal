@@ -9,51 +9,65 @@ import SwiftUI
 
 struct ReadyScreen: View {
     var onStartUsingApp: () -> Void
+    @State private var confetti = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Top spacer
-            Spacer()
+        ZStack {
+            OnboardingGradientBackground()
 
-            // Success content
-            VStack(spacing: 24) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.green)
+            VStack(spacing: 28) {
+                Spacer(minLength: 40)
 
-                VStack(spacing: 12) {
-                    Text("You're all set!")
-                        .font(.system(size: 32, weight: .bold, design: .default))
+                OnboardingGlassCard {
+                    VStack(spacing: 16) {
+                        ZStack {
+                            ForEach(0..<12, id: \.self) { index in
+                                Capsule()
+                                    .fill(index % 2 == 0 ? Color.white.opacity(0.7) : Color.white.opacity(0.4))
+                                    .frame(width: 6, height: 24)
+                                    .offset(y: -70)
+                                    .rotationEffect(.degrees(Double(index) / 12.0 * 360.0))
+                                    .opacity(confetti ? 1 : 0)
+                                    .animation(
+                                        .easeInOut(duration: 0.8)
+                                            .repeatForever(autoreverses: true)
+                                            .delay(Double(index) * 0.05),
+                                        value: confetti
+                                    )
+                            }
 
-                    Text("Your family calendar is ready to go. Start sharing events with your loved ones.")
-                        .font(.system(size: 15, weight: .regular, design: .default))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 86))
+                                .foregroundColor(.white)
+                        }
+
+                        Text("You're all set!")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text("FamliCal will keep your crew in sync with smart linking, shared timelines, and spotlight summaries.")
+                            .font(.system(size: 15))
+                            .foregroundColor(.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
                 }
+
+                VStack(spacing: 16) {
+                    OnboardingPrimaryButton(title: "Start using FamliCal", action: onStartUsingApp)
+
+                    Text("Tip: You can tweak colors and calendars anytime from Settings.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+
+                Spacer(minLength: 32)
             }
             .padding(.horizontal, 24)
-
-            // Bottom spacer
-            Spacer()
-
-            // Action button
-            VStack(spacing: 16) {
-                Button(action: onStartUsingApp) {
-                    Text("Start Using FamliCal")
-                        .font(.system(size: 16, weight: .semibold, design: .default))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 24)
-            }
-            .padding(.bottom, 48)
+            .padding(.bottom, 40)
         }
-        .background(Color(.systemBackground))
-        .ignoresSafeArea(edges: .bottom)
+        .onAppear { confetti = true }
     }
 }
 

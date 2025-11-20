@@ -7,10 +7,12 @@
 
 import SwiftUI
 import EventKit
+import Contacts
 
 struct PermissionsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var calendarPermissionStatus = ""
+    @State private var contactsPermissionStatus = ""
     @State private var showingPermissionAlert = false
     @State private var eventStore = EKEventStore()
 
@@ -58,6 +60,46 @@ struct PermissionsView: View {
                         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
+                    // Contacts Permissions Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Contacts Access")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 16)
+
+                        VStack(spacing: 0) {
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Contacts Permission")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    Text("Quick add drivers from contacts")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.gray)
+                                }
+
+                                Spacer()
+
+                                HStack(spacing: 8) {
+                                    Image(systemName: getContactsPermissionIcon())
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(getContactsPermissionColor())
+
+                                    Text(getContactsPermissionText())
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(getContactsPermissionColor())
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    }
+
                     // Permission Info Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("About Permissions")
@@ -71,6 +113,15 @@ struct PermissionsView: View {
                                 title: "Calendar Access",
                                 description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
                             )
+
+                            Divider()
+                                .padding(.vertical, 8)
+
+                            PermissionInfoRow(
+                                icon: "person.crop.circle.fill.badge.plus",
+                                title: "Contacts Access",
+                                description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
+                            )
                         }
                         .padding(12)
                         .background(Color(.systemBackground))
@@ -79,9 +130,9 @@ struct PermissionsView: View {
                         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
 
-                    // Request Permission Button
-                    if getPermissionText() != "Granted" {
-                        VStack(spacing: 12) {
+                    // Request Permission Buttons
+                    VStack(spacing: 12) {
+                        if getPermissionText() != "Granted" {
                             Button(action: requestCalendarPermission) {
                                 Text("Request Calendar Permission")
                                     .font(.system(size: 16, weight: .semibold))
@@ -92,8 +143,20 @@ struct PermissionsView: View {
                                     .cornerRadius(12)
                             }
                         }
-                        .padding(.horizontal, 16)
+
+                        if getContactsPermissionText() != "Granted" {
+                            Button(action: requestContactsPermission) {
+                                Text("Request Contacts Permission")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.blue)
+                                    .cornerRadius(12)
+                            }
+                        }
                     }
+                    .padding(.horizontal, 16)
 
                     Spacer()
                 }
@@ -116,7 +179,10 @@ struct PermissionsView: View {
                 }
             }
         }
-        .onAppear(perform: checkCalendarPermission)
+        .onAppear {
+            checkCalendarPermission()
+            checkContactsPermission()
+        }
     }
 
     private func checkCalendarPermission() {
@@ -168,6 +234,63 @@ struct PermissionsView: View {
 
     private func getPermissionColor() -> Color {
         switch calendarPermissionStatus {
+        case "Granted":
+            return .green
+        case "Denied", "Restricted":
+            return .red
+        case "Not Determined":
+            return .orange
+        default:
+            return .gray
+        }
+    }
+
+    private func checkContactsPermission() {
+        let status = ContactsManager.shared.getContactsAuthorizationStatus()
+        switch status {
+        case .authorized, .limited:
+            contactsPermissionStatus = "Granted"
+        case .denied:
+            contactsPermissionStatus = "Denied"
+        case .restricted:
+            contactsPermissionStatus = "Restricted"
+        case .notDetermined:
+            contactsPermissionStatus = "Not Determined"
+        @unknown default:
+            contactsPermissionStatus = "Unknown"
+        }
+    }
+
+    private func requestContactsPermission() {
+        Task {
+            _ = await ContactsManager.shared.requestContactsAccess()
+            await MainActor.run {
+                checkContactsPermission()
+            }
+        }
+    }
+
+    private func getContactsPermissionText() -> String {
+        contactsPermissionStatus.isEmpty ? "Checking..." : contactsPermissionStatus
+    }
+
+    private func getContactsPermissionIcon() -> String {
+        switch contactsPermissionStatus {
+        case "Granted":
+            return "checkmark.circle.fill"
+        case "Denied":
+            return "xmark.circle.fill"
+        case "Restricted":
+            return "exclamationmark.circle.fill"
+        case "Not Determined":
+            return "questionmark.circle.fill"
+        default:
+            return "circle"
+        }
+    }
+
+    private func getContactsPermissionColor() -> Color {
+        switch contactsPermissionStatus {
         case "Granted":
             return .green
         case "Denied", "Restricted":

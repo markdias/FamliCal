@@ -99,26 +99,19 @@ final class CalendarManager {
         }
 
         // Fallback: search through all event calendars
-        // Wrap in try-catch to handle EventKit errors gracefully
         for calendar in calendars {
-            do {
-                let predicate = eventStore.predicateForEvents(withStart: Date(timeIntervalSince1970: 0),
-                                                               end: Date(timeIntervalSince1970: Date().timeIntervalSince1970 + 86400 * 365 * 2),
-                                                               calendars: [calendar])
-                let events = eventStore.events(matching: predicate)
-                if let event = events.first(where: {
-                    guard $0.eventIdentifier == identifier else { return false }
-                    if let occurrenceDate = occurrenceStartDate {
-                        return abs($0.startDate.timeIntervalSince(occurrenceDate)) < 1
-                    }
-                    return true
-                }) {
-                    return event
+            let predicate = eventStore.predicateForEvents(withStart: Date(timeIntervalSince1970: 0),
+                                                           end: Date(timeIntervalSince1970: Date().timeIntervalSince1970 + 86400 * 365 * 2),
+                                                           calendars: [calendar])
+            let events = eventStore.events(matching: predicate)
+            if let event = events.first(where: {
+                guard $0.eventIdentifier == identifier else { return false }
+                if let occurrenceDate = occurrenceStartDate {
+                    return abs($0.startDate.timeIntervalSince(occurrenceDate)) < 1
                 }
-            } catch {
-                // If we can't access this calendar, log and skip it
-                print("⚠️ Could not search calendar '\(calendar.title)': \(error.localizedDescription)")
-                continue
+                return true
+            }) {
+                return event
             }
         }
 
@@ -141,42 +134,32 @@ final class CalendarManager {
         let startDate = calendar.date(byAdding: .day, value: -pastDays, to: Date()) ?? Date()
         let endDate = calendar.date(byAdding: .day, value: futureDays, to: Date()) ?? Date()
 
+        let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
+        let events = eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+
         var results: [UpcomingCalendarEvent] = []
 
-        do {
-            let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
-            let events = eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+        for event in events {
+            let calendarColor = event.calendar.cgColor.map { UIColor(cgColor: $0) } ?? .systemBlue
 
-            // Map events with error handling for each event
-            for event in events.prefix(limit) {
-                do {
-                    // Safely access event calendar properties
-                    let calendarColor = event.calendar.cgColor.map { UIColor(cgColor: $0) } ?? .systemBlue
+            let upcomingEvent = UpcomingCalendarEvent(
+                id: event.eventIdentifier,
+                title: event.title,
+                location: event.location,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                calendarID: event.calendar.calendarIdentifier,
+                calendarColor: calendarColor,
+                calendarTitle: event.calendar.title,
+                hasRecurrence: event.hasRecurrenceRules,
+                recurrenceRule: event.recurrenceRules?.first,
+                isAllDay: event.isAllDay
+            )
+            results.append(upcomingEvent)
 
-                    let upcomingEvent = UpcomingCalendarEvent(
-                        id: event.eventIdentifier,
-                        title: event.title,
-                        location: event.location,
-                        startDate: event.startDate,
-                        endDate: event.endDate,
-                        calendarID: event.calendar.calendarIdentifier,
-                        calendarColor: calendarColor,
-                        calendarTitle: event.calendar.title,
-                        hasRecurrence: event.hasRecurrenceRules,
-                        recurrenceRule: event.recurrenceRules?.first,
-                        isAllDay: event.isAllDay
-                    )
-                    results.append(upcomingEvent)
-                } catch {
-                    // If we can't access a specific event's details, log and skip it
-                    print("⚠️ Could not access event '\(event.title)': \(error.localizedDescription)")
-                    continue
-                }
+            if limit > 0 && results.count >= limit {
+                break
             }
-        } catch {
-            // If predicate search fails, return empty array with error log
-            print("⚠️ Error fetching events from calendars: \(error.localizedDescription)")
-            return []
         }
 
         return results
@@ -307,20 +290,15 @@ final class CalendarManager {
         }
 
         // Verify the event is in the correct calendar (safely access event.calendar)
-        do {
-            let eventCalendarID = event.calendar.calendarIdentifier
-            guard eventCalendarID == calendarID else {
-                print("❌ Event found but in wrong calendar!")
-                print("   Expected calendar: \(calendarID)")
-                print("   Actual calendar: \(eventCalendarID)")
-                return false
-            }
-
-            print("✅ Found event: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
-        } catch {
-            print("❌ Error accessing event calendar: \(error.localizedDescription)")
+        let eventCalendarID = event.calendar.calendarIdentifier
+        guard eventCalendarID == calendarID else {
+            print("❌ Event found but in wrong calendar!")
+            print("   Expected calendar: \(calendarID)")
+            print("   Actual calendar: \(eventCalendarID)")
             return false
         }
+
+        print("✅ Found event: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
 
         event.title = title
         event.startDate = startDate
@@ -364,20 +342,15 @@ final class CalendarManager {
         }
 
         // Verify the event is in the correct calendar (safely access event.calendar)
-        do {
-            let eventCalendarID = event.calendar.calendarIdentifier
-            guard eventCalendarID == calendarID else {
-                print("❌ Event found but in wrong calendar!")
-                print("   Expected calendar: \(calendarID)")
-                print("   Actual calendar: \(eventCalendarID)")
-                return false
-            }
-
-            print("✅ Found event to delete: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
-        } catch {
-            print("❌ Error accessing event calendar: \(error.localizedDescription)")
+        let eventCalendarID = event.calendar.calendarIdentifier
+        guard eventCalendarID == calendarID else {
+            print("❌ Event found but in wrong calendar!")
+            print("   Expected calendar: \(calendarID)")
+            print("   Actual calendar: \(eventCalendarID)")
             return false
         }
+
+        print("✅ Found event to delete: \(event.title ?? "Unknown") in calendar: \(event.calendar.title)")
 
         do {
             try eventStore.remove(event, span: span)

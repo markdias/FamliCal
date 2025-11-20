@@ -11,7 +11,7 @@ struct AppSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
     @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
-    @AppStorage("eventsPastDays") private var eventsPastDays: Int = 0
+    @AppStorage("eventsPastDays") private var eventsPastDays: Int = 90
     @AppStorage("eventsFutureDays") private var eventsFutureDays: Int = 180
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"

@@ -206,6 +206,19 @@ struct SpotlightView: View {
                     }
                 }
 
+                // Driver (if available)
+                if let driverName = event.driverName {
+                    HStack(spacing: 8) {
+                        Image(systemName: "car.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                        Text(driverName)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+
                 Spacer(minLength: 0)
             }
 
@@ -221,6 +234,18 @@ struct SpotlightView: View {
     }
 
     // MARK: - Private Methods
+
+    private func fetchDriverForEvent(_ eventIdentifier: String) -> String? {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", eventIdentifier)
+
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            return results.first?.driver?.name
+        } catch {
+            return nil
+        }
+    }
 
     private func loadEvents() {
         isLoadingEvents = true
@@ -255,7 +280,7 @@ struct SpotlightView: View {
         }
 
         // Fetch events for this member
-        let upcomingEvents = CalendarManager.shared.fetchNextEvents(for: Array(calendarIDs), limit: 100)
+        let upcomingEvents = CalendarManager.shared.fetchNextEvents(for: Array(calendarIDs), limit: 0)
 
         var eventItems: [EventItem] = []
         for event in upcomingEvents {
@@ -267,6 +292,7 @@ struct SpotlightView: View {
             }()
 
             let displayID = "\(event.id)|\(event.startDate.timeIntervalSince1970)"
+            let driverName = fetchDriverForEvent(event.id)
             eventItems.append(EventItem(
                 id: displayID,
                 eventIdentifier: event.id,
@@ -281,7 +307,8 @@ struct SpotlightView: View {
                 calendarID: event.calendarID,
                 hasRecurrence: event.hasRecurrence,
                 recurrenceRule: nil,
-                isAllDay: event.isAllDay
+                isAllDay: event.isAllDay,
+                driverName: driverName
             ))
         }
 
@@ -324,7 +351,8 @@ struct SpotlightView: View {
                     calendarID: existing.calendarID,
                     memberColors: existing.memberColors,
                     hasRecurrence: existing.hasRecurrence || event.hasRecurrence,
-                    isAllDay: existing.isAllDay
+                    isAllDay: existing.isAllDay,
+                    driverName: existing.driverName ?? event.driverName
                 )
             } else {
                 grouped[key] = GroupedEvent(
@@ -341,7 +369,8 @@ struct SpotlightView: View {
                     calendarID: event.calendarID,
                     memberColors: [event.memberColor],
                     hasRecurrence: event.hasRecurrence,
-                    isAllDay: event.isAllDay
+                    isAllDay: event.isAllDay,
+                    driverName: event.driverName
                 )
             }
         }
@@ -390,6 +419,7 @@ private struct EventItem: Identifiable {
     let hasRecurrence: Bool
     let recurrenceRule: Any?
     let isAllDay: Bool
+    let driverName: String?
 }
 
 private struct GroupedEvent: Identifiable {
@@ -407,6 +437,7 @@ private struct GroupedEvent: Identifiable {
     let memberColors: [UIColor]
     let hasRecurrence: Bool
     let isAllDay: Bool
+    let driverName: String?
 }
 
 #Preview {
