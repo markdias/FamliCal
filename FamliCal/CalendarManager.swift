@@ -223,7 +223,7 @@ final class CalendarManager {
         }
     }
 
-    func createEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, in calendarID: String) -> String? {
+    func createEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, isAllDay: Bool = false, in calendarID: String) -> String? {
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else { return nil }
 
         let event = EKEvent(eventStore: eventStore)
@@ -232,6 +232,7 @@ final class CalendarManager {
         event.endDate = endDate
         event.location = location
         event.notes = notes
+        event.isAllDay = isAllDay
         event.calendar = calendar
 
         do {
@@ -243,7 +244,7 @@ final class CalendarManager {
         }
     }
 
-    func createRecurringEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, recurrenceRule: EKRecurrenceRule, in calendarID: String) -> String? {
+    func createRecurringEvent(title: String, startDate: Date, endDate: Date, location: String?, notes: String?, recurrenceRule: EKRecurrenceRule, isAllDay: Bool = false, in calendarID: String) -> String? {
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else { return nil }
 
         let event = EKEvent(eventStore: eventStore)
@@ -252,6 +253,7 @@ final class CalendarManager {
         event.endDate = endDate
         event.location = location
         event.notes = notes
+        event.isAllDay = isAllDay
         event.addRecurrenceRule(recurrenceRule)
         event.calendar = calendar
 
@@ -271,7 +273,8 @@ final class CalendarManager {
                      startDate: Date,
                      endDate: Date,
                      location: String?,
-                     notes: String?) -> Bool {
+                     notes: String?,
+                     isAllDay: Bool = false) -> Bool {
         // First, find the specific calendar
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
             print("❌ Could not find calendar with ID: \(calendarID)")
@@ -305,6 +308,7 @@ final class CalendarManager {
         event.endDate = endDate
         event.location = location
         event.notes = notes
+        event.isAllDay = isAllDay
 
         do {
             try eventStore.save(event, span: .thisEvent)

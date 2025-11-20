@@ -80,24 +80,31 @@ struct VisibleCalendarsView: View {
                                                 }
                                             }) {
                                                 HStack(spacing: 12) {
-                                                    Circle()
-                                                        .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                                                        .frame(width: 10, height: 10)
+                                                    // Colored dot from first linked calendar
+                                                    if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
+                                                        Circle()
+                                                            .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                                                            .frame(width: 12, height: 12)
+                                                    } else {
+                                                        Circle()
+                                                            .fill(Color.gray)
+                                                            .frame(width: 12, height: 12)
+                                                    }
 
                                                     VStack(alignment: .leading, spacing: 2) {
-                                                        HStack(spacing: 8) {
-                                                            Text(member.name ?? "Unknown")
-                                                                .font(.system(size: 16, weight: .semibold, design: .default))
-                                                                .foregroundColor(.primary)
+                                                        Text(member.name ?? "Unknown")
+                                                            .font(.system(size: 16, weight: .semibold, design: .default))
+                                                            .foregroundColor(.primary)
 
-                                                            Text("(\((member.memberCalendars?.count) ?? 0))")
-                                                                .font(.system(size: 14, weight: .regular, design: .default))
+                                                        HStack(spacing: 4) {
+                                                            Image(systemName: "calendar")
+                                                                .font(.system(size: 11, weight: .regular))
+                                                                .foregroundColor(.gray)
+
+                                                            Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
+                                                                .font(.system(size: 12, weight: .regular, design: .default))
                                                                 .foregroundColor(.gray)
                                                         }
-
-                                                        Text("Family member")
-                                                            .font(.system(size: 12, weight: .regular, design: .default))
-                                                            .foregroundColor(.gray)
                                                     }
 
                                                     Spacer()

@@ -139,6 +139,17 @@ struct FamilyMemberRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Colored dot from first linked calendar
+            if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
+                Circle()
+                    .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                    .frame(width: 12, height: 12)
+            } else {
+                Circle()
+                    .fill(Color.gray)
+                    .frame(width: 12, height: 12)
+            }
+
             // Member info
             VStack(alignment: .leading, spacing: 4) {
                 Text(member.name ?? "Unknown")
@@ -151,7 +162,7 @@ struct FamilyMemberRow: View {
                             .font(.system(size: 12))
                             .foregroundColor(.green)
 
-                        Text("\(memberCals.count) calendar\(memberCals.count != 1 ? "s" : "") linked")
+                        Text("\(memberCals.count) calendar\(memberCals.count != 1 ? "s" : "")")
                             .font(.system(size: 13))
                             .foregroundColor(.gray)
                     }
@@ -176,7 +187,7 @@ struct FamilyMemberRow: View {
                     .font(.system(size: 16))
                     .foregroundColor(.blue)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 4)
 
             // Edit button
             Button(action: onEdit) {
@@ -184,6 +195,7 @@ struct FamilyMemberRow: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.gray)
             }
+            .padding(.horizontal, 4)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)

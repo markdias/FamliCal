@@ -61,42 +61,66 @@ struct SelectMemberCalendarsView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Member info header
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
-                                .frame(width: 48, height: 48)
-                                .overlay(
-                                    Text(member.avatarInitials ?? "?")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.white)
-                                )
+                        // Member info header with gradient background
+                        ZStack {
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF").opacity(0.1),
+                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF").opacity(0.05)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(member.name ?? "Unknown")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.primary)
+                            HStack(spacing: 12) {
+                                // Colored dot from first linked calendar
+                                if let firstCalendar = memberCalendars.first {
+                                    Circle()
+                                        .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                                        .frame(width: 16, height: 16)
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray)
+                                        .frame(width: 16, height: 16)
+                                }
 
-                                Text("\(memberCalendars.count) calendar\(memberCalendars.count != 1 ? "s" : "")")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.gray)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(member.name ?? "Unknown")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.primary)
+
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "calendar.circle.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF"))
+
+                                        Text("\(memberCalendars.count) calendar\(memberCalendars.count != 1 ? "s" : "") linked")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+
+                                Spacer()
                             }
-
-                            Spacer()
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 16)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                        .background(Color(.systemGray6))
                         .cornerRadius(12)
                         .padding(.horizontal, 16)
 
                         // Current calendars section
                         if !memberCalendars.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Linked Calendars")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 16)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "calendar.badge.checkmark")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color.fromHex(member.colorHex ?? "#007AFF"))
+
+                                    Text("Linked Calendars")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 16)
 
                                 VStack(spacing: 0) {
                                     if let autoLinked = autoLinkedCalendar {
@@ -176,10 +200,16 @@ struct SelectMemberCalendarsView: View {
                         // Shared calendars section
                         if !sharedCalendars.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Shared Calendars")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 16)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "person.2.badge.glow.fill")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(.blue)
+
+                                    Text("Shared Calendars")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 16)
 
                                 VStack(spacing: 0) {
                                     ForEach(sharedCalendars, id: \.self) { calendar in
@@ -226,7 +256,7 @@ struct SelectMemberCalendarsView: View {
                         if isLoading {
                             VStack(spacing: 12) {
                                 ProgressView()
-                                    .tint(.blue)
+                                    .tint(Color.fromHex(member.colorHex ?? "#007AFF"))
 
                                 Text("Loading calendars...")
                                     .font(.system(size: 15, weight: .regular))
@@ -236,10 +266,16 @@ struct SelectMemberCalendarsView: View {
                             .padding(.vertical, 24)
                         } else if !calendarsBySource.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Add More Calendars")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 16)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(.green)
+
+                                    Text("Add More Calendars")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 16)
 
                                 VStack(alignment: .leading, spacing: 0) {
                                     ForEach(Array(calendarsBySource.keys.sorted()), id: \.self) { sourceTitle in
@@ -314,12 +350,6 @@ struct SelectMemberCalendarsView: View {
             }
             .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text("Select Calendars")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-            }
         }
         .onAppear {
             loadAvailableCalendars()

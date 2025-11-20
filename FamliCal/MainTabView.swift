@@ -28,6 +28,11 @@ struct MainTabView: View {
     @State private var showingAddEvent = false
     @State private var showingSearch = false
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var theme: AppTheme {
+        themeManager.selectedTheme
+    }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -78,25 +83,29 @@ struct MainTabView: View {
 
     private var compactControlStack: some View {
         HStack(spacing: 12) {
-            SettingsControlButton(imageName: "gearshape.fill") {
+            SettingsControlButton(imageName: "gearshape.fill", action: {
                 showingSettings = true
-            }
+            }, theme: theme)
             .accessibilityLabel("Open settings")
 
-            SettingsControlButton(imageName: "magnifyingglass") {
+            SettingsControlButton(imageName: "magnifyingglass", action: {
                 showingSearch = true
-            }
+            }, theme: theme)
             .accessibilityLabel("Search events")
 
-            SettingsControlButton(imageName: activeView == .events ? "calendar" : "list.bullet.rectangle") {
+            SettingsControlButton(imageName: activeView == .events ? "calendar" : "list.bullet.rectangle", action: {
                 toggleActiveView()
-            }
+            }, theme: theme)
             .accessibilityLabel(activeView == .events ? "Open calendar view" : "Return to event list")
             .accessibilityHint(activeView == .events ? "Switch to calendar grid" : "Switch to events list")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color(.systemBackground).opacity(0.95))
+        .background(theme.floatingControlsBackground)
+        .overlay(
+            Capsule()
+                .stroke(theme.floatingControlsBorder, lineWidth: 1)
+        )
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
     }
@@ -107,7 +116,10 @@ struct MainTabView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 48, height: 48)
-                .background(Color.blue)
+                .background(
+                    Circle()
+                        .fill(theme.accentFillStyle())
+                )
                 .clipShape(Circle())
                 .shadow(color: Color.black.opacity(0.08), radius: 10, y: 5)
         }
@@ -117,14 +129,18 @@ struct MainTabView: View {
     private struct SettingsControlButton: View {
         let imageName: String
         let action: () -> Void
+        let theme: AppTheme
 
         var body: some View {
             Button(action: action) {
                 Image(systemName: imageName)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(theme.floatingControlForeground)
                     .frame(width: 40, height: 40)
-                    .background(Color(.systemGray6))
+                    .background(
+                        Circle()
+                            .fill(theme.chromeOverlay)
+                    )
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -154,4 +170,5 @@ struct MainTabView: View {
 #Preview {
     MainTabView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }

@@ -44,7 +44,7 @@ struct EventSearchView: View {
 
     private var filteredEvents: [SearchEvent] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return allEvents }
+        guard !trimmed.isEmpty else { return [] }
         return allEvents.filter { $0.matches(query: trimmed) }
     }
 

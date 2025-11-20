@@ -12,6 +12,7 @@ import CoreData
 struct FamliCalApp: App {
     let persistenceController = PersistenceController.shared
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @StateObject private var themeManager = ThemeManager()
 
     init() {
         let defaults = UserDefaults.standard
@@ -35,13 +36,18 @@ struct FamliCalApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
-                MainTabView()
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            } else {
-                OnboardingView()
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            Group {
+                if hasCompletedOnboarding {
+                    MainTabView()
+                        .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                        .environmentObject(themeManager)
+                } else {
+                    OnboardingView()
+                        .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                        .environmentObject(themeManager)
+                }
             }
+            .preferredColorScheme(themeManager.selectedTheme.prefersDarkInterface ? .dark : .light)
         }
     }
 }

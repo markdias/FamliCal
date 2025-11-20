@@ -11,11 +11,13 @@ import CoreData
 struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var showingFamilyMembers = false
     @State private var showingVisibleCalendars = false
     @State private var showingDrivers = false
     @State private var showingAppSettings = false
     @State private var showingPermissions = false
+    @State private var showingThemeSettings = false
 
     var body: some View {
         NavigationView {
@@ -50,8 +52,8 @@ struct SettingsView: View {
                             iconName: "paintbrush",
                             iconColor: Color.purple,
                             title: "Theme",
-                            subtitle: "Customize the look and feel",
-                            action: {}
+                            subtitle: themeManager.selectedTheme.displayName,
+                            action: { showingThemeSettings = true }
                         )
                     }
 
@@ -121,6 +123,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingPermissions) {
             PermissionsView()
+        }
+        .sheet(isPresented: $showingThemeSettings) {
+            ThemeSettingsView()
         }
     }
 }

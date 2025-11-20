@@ -13,6 +13,7 @@ import MapKit
 
 struct CalendarView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var themeManager: ThemeManager
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
 
@@ -40,12 +41,15 @@ struct CalendarView: View {
     @State private var contextMenuEvent: UpcomingCalendarEvent? = nil
     @State private var showingDeleteOptions = false
     @State private var availableCalendars: [EKCalendar] = []
+    @Namespace private var animationNamespace
 
     private let calendar: Calendar = {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Monday as first day
         return calendar
     }()
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var secondaryTextColor: Color { theme.mutedTagColor }
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     private static let monthFormatter: DateFormatter = {
@@ -75,6 +79,9 @@ struct CalendarView: View {
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomLeading) {
+                theme.backgroundLayer()
+                    .ignoresSafeArea()
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         // Header with month/year and Today button
@@ -94,8 +101,10 @@ struct CalendarView: View {
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(Color.blue)
-                                    .cornerRadius(6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(theme.accentFillStyle())
+                                    )
                             }
                         }
                         .padding(.horizontal, 16)
@@ -108,7 +117,7 @@ struct CalendarView: View {
                                 ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
                                     Text(day)
                                         .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(secondaryTextColor)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 8)
                                 }
@@ -124,8 +133,14 @@ struct CalendarView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(theme.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(theme.cardStroke, lineWidth: 1)
+                        )
                         .gesture(
                             DragGesture()
                                 .onEnded { value in
@@ -149,18 +164,24 @@ struct CalendarView: View {
                                 HStack {
                                     Image(systemName: "calendar.badge.exclamationmark")
                                         .font(.system(size: 16))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(secondaryTextColor)
 
                                     Text("No events scheduled")
                                         .font(.system(size: 14))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(secondaryTextColor)
 
                                     Spacer()
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(theme.cardBackground)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(theme.cardStroke, lineWidth: 1)
+                                )
                             }
                         }
                     }
@@ -168,7 +189,7 @@ struct CalendarView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 120)
                 }
-                .background(Color(.systemGroupedBackground))
+                .background(Color.clear)
             }
             .navigationBarHidden(true)
         }
@@ -192,98 +213,119 @@ struct CalendarView: View {
             selectedEvent = upcomingEvent
             showingEventDetail = true
         }) {
-            HStack(spacing: isCompact ? 12 : 16) {
-                if isCompact {
+            let timeBoxWidth: CGFloat = 76
+            let spacerWidth: CGFloat = 2
+            let cardCornerRadius: CGFloat = 16
+            let primaryName = groupedEvent.memberNames.first ?? ""
+            let extraCount = max(0, groupedEvent.memberNames.count - 1)
+            let memberLabel = extraCount > 0 ? "\(primaryName) +\(extraCount)" : primaryName
+            let timeLabel = groupedEvent.isAllDay ? "All day" : (groupedEvent.startTime ?? "")
+
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                    .fill(theme.cardBackground)
+
+                memberColorBackground(for: groupedEvent)
+                    .clipShape(RoundedCorner(radius: cardCornerRadius, corners: [.topLeft, .bottomLeft]))
+                    .frame(width: timeBoxWidth)
+
+                HStack(spacing: 0) {
+                    // Time block
                     ZStack {
                         memberColorBackground(for: groupedEvent)
-                        Text("all day")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 80, height: 38)
-                    .cornerRadius(10)
-                } else {
-                    VStack(spacing: 2) {
-                        if let startTime = groupedEvent.startTime {
-                            Text(startTime)
-                                .font(.system(size: 24, weight: .bold))
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(timeLabel)
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.white)
-                        } else {
-                            Text("all day")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
+                                .allowsTightening(true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Spacer(minLength: 0)
+
+                            if !memberLabel.isEmpty {
+                                Text(memberLabel)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
+                                    .allowsTightening(true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 10)
                     }
-                    .frame(width: 90, height: 70)
-                    .background {
-                        memberColorBackground(for: groupedEvent)
-                    }
-                    .cornerRadius(8)
-                }
+                    .frame(width: timeBoxWidth)
+                    .frame(maxHeight: .infinity)
+                    .clipShape(RoundedCorner(radius: cardCornerRadius, corners: [.topLeft, .bottomLeft]))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    // Title
-                    Text(groupedEvent.title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
+                    // Thin white spacer
+                    Color.white
+                        .frame(width: spacerWidth)
+                        .frame(maxHeight: .infinity)
 
-                    // Member names
-                    Text(groupedEvent.memberNames.joined(separator: ", "))
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        // Title
+                        Text(groupedEvent.title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
 
-                    // Time
-                    let timeText = groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-")
-                    HStack(spacing: 8) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
-                        Text(timeText)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                    }
+                        // Time
+                        let timeText = groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-")
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 12))
+                                .foregroundColor(secondaryTextColor)
+                            Text(timeText)
+                                .font(.system(size: 13))
+                                .foregroundColor(secondaryTextColor)
+                        }
 
-                    // Location (first line only) - tappable to open maps
-                    if let location = groupedEvent.location {
-                        let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
-                        Button(action: { MapsUtility.openLocation(firstLine, in: defaultMapsApp) }) {
+                        // Location (first line only) - tappable to open maps
+                        if let location = groupedEvent.location {
+                            let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                            Button(action: { MapsUtility.openLocation(firstLine, in: defaultMapsApp) }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "location.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(secondaryTextColor)
+                                    Text(firstLine)
+                                        .font(.system(size: 11.5))
+                                        .foregroundColor(secondaryTextColor)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+
+                        // Driver (if available)
+                        if let driverName = groupedEvent.driverName {
                             HStack(spacing: 8) {
-                                Image(systemName: "location.fill")
+                                Image(systemName: "car.fill")
                                     .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                                Text(firstLine)
+                                    .foregroundColor(secondaryTextColor)
+                                Text(driverName)
                                     .font(.system(size: 13))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(secondaryTextColor)
                                     .lineLimit(1)
                             }
                         }
-                    }
 
-                    // Driver (if available)
-                    if let driverName = groupedEvent.driverName {
-                        HStack(spacing: 8) {
-                            Image(systemName: "car.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.gray)
-                            Text(driverName)
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                        }
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, isCompact ? 8 : 10)
+                    .padding(.horizontal, 12)
 
                     Spacer(minLength: 0)
                 }
-
-                Spacer()
             }
-            .frame(minHeight: isCompact ? 52 : 70)
-            .padding(.horizontal, 14)
-            .padding(.vertical, isCompact ? 8 : 12)
-            .background(Color.white.opacity(0.85))
-            .cornerRadius(12)
+            .frame(maxWidth: .infinity, minHeight: isCompact ? 70 : 84, alignment: .leading)
+            .overlay(
+                RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                    .stroke(theme.cardStroke, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -439,59 +481,60 @@ struct CalendarView: View {
         let hasEvents = dayEvents[formatDateKey(date)] != nil && !dayEvents[formatDateKey(date)]!.isEmpty
         let eventCount = dayEvents[formatDateKey(date)]?.count ?? 0
 
-        return VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .center, spacing: 4) {
             Text(Self.dayFormatter.string(from: date))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(
                     isSelected ? .white
-                    : !isCurrentMonth ? .gray.opacity(0.5)
-                    : isToday ? .blue
+                    : !isCurrentMonth ? secondaryTextColor.opacity(0.5)
+                    : isToday ? theme.accentColor
                     : .primary
                 )
-
-            Spacer()
+                .frame(width: 24, height: 24)
+                .background(
+                    ZStack {
+                        if isSelected {
+                            theme.accentFillStyle()
+                                .clipShape(Circle())
+                                .matchedGeometryEffect(id: "selectedDate", in: animationNamespace)
+                        }
+                        if isToday && !isSelected {
+                            Circle()
+                                .stroke(theme.accentColor, lineWidth: 2)
+                        }
+                    }
+                )
 
             // Event indicators (dots)
             if hasEvents {
-                HStack(spacing: 1) {
+                HStack(spacing: 2) {
                     ForEach(0..<min(3, eventCount), id: \.self) { index in
                         Circle()
                             .fill(Color(uiColor: dayEvents[formatDateKey(date)]![index].color))
-                            .frame(width: 3, height: 3)
+                            .frame(width: 5, height: 5)
                     }
-                    if eventCount > 3 {
-                        Text("+")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
+                }
+            } else {
+                Spacer().frame(height: 5)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    isToday && !isSelected ? theme.accentColor.opacity(0.1) : Color.clear
+                )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isCurrentMonth {
+                withAnimation(.spring()) {
+                    selectedDate = date
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(6)
-        .frame(minHeight: 52)
-        .background(
-            isSelected ? Color.blue
-            : !isCurrentMonth ? Color(.systemGray5).opacity(0.3)
-            : isToday ? Color.blue.opacity(0.15)
-            : hasEvents ? Color.blue.opacity(0.06)
-            : Color(.systemGray6)
-        )
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(
-                    isToday && !isSelected ? Color.blue.opacity(0.3) : Color.clear,
-                    lineWidth: 2
-                )
-        )
-        .onTapGesture {
-            if isCurrentMonth {
-                selectedDate = date
-            }
-        }
-        .opacity(isCurrentMonth ? 1 : 0.6)
+        .opacity(isCurrentMonth ? 1 : 0.5)
     }
 
     private func getDaysInMonth() -> [Date] {
@@ -540,16 +583,20 @@ struct CalendarView: View {
     }
 
     private func previousMonth() {
-        if let newMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) {
-            currentMonth = newMonth
-            updateSelectedDateForMonth(newMonth)
+        withAnimation {
+            if let newMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) {
+                currentMonth = newMonth
+                updateSelectedDateForMonth(newMonth)
+            }
         }
     }
 
     private func nextMonth() {
-        if let newMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) {
-            currentMonth = newMonth
-            updateSelectedDateForMonth(newMonth)
+        withAnimation {
+            if let newMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) {
+                currentMonth = newMonth
+                updateSelectedDateForMonth(newMonth)
+            }
         }
     }
 
@@ -855,4 +902,5 @@ struct GroupedDayEvent: Identifiable {
 #Preview {
     CalendarView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }

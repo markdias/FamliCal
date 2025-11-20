@@ -155,81 +155,127 @@ struct SpotlightView: View {
     }
 
     private func eventCard(_ event: GroupedEvent) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            // Left side: Date box with color
-            VStack(spacing: 2) {
-                Text(Self.dayOfWeekFormatter.string(from: event.startDate))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
+        let dateBoxWidth: CGFloat = 64
+        let cardCornerRadius: CGFloat = 16
 
-                Text(Self.dayFormatter.string(from: event.startDate))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+        return ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .fill(Color(uiColor: .systemBackground))
 
-                Text(Self.monthFormatter.string(from: event.startDate))
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.white.opacity(0.9))
+            Group {
+                if event.memberColors.count > 1 {
+                    LinearGradient(
+                        gradient: Gradient(colors: event.memberColors.map { Color(uiColor: $0) }),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else {
+                    Color(uiColor: event.memberColor)
+                }
             }
-            .frame(width: 60, height: 70)
-            .background(Color(uiColor: event.memberColor))
-            .cornerRadius(8)
+            .clipShape(RoundedCorner(radius: cardCornerRadius, corners: [.topLeft, .bottomLeft]))
+            .frame(width: dateBoxWidth)
 
-            // Right side: Event details
-            VStack(alignment: .leading, spacing: 4) {
-                // Title
-                Text(event.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+            HStack(spacing: 0) {
+                VStack(spacing: 2) {
+                    Text(Self.dayOfWeekFormatter.string(from: event.startDate))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
 
-                // Time
-                HStack(spacing: 8) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    Text(event.isAllDay ? "all day" : (event.timeRange ?? "-"))
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
+                    Text(Self.dayFormatter.string(from: event.startDate))
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+
+                    Text(Self.monthFormatter.string(from: event.startDate))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
                 }
+                .frame(width: dateBoxWidth)
+                .padding(.vertical, 8)
 
-                // Location (first line only)
-                if let location = event.location {
-                    let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
-                    HStack(spacing: 8) {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
-                        Text(firstLine)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(event.title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+
+                        Spacer(minLength: 0)
+
+                        if !event.isAllDay, let timeRange = event.timeRange {
+                            let startTime = timeRange.split(separator: "–").first.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                            Text(startTime)
+                                .font(.custom("Fira Mono", size: 14))
+                                .fontWeight(.semibold)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                                .frame(width: 36, alignment: .trailing)
+                        }
                     }
-                }
 
-                // Driver (if available)
-                if let driverName = event.driverName {
-                    HStack(spacing: 8) {
-                        Image(systemName: "car.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
-                        Text(driverName)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+                    if let location = event.location {
+                        let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                        HStack(spacing: 6) {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            Text(firstLine)
+                                .font(.system(size: 11.5))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+
+                            Spacer(minLength: 0)
+
+                            if !event.isAllDay, let timeRange = event.timeRange {
+                                let endTime = timeRange.split(separator: "–").last.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                                Text(endTime)
+                                    .font(.custom("Fira Mono", size: 14))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                                    .frame(width: 36, alignment: .trailing)
+                            }
+                        }
+                    } else if !event.isAllDay, let timeRange = event.timeRange {
+                        let endTime = timeRange.split(separator: "–").last.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Text(endTime)
+                                .font(.custom("Fira Mono", size: 14))
+                                .fontWeight(.semibold)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                                .frame(width: 36, alignment: .trailing)
+                        }
                     }
+
+                    if let driverName = event.driverName {
+                        HStack(spacing: 8) {
+                            Image(systemName: "car.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            Text(driverName)
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
 
                 Spacer(minLength: 0)
             }
-
-            Spacer()
         }
-        .frame(minHeight: 70)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(uiColor: .systemBackground))
+        .frame(maxWidth: .infinity, minHeight: dateBoxWidth, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .stroke(Color(.systemGray4), lineWidth: 1)
         )
     }
 

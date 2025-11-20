@@ -15,6 +15,7 @@ struct FamilyView: View {
     var onAddEventRequested: (() -> Void)? = nil
     var onChangeViewRequested: (() -> Void)? = nil
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var themeManager: ThemeManager
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
     @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
@@ -46,6 +47,8 @@ struct FamilyView: View {
     @State private var availableCalendars: [EKCalendar] = []
 
     private let calendar = Calendar.current
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var secondaryTextColor: Color { theme.mutedTagColor }
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -80,6 +83,9 @@ struct FamilyView: View {
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomLeading) {
+                theme.backgroundLayer()
+                    .ignoresSafeArea()
+
                 mainScrollView
                     .navigationBarHidden(true)
 
@@ -132,7 +138,7 @@ struct FamilyView: View {
             .padding(.top, 32)
             .padding(.bottom, 32)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.clear)
         .refreshable {
             await reloadEvents()
         }
@@ -159,28 +165,32 @@ struct FamilyView: View {
 
     private var controlStack: some View {
         HStack(spacing: 12) {
-            ControlCircleButton(imageName: "gearshape.fill") {
+            ControlCircleButton(imageName: "gearshape.fill", action: {
                 showingSettings = true
-            }
+            }, theme: theme)
             .accessibilityLabel("Open settings")
 
-            ControlCircleButton(imageName: "magnifyingglass") {
+            ControlCircleButton(imageName: "magnifyingglass", action: {
                 if let action = onSearchRequested {
                     action()
                 } else {
                     showingSearch = true
                 }
-            }
+            }, theme: theme)
             .accessibilityLabel("Search events")
 
-            ControlCircleButton(imageName: "calendar") {
+            ControlCircleButton(imageName: "calendar", action: {
                 onChangeViewRequested?()
-            }
+            }, theme: theme)
             .accessibilityLabel("Switch view")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color(.systemBackground).opacity(0.95))
+        .background(theme.floatingControlsBackground)
+        .overlay(
+            Capsule()
+                .stroke(theme.floatingControlsBorder, lineWidth: 1)
+        )
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
     }
@@ -197,7 +207,10 @@ struct FamilyView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 48, height: 48)
-                .background(Color.blue)
+                .background(
+                    Circle()
+                        .fill(theme.accentFillStyle())
+                )
                 .clipShape(Circle())
                 .shadow(color: Color.black.opacity(0.08), radius: 10, y: 5)
         }
@@ -207,14 +220,18 @@ struct FamilyView: View {
     private struct ControlCircleButton: View {
         let imageName: String
         let action: () -> Void
+        let theme: AppTheme
 
         var body: some View {
             Button(action: action) {
                 Image(systemName: imageName)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(theme.floatingControlForeground)
                     .frame(width: 40, height: 40)
-                    .background(Color(.systemGray6))
+                    .background(
+                        Circle()
+                            .fill(theme.chromeOverlay)
+                    )
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -235,11 +252,11 @@ struct FamilyView: View {
     private var loadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
-                .tint(.blue)
+                .tint(theme.accentColor)
 
             Text("Fetching upcoming events...")
                 .font(.system(size: 15))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
@@ -249,14 +266,14 @@ struct FamilyView: View {
         VStack(spacing: 12) {
             Image(systemName: "calendar.badge.plus")
                 .font(.system(size: 48))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
 
             Text("No upcoming events")
                 .font(.system(size: 16, weight: .semibold))
 
             Text("Link family calendars in Settings to see everyone's next plans.")
                 .font(.system(size: 14))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
         }
@@ -300,7 +317,7 @@ struct FamilyView: View {
                                 // Member name header
                                 Text(memberGroup.memberName)
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(secondaryTextColor)
                                     .padding(.horizontal, 16)
 
                                 // Events for this member (limited by eventsPerPerson, only future events)
@@ -420,25 +437,31 @@ struct FamilyView: View {
                 // Day name and date
                 Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.gray)
+                    .foregroundColor(secondaryTextColor)
 
                 // Time on its own line to avoid truncation
                 if let timeRange = event.timeRange {
                     Text(timeRange)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(secondaryTextColor)
                 }
 
                 // Status on separate line
                 Text(statusText)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.gray)
+                    .foregroundColor(secondaryTextColor)
             }
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
             .padding(12)
         }
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(uiColor: .systemBackground)))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(theme.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
@@ -459,25 +482,16 @@ struct FamilyView: View {
     }
 
     private func eventCard(_ groupedEvent: GroupedEvent) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            // Left side: Date box with color
-            VStack(spacing: 2) {
-                Text(Self.dayOfWeekFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
+        let dateBoxWidth: CGFloat = 64
+        let cardCornerRadius: CGFloat = 16
 
-                Text(Self.dayFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+        return ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .fill(theme.cardBackground)
 
-                Text(Self.monthFormatter.string(from: groupedEvent.startDate))
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.white.opacity(0.9))
-            }
-            .frame(width: 60, height: 70)
-            .background {
+            // Colored date panel that fills the card height with rounded left edge
+            Group {
                 if groupedEvent.memberColors.count > 1 {
-                    // Gradient fade between multiple colors
                     LinearGradient(
                         gradient: Gradient(colors: groupedEvent.memberColors.map { Color(uiColor: $0) }),
                         startPoint: .topLeading,
@@ -487,70 +501,113 @@ struct FamilyView: View {
                     Color(uiColor: groupedEvent.memberColor)
                 }
             }
-            .cornerRadius(8)
+            .clipShape(RoundedCorner(radius: cardCornerRadius, corners: [.topLeft, .bottomLeft]))
+            .frame(width: dateBoxWidth)
 
-            // Right side: Event details
-            VStack(alignment: .leading, spacing: 4) {
-                // Title
-                Text(groupedEvent.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+            HStack(spacing: 0) {
+                VStack(spacing: 2) {
+                    Text(Self.dayOfWeekFormatter.string(from: groupedEvent.startDate))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
 
-                // Member names (all people sharing this event)
-                Text(groupedEvent.memberNames.joined(separator: ", "))
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundColor(.gray)
-                    .lineLimit(2)
+                    Text(Self.dayFormatter.string(from: groupedEvent.startDate))
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
 
-                // Time
-                HStack(spacing: 8) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    Text(groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-"))
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
+                    Text(Self.monthFormatter.string(from: groupedEvent.startDate))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
                 }
+                .frame(width: dateBoxWidth)
+                .padding(.vertical, 8)
 
-                // Location (first line only)
-                if let location = groupedEvent.location {
-                    let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
-                    HStack(spacing: 8) {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
+                VStack(alignment: .leading, spacing: 4) {
+                    // Title with start time on the right
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(groupedEvent.title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+
+                        Spacer(minLength: 0)
+
+                        if !groupedEvent.isAllDay, let timeRange = groupedEvent.timeRange {
+                            let startTime = timeRange.split(separator: "–").first.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                            Text(startTime)
+                                .font(.custom("Fira Mono", size: 14))
+                                .fontWeight(.semibold)
+                                .foregroundColor(secondaryTextColor)
+                                .lineLimit(1)
+                                .frame(width: 36, alignment: .trailing)
+                        }
+                    }
+
+                    // Location with end time
+                    if let location = groupedEvent.location {
+                        let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                        HStack(spacing: 6) {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(secondaryTextColor)
                         Text(firstLine)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 11.5))
+                            .foregroundColor(secondaryTextColor)
                             .lineLimit(1)
-                    }
-                }
 
-                // Driver (if available)
-                if let driverName = groupedEvent.driverName {
-                    HStack(spacing: 8) {
-                        Image(systemName: "car.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
-                        Text(driverName)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+                            Spacer(minLength: 0)
+
+                            if !groupedEvent.isAllDay, let timeRange = groupedEvent.timeRange {
+                                let endTime = timeRange.split(separator: "–").last.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                                Text(endTime)
+                                    .font(.custom("Fira Mono", size: 14))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(secondaryTextColor)
+                                    .lineLimit(1)
+                                    .frame(width: 36, alignment: .trailing)
+                            }
+                        }
+                    } else if !groupedEvent.isAllDay, let timeRange = groupedEvent.timeRange {
+                        // Show time if no location
+                        let endTime = timeRange.split(separator: "–").last.map(String.init).map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Text(endTime)
+                                .font(.custom("Fira Mono", size: 14))
+                                .fontWeight(.semibold)
+                                .foregroundColor(secondaryTextColor)
+                                .lineLimit(1)
+                                .frame(width: 36, alignment: .trailing)
+                        }
                     }
+
+                    // Driver (if available)
+                    if let driverName = groupedEvent.driverName {
+                        HStack(spacing: 8) {
+                            Image(systemName: "car.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(secondaryTextColor)
+                            Text(driverName)
+                                .font(.system(size: 12))
+                                .foregroundColor(secondaryTextColor)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
 
                 Spacer(minLength: 0)
             }
-
-            Spacer()
         }
-        .frame(minHeight: 70)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(uiColor: .systemBackground))
+        .frame(maxWidth: .infinity, minHeight: dateBoxWidth, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
         )
     }
 
@@ -1084,6 +1141,28 @@ private struct MemberEventGroup: Identifiable {
     let upcomingEvents: [GroupedEvent]
 }
 
+// MARK: - Extensions
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect,
+                                byRoundingCorners: corners,
+                                cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
 #Preview {
-    FamilyView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    FamilyView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }
