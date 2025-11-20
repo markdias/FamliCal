@@ -508,7 +508,7 @@ struct FamilyView: View {
                     Image(systemName: "clock")
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
-                    Text(groupedEvent.timeRange ?? "All Day")
+                    Text(groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 }

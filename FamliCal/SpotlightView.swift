@@ -187,7 +187,7 @@ struct SpotlightView: View {
                     Image(systemName: "clock")
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
-                    Text(event.timeRange ?? "All Day")
+                    Text(event.isAllDay ? "all day" : (event.timeRange ?? "-"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 }

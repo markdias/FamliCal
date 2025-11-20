@@ -96,390 +96,20 @@ struct EditEventView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Title Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Title")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        TextField("Event Title", text: $eventTitle)
-                            .font(.system(size: 16, weight: .regular))
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                    }
-
-                    // Location Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Location")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Location", text: $locationName)
-                                .font(.system(size: 16, weight: .regular))
-                                .padding(12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                                .onChange(of: locationName) { _, newValue in
-                                    if isApplyingLocationSelection {
-                                        isApplyingLocationSelection = false
-                                        return
-                                    }
-
-                                    searchCompleter.query = newValue
-                                    if newValue.isEmpty {
-                                        locationAddress = ""
-                                    }
-                                }
-
-                            if !searchCompleter.results.isEmpty {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
-                                        Button(action: {
-                                            isApplyingLocationSelection = true
-                                            locationName = result.title
-                                            locationAddress = result.subtitle
-                                            searchCompleter.query = ""
-                                            searchCompleter.results = []
-                                        }) {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(result.title)
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(.primary)
-                                                Text(result.subtitle)
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.vertical, 8)
-                                            .padding(.horizontal, 12)
-                                        }
-                                        if index < searchCompleter.results.count - 1 {
-                                            Divider()
-                                        }
-                                    }
-                                }
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-
-                    // Time Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Time")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            // All-day toggle
-                            HStack {
-                                Text("All-day")
-                                    .font(.system(size: 16, weight: .regular))
-                                Spacer()
-                                Toggle("", isOn: $isAllDay)
-                                    .tint(.blue)
-                            }
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-
-                            // Starts
-                            if !isAllDay {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Starts")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(.gray)
-
-                                    HStack(spacing: 12) {
-                                        Button(action: { showingDatePicker.toggle() }) {
-                                            Text(formattedDate(eventDate))
-                                                .font(.system(size: 15, weight: .regular))
-                                                .foregroundColor(.black)
-                                                .padding(10)
-                                                .background(Color(.systemGray6))
-                                                .cornerRadius(6)
-                                        }
-
-                                        Button(action: { showingStartTimePicker.toggle() }) {
-                                            Text(formattedTime(startTime))
-                                                .font(.system(size: 15, weight: .regular))
-                                                .foregroundColor(.black)
-                                                .padding(10)
-                                                .background(Color(.systemGray6))
-                                                .cornerRadius(6)
-                                        }
-                                    }
-
-                                    if showingDatePicker {
-                                        DatePicker(
-                                            "Select Date",
-                                            selection: $eventDate,
-                                            displayedComponents: .date
-                                        )
-                                        .datePickerStyle(.graphical)
-                                        .environment(\.calendar, calendarWithMondayAsFirstDay)
-                                    }
-
-                                    if showingStartTimePicker {
-                                        DatePicker(
-                                            "Start Time",
-                                            selection: $startTime,
-                                            displayedComponents: .hourAndMinute
-                                        )
-                                        .datePickerStyle(.wheel)
-                                    }
-                                }
-                                .padding(12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-
-                                // Ends
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Ends")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(.gray)
-
-                                    HStack(spacing: 12) {
-                                        Button(action: { showingDatePicker.toggle() }) {
-                                            Text(formattedDate(eventDate))
-                                                .font(.system(size: 15, weight: .regular))
-                                                .foregroundColor(.black)
-                                                .padding(10)
-                                                .background(Color(.systemGray6))
-                                                .cornerRadius(6)
-                                        }
-
-                                        Button(action: { showingEndTimePicker.toggle() }) {
-                                            Text(formattedTime(endTime))
-                                                .font(.system(size: 15, weight: .regular))
-                                                .foregroundColor(.black)
-                                                .padding(10)
-                                                .background(Color(.systemGray6))
-                                                .cornerRadius(6)
-                                        }
-                                    }
-
-                                    if showingEndTimePicker {
-                                        DatePicker(
-                                            "End Time",
-                                            selection: $endTime,
-                                            displayedComponents: .hourAndMinute
-                                        )
-                                        .datePickerStyle(.wheel)
-                                    }
-                                }
-                                .padding(12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-
-                    // Show as Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Show as")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        HStack {
-                            Text("Show as")
-                                .font(.system(size: 16, weight: .regular))
-                            Spacer()
-                            Menu {
-                                ForEach(ShowAsOption.allCases, id: \.self) { option in
-                                    Button(option.rawValue) {
-                                        showAsOption = option
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Text(showAsOption.rawValue)
-                                        .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(.black)
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        }
-                        .padding(12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-
-                    // Repeat Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Repeat")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        HStack {
-                            Text("Repeat")
-                                .font(.system(size: 16, weight: .regular))
-                            Spacer()
-                            Menu {
-                                ForEach(RepeatOption.allCases, id: \.self) { option in
-                                    Button(option.rawValue) {
-                                        repeatOption = option
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Text(repeatOption.rawValue)
-                                        .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(.black)
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        }
-                        .padding(12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-
-                    // Alert Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Alert")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        HStack {
-                            Text("Alert")
-                                .font(.system(size: 16, weight: .regular))
-                            Spacer()
-                            Menu {
-                                ForEach(AlertOption.allCases, id: \.self) { option in
-                                    Button(option.rawValue) {
-                                        alertOption = option
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Text(alertOption.rawValue)
-                                        .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(.black)
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        }
-                        .padding(12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-
-                    // Notes Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Notes")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-
-                        TextEditor(text: $notes)
-                            .font(.system(size: 16, weight: .regular))
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                            .frame(height: 120)
-                    }
-
-                    // Driver Section
-                    if !allAvailableDrivers.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Driver")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.black)
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Image(systemName: "car.fill")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(.gray)
-                                    Text("Driver")
-                                        .font(.system(size: 16, weight: .regular))
-                                    Spacer()
-                                    Menu {
-                                        Button(action: { selectedDriver = nil }) {
-                                            HStack {
-                                                Text("None")
-                                                if selectedDriver == nil {
-                                                    Image(systemName: "checkmark")
-                                                }
-                                            }
-                                        }
-                                        Divider()
-                                        ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
-                                            Button(action: { selectedDriver = driverWrapper }) {
-                                                HStack {
-                                                    Text(driverWrapper.name)
-                                                    if selectedDriver?.id == driverWrapper.id {
-                                                        Image(systemName: "checkmark")
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(selectedDriver?.name ?? "None")
-                                                .font(.system(size: 16, weight: .regular))
-                                                .foregroundColor(.black)
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
-                                }
-                                .padding(12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-
-                                if let driver = selectedDriver, driver.isFamilyMember {
-                                    HStack {
-                                        Image(systemName: "clock.fill")
-                                            .font(.system(size: 14, weight: .regular))
-                                            .foregroundColor(.gray)
-                                        Text("Travel Time")
-                                            .font(.system(size: 16, weight: .regular))
-                                        Spacer()
-                                        Menu {
-                                            ForEach([5, 10, 15, 20, 25, 30, 45, 60], id: \.self) { minutes in
-                                                Button(action: { driverTravelTimeMinutes = minutes }) {
-                                                    HStack {
-                                                        Text("\(minutes) min")
-                                                        if driverTravelTimeMinutes == minutes {
-                                                            Image(systemName: "checkmark")
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } label: {
-                                            HStack {
-                                                Text("\(driverTravelTimeMinutes) min")
-                                                    .font(.system(size: 16, weight: .regular))
-                                                    .foregroundColor(.black)
-                                                Image(systemName: "chevron.right")
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        }
-                                    }
-                                    .padding(12)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
-                                }
-                            }
-                        }
-                    }
-
+                    titleSection
+                    locationSection
+                    timeSection
+                    driverSection
+                    showAsSection
+                    repeatSection
+                    alertSection
+                    notesSection
                     Spacer()
                         .frame(height: 20)
                 }
                 .padding(16)
             }
+            .background(Color(.systemGray6))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -932,6 +562,409 @@ struct EditEventView: View {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Monday
         return calendar
+    }
+
+    // MARK: - Section Builders
+
+    @ViewBuilder
+    private var timeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Time")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            VStack(alignment: .leading, spacing: 12) {
+                // All-day toggle
+                HStack {
+                    Text("All-day")
+                        .font(.system(size: 16, weight: .regular))
+                    Spacer()
+                    Toggle("", isOn: $isAllDay)
+                        .tint(.blue)
+                }
+                .padding(12)
+                .background(Color.white)
+                .cornerRadius(8)
+
+                // Starts
+                if !isAllDay {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Starts")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.gray)
+
+                        HStack(spacing: 12) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundColor(.black)
+                                    .padding(10)
+                                    .background(Color.white)
+                                    .cornerRadius(6)
+                            }
+
+                            Button(action: { showingStartTimePicker.toggle() }) {
+                                Text(formattedTime(startTime))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundColor(.black)
+                                    .padding(10)
+                                    .background(Color.white)
+                                    .cornerRadius(6)
+                            }
+                        }
+
+                        if showingDatePicker {
+                            DatePicker(
+                                "Select Date",
+                                selection: $eventDate,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.graphical)
+                            .environment(\.calendar, calendarWithMondayAsFirstDay)
+                        }
+
+                        if showingStartTimePicker {
+                            DatePicker(
+                                "Start Time",
+                                selection: $startTime,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .datePickerStyle(.wheel)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.white)
+                    .cornerRadius(8)
+
+                    // Ends
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ends")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.gray)
+
+                        HStack(spacing: 12) {
+                            Button(action: { showingDatePicker.toggle() }) {
+                                Text(formattedDate(eventDate))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundColor(.black)
+                                    .padding(10)
+                                    .background(Color.white)
+                                    .cornerRadius(6)
+                            }
+
+                            Button(action: { showingEndTimePicker.toggle() }) {
+                                Text(formattedTime(endTime))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundColor(.black)
+                                    .padding(10)
+                                    .background(Color.white)
+                                    .cornerRadius(6)
+                            }
+                        }
+
+                        if showingEndTimePicker {
+                            DatePicker(
+                                "End Time",
+                                selection: $endTime,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .datePickerStyle(.wheel)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var showAsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Show as")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            HStack {
+                Text("Show as")
+                    .font(.system(size: 16, weight: .regular))
+                Spacer()
+                Menu {
+                    ForEach(ShowAsOption.allCases, id: \.self) { option in
+                        Button(option.rawValue) {
+                            showAsOption = option
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(showAsOption.rawValue)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.black)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white)
+            .cornerRadius(8)
+        }
+    }
+
+    @ViewBuilder
+    private var repeatSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Repeat")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            HStack {
+                Text("Repeat")
+                    .font(.system(size: 16, weight: .regular))
+                Spacer()
+                Menu {
+                    ForEach(RepeatOption.allCases, id: \.self) { option in
+                        Button(option.rawValue) {
+                            repeatOption = option
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(repeatOption.rawValue)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.black)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white)
+            .cornerRadius(8)
+        }
+    }
+
+    @ViewBuilder
+    private var alertSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Alert")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            HStack {
+                Text("Alert")
+                    .font(.system(size: 16, weight: .regular))
+                Spacer()
+                Menu {
+                    ForEach(AlertOption.allCases, id: \.self) { option in
+                        Button(option.rawValue) {
+                            alertOption = option
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(alertOption.rawValue)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.black)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white)
+            .cornerRadius(8)
+        }
+    }
+
+    @ViewBuilder
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Notes")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            TextEditor(text: $notes)
+                .font(.system(size: 16, weight: .regular))
+                .padding(12)
+                .background(Color.white)
+                .cornerRadius(8)
+                .frame(height: 120)
+        }
+    }
+
+    @ViewBuilder
+    private var driverSection: some View {
+        if !allAvailableDrivers.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Driver")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.black)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "car.fill")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.gray)
+                        Text("Driver")
+                            .font(.system(size: 16, weight: .regular))
+                        Spacer()
+                        Menu {
+                            Button(action: { selectedDriver = nil }) {
+                                HStack {
+                                    Text("None")
+                                    if selectedDriver == nil {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                            Divider()
+                            ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
+                                Button(action: { selectedDriver = driverWrapper }) {
+                                    HStack {
+                                        Text(driverWrapper.name)
+                                        if selectedDriver?.id == driverWrapper.id {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(selectedDriver?.name ?? "None")
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.black)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.white)
+                    .cornerRadius(8)
+
+                    if let driver = selectedDriver, driver.isFamilyMember {
+                        HStack {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.gray)
+                            Text("Travel Time")
+                                .font(.system(size: 16, weight: .regular))
+                            Spacer()
+                            Menu {
+                                ForEach([5, 10, 15, 20, 25, 30, 45, 60], id: \.self) { minutes in
+                                    Button(action: { driverTravelTimeMinutes = minutes }) {
+                                        HStack {
+                                            Text("\(minutes) min")
+                                            if driverTravelTimeMinutes == minutes {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text("\(driverTravelTimeMinutes) min")
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.black)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                        .padding(12)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Title")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            TextField("Event Title", text: $eventTitle)
+                .font(.system(size: 16, weight: .regular))
+                .padding(12)
+                .background(Color.white)
+                .cornerRadius(8)
+        }
+    }
+
+    @ViewBuilder
+    private var locationSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Location")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.black)
+
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Location", text: $locationName)
+                    .font(.system(size: 16, weight: .regular))
+                    .padding(12)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .onChange(of: locationName) { _, newValue in
+                        if isApplyingLocationSelection {
+                            isApplyingLocationSelection = false
+                            return
+                        }
+
+                        searchCompleter.query = newValue
+                        if newValue.isEmpty {
+                            locationAddress = ""
+                        }
+                    }
+
+                if !searchCompleter.results.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
+                            Button(action: {
+                                isApplyingLocationSelection = true
+                                locationName = result.title
+                                locationAddress = result.subtitle
+                                searchCompleter.query = ""
+                                searchCompleter.results = []
+                            }) {
+                                locationSuggestion(result)
+                            }
+
+                            if index < searchCompleter.results.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                    .background(Color.white)
+                    .cornerRadius(8)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func locationSuggestion(_ result: MKLocalSearchCompletion) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(result.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
+            Text(result.subtitle)
+                .font(.system(size: 12))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
     }
 }
 

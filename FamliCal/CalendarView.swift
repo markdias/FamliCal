@@ -186,6 +186,186 @@ struct CalendarView: View {
     }
 
     @ViewBuilder
+    private func dayEventButton(for groupedEvent: GroupedDayEvent, isCompact: Bool) -> some View {
+        let upcomingEvent = makeUpcomingEvent(from: groupedEvent)
+        Button(action: {
+            selectedEvent = upcomingEvent
+            showingEventDetail = true
+        }) {
+            HStack(spacing: isCompact ? 12 : 16) {
+                if isCompact {
+                    ZStack {
+                        memberColorBackground(for: groupedEvent)
+                        Text("all day")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 80, height: 38)
+                    .cornerRadius(10)
+                } else {
+                    VStack(spacing: 2) {
+                        if let startTime = groupedEvent.startTime {
+                            Text(startTime)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                        } else {
+                            Text("all day")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .frame(width: 90, height: 70)
+                    .background {
+                        memberColorBackground(for: groupedEvent)
+                    }
+                    .cornerRadius(8)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    // Title
+                    Text(groupedEvent.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    // Member names
+                    Text(groupedEvent.memberNames.joined(separator: ", "))
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+
+                    // Time
+                    let timeText = groupedEvent.isAllDay ? "all day" : (groupedEvent.timeRange ?? "-")
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                        Text(timeText)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                    }
+
+                    // Location (first line only) - tappable to open maps
+                    if let location = groupedEvent.location {
+                        let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
+                        Button(action: { MapsUtility.openLocation(firstLine, in: defaultMapsApp) }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                Text(firstLine)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+
+                    // Driver (if available)
+                    if let driverName = groupedEvent.driverName {
+                        HStack(spacing: 8) {
+                            Image(systemName: "car.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            Text(driverName)
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                Spacer()
+            }
+            .frame(minHeight: isCompact ? 52 : 70)
+            .padding(.horizontal, 14)
+            .padding(.vertical, isCompact ? 8 : 12)
+            .background(Color.white.opacity(0.85))
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            dayEventContextMenu(for: upcomingEvent)
+        }
+    }
+
+    @ViewBuilder
+    private func memberColorBackground(for groupedEvent: GroupedDayEvent) -> some View {
+        if groupedEvent.memberColors.count > 1 {
+            LinearGradient(
+                gradient: Gradient(colors: groupedEvent.memberColors.map { Color(uiColor: $0) }),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        } else {
+            Color(uiColor: groupedEvent.memberColor)
+        }
+    }
+
+    private func makeUpcomingEvent(from groupedEvent: GroupedDayEvent) -> UpcomingCalendarEvent {
+        UpcomingCalendarEvent(
+            id: groupedEvent.eventIdentifier,
+            title: groupedEvent.title,
+            location: groupedEvent.location,
+            startDate: groupedEvent.startDate,
+            endDate: groupedEvent.endDate,
+            calendarID: groupedEvent.calendarID,
+            calendarColor: groupedEvent.calendarColor,
+            calendarTitle: groupedEvent.calendarTitle,
+            hasRecurrence: groupedEvent.hasRecurrence,
+            recurrenceRule: nil,
+            isAllDay: groupedEvent.isAllDay
+        )
+    }
+
+    @ViewBuilder
+    private func dayEventContextMenu(for event: UpcomingCalendarEvent) -> some View {
+        Button(action: { duplicateEvent(event) }) {
+            Label("Duplicate", systemImage: "doc.on.doc")
+        }
+
+        // Move to calendar
+        Menu {
+            ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
+                Button(action: {
+                    moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
+                }) {
+                    HStack {
+                        Text(calendar.title)
+                        if calendar.calendarIdentifier == event.calendarID {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Label("Move to Calendar", systemImage: "calendar.badge.plus")
+        }
+
+        Divider()
+
+        // Delete action
+        if event.hasRecurrence {
+            Menu {
+                Button(action: { deleteEvent(event, span: .thisEvent) }) {
+                    Label("Delete This Event", systemImage: "trash")
+                }
+                Button(role: .destructive, action: { deleteEvent(event, span: .futureEvents) }) {
+                    Label("Delete This & Future Events", systemImage: "trash")
+                }
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        } else {
+            Button(role: .destructive, action: { deleteEvent(event, span: .thisEvent) }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    @ViewBuilder
     private func dayDetailsView(for events: [DayEventItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(Self.fullDateFormatter.string(from: selectedDate))
@@ -194,190 +374,15 @@ struct CalendarView: View {
 
             // Group events by title, time, and location
             let groupedEvents = groupEventsByDetails(events)
+            let allDayEvents = groupedEvents.filter { $0.isAllDay }
+            let timedEvents = groupedEvents.filter { !$0.isAllDay }
 
             VStack(spacing: 4) {
-                ForEach(Array(groupedEvents.enumerated()), id: \.element.id) { _, groupedEvent in
-                    Button(action: {
-                        selectedEvent = UpcomingCalendarEvent(
-                            id: groupedEvent.eventIdentifier,
-                            title: groupedEvent.title,
-                            location: groupedEvent.location,
-                            startDate: groupedEvent.startDate,
-                            endDate: groupedEvent.endDate,
-                            calendarID: groupedEvent.calendarID,
-                            calendarColor: groupedEvent.calendarColor,
-                            calendarTitle: groupedEvent.calendarTitle,
-                            hasRecurrence: groupedEvent.hasRecurrence,
-                            recurrenceRule: nil,
-                            isAllDay: groupedEvent.isAllDay
-                        )
-                        showingEventDetail = true
-                    }) {
-                        HStack(spacing: 16) {
-                            // Left side: Colored square with start time
-                            VStack(spacing: 2) {
-                                if let startTime = groupedEvent.startTime {
-                                    Text(startTime)
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.white)
-                                } else {
-                                    Text("All")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.white)
-                                    Text("Day")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(width: 90, height: 70)
-                            .background {
-                                if groupedEvent.memberColors.count > 1 {
-                                    // Gradient fade between multiple colors
-                                    LinearGradient(
-                                        gradient: Gradient(colors: groupedEvent.memberColors.map { Color(uiColor: $0) }),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                } else {
-                                    Color(uiColor: groupedEvent.memberColor)
-                                }
-                            }
-                            .cornerRadius(8)
-
-                            // Right side: Event details
-                            VStack(alignment: .leading, spacing: 4) {
-                                // Title
-                                Text(groupedEvent.title)
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                    .lineLimit(2)
-
-                                // Member names
-                                Text(groupedEvent.memberNames.joined(separator: ", "))
-                                    .font(.system(size: 12, weight: .regular))
-                                    .foregroundColor(.gray)
-                                    .lineLimit(1)
-
-                                // Time
-                                if let timeRange = groupedEvent.timeRange {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "clock")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                        Text(timeRange)
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.gray)
-                                    }
-                                } else {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "clock")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                        Text("All Day")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-
-                                // Location (first line only) - tappable to open maps
-                                if let location = groupedEvent.location {
-                                    let firstLine = location.split(separator: "\n").first.map(String.init) ?? location
-                                    Button(action: { MapsUtility.openLocation(firstLine, in: defaultMapsApp) }) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "location.fill")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.gray)
-                                            Text(firstLine)
-                                                .font(.system(size: 13))
-                                                .foregroundColor(.gray)
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                }
-
-                                // Driver (if available)
-                                if let driverName = groupedEvent.driverName {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "car.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                        Text(driverName)
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.gray)
-                                            .lineLimit(1)
-                                    }
-                                }
-
-                                Spacer()
-                            }
-
-                            Spacer()
-                        }
-                        .frame(minHeight: 70)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.white.opacity(0.85))
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        let event = UpcomingCalendarEvent(
-                            id: groupedEvent.eventIdentifier,
-                            title: groupedEvent.title,
-                            location: groupedEvent.location,
-                            startDate: groupedEvent.startDate,
-                            endDate: groupedEvent.endDate,
-                            calendarID: groupedEvent.calendarID,
-                            calendarColor: groupedEvent.calendarColor,
-                            calendarTitle: groupedEvent.calendarTitle,
-                            hasRecurrence: groupedEvent.hasRecurrence,
-                            recurrenceRule: nil,
-                            isAllDay: groupedEvent.isAllDay
-                        )
-
-                        // Duplicate action
-                        Button(action: { duplicateEvent(event) }) {
-                            Label("Duplicate", systemImage: "doc.on.doc")
-                        }
-
-                        // Move to calendar
-                        Menu {
-                            ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
-                                Button(action: {
-                                    moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
-                                }) {
-                                    HStack {
-                                        Text(calendar.title)
-                                        if calendar.calendarIdentifier == event.calendarID {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            Label("Move to Calendar", systemImage: "calendar.badge.plus")
-                        }
-
-                        Divider()
-
-                        // Delete action
-                        if groupedEvent.hasRecurrence {
-                            Menu {
-                                Button(action: { deleteEvent(event, span: .thisEvent) }) {
-                                    Label("Delete This Event", systemImage: "trash")
-                                }
-                                Button(role: .destructive, action: { deleteEvent(event, span: .futureEvents) }) {
-                                    Label("Delete This & Future Events", systemImage: "trash")
-                                }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        } else {
-                            Button(role: .destructive, action: { deleteEvent(event, span: .thisEvent) }) {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
+                ForEach(allDayEvents) { groupedEvent in
+                    dayEventButton(for: groupedEvent, isCompact: true)
+                }
+                ForEach(timedEvents) { groupedEvent in
+                    dayEventButton(for: groupedEvent, isCompact: false)
                 }
             }
         }
