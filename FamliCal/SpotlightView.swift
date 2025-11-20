@@ -60,7 +60,7 @@ struct SpotlightView: View {
                             Button(action: { dismiss() }) {
                                 Image(systemName: "chevron.left")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                             }
 
                             Text(member.name ?? "Unknown")
@@ -126,7 +126,7 @@ struct SpotlightView: View {
     private var loadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
-                .tint(.blue)
+                .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
 
             Text("Loading events...")
                 .font(.system(size: 15))
@@ -491,7 +491,7 @@ private struct GroupedEvent: Identifiable {
     let member = FamilyMember(context: context)
     member.id = UUID()
     member.name = "John Doe"
-    member.colorHex = "#007AFF"
+    member.colorHex = "#555555"
     member.avatarInitials = "JD"
 
     return SpotlightView(member: member)

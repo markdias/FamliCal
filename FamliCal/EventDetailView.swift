@@ -98,35 +98,75 @@ struct EventDetailView: View {
                             }
                         }
 
-                    // Location (smaller text, red) - tappable to open maps
+                    // Location - tappable to open maps
                     if let location = event.location, !location.isEmpty {
                         Button(action: { MapsUtility.openLocation(location, in: defaultMapsApp) }) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 10) {
                                     Image(systemName: "location.fill")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(.red)
-
-                                    Text(location)
                                         .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.red)
-                                        .lineLimit(3)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                        .frame(width: 20)
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("Location")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.gray)
+                                        Text(location)
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(.primary)
+                                            .lineLimit(2)
+                                    }
+
+                                    Spacer()
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(10)
                             .padding(.horizontal, 20)
                         }
                     }
 
-                    // Date and Time on same line
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(Self.fullDateFormatter.string(from: event.startDate))
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                    // Date and Time section with icons
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                .frame(width: 20)
 
-                        Text("\(Self.timeFormatter.string(from: event.startDate)) – \(Self.timeFormatter.string(from: event.endDate))")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Date")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.gray)
+                                Text(Self.fullDateFormatter.string(from: event.startDate))
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.primary)
+                            }
+
+                            Spacer()
+                        }
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                .frame(width: 20)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Time")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.gray)
+                                Text("\(Self.timeFormatter.string(from: event.startDate)) – \(Self.timeFormatter.string(from: event.endDate))")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.primary)
+                            }
+
+                            Spacer()
+                        }
                     }
                     .padding(.horizontal, 20)
 
@@ -171,7 +211,7 @@ struct EventDetailView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "car.fill")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                         .frame(width: 24)
 
                                     VStack(alignment: .leading, spacing: 4) {
@@ -184,11 +224,11 @@ struct EventDetailView: View {
                                                 HStack(spacing: 6) {
                                                     Image(systemName: "phone.fill")
                                                         .font(.system(size: 12))
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                                                     Text(phone)
                                                         .font(.system(size: 14))
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                                 }
                                             }
                                         }
@@ -198,11 +238,11 @@ struct EventDetailView: View {
                                                 HStack(spacing: 6) {
                                                     Image(systemName: "envelope.fill")
                                                         .font(.system(size: 12))
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                                                     Text(email)
                                                         .font(.system(size: 14))
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                                 }
                                             }
                                         }
@@ -250,7 +290,7 @@ struct EventDetailView: View {
                                     HStack(spacing: 12) {
                                         Image(systemName: "bell.fill")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                                         Text(alertDisplayText(alarm))
                                             .font(.system(size: 15, weight: .regular))
@@ -277,27 +317,42 @@ struct EventDetailView: View {
                         }
                     }
 
-                    // Map section
-                    if locationCoordinates != nil {
-                        VStack(spacing: 0) {
-                            Map(position: .constant(.region(mapRegion)))
-                                .frame(height: 250)
+                    // Map section with location header
+                    if locationCoordinates != nil || isLoadingLocation {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "map.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+
+                                Text("Location Preview")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.gray)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+
+                            if locationCoordinates != nil {
+                                Map(position: .constant(.region(mapRegion)))
+                                    .frame(height: 280)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal, 20)
+                            } else if isLoadingLocation {
+                                HStack {
+                                    ProgressView()
+                                        .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                    Text("Loading map...")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(height: 280)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(.systemGray6))
                                 .cornerRadius(12)
+                                .padding(.horizontal, 20)
+                            }
                         }
-                        .padding(.horizontal, 20)
-                    } else if isLoadingLocation {
-                        HStack {
-                            ProgressView()
-                                .tint(.blue)
-                            Text("Loading map...")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                        }
-                        .frame(height: 250)
-                        .frame(maxWidth: .infinity)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
                     }
 
                     // Recurring indicator
@@ -305,7 +360,7 @@ struct EventDetailView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "repeat.circle.fill")
                                 .font(.system(size: 14))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                             Text("This is a recurring event")
                                 .font(.system(size: 13, weight: .semibold))
@@ -338,7 +393,7 @@ struct EventDetailView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                     }
                 }
 
@@ -346,7 +401,7 @@ struct EventDetailView: View {
                     Button(action: { isEditing = true }) {
                         Text("Edit")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                     }
                 }
             }
@@ -379,7 +434,7 @@ struct EventDetailView: View {
 
                 // Load location map regardless of event details
                 if let location = event.location, !location.isEmpty {
-                    geocodeLocation(location)
+                    geocodeLocation(location, zoom: 0.002) // Much tighter zoom
                 }
 
                 // Fetch driver information
@@ -439,7 +494,7 @@ struct EventDetailView: View {
         self.alerts = ekEvent.alarms ?? []
     }
 
-    private func geocodeLocation(_ locationString: String) {
+    private func geocodeLocation(_ locationString: String, zoom: Double = 0.01) {
         isLoadingLocation = true
 
         Task {
@@ -456,7 +511,7 @@ struct EventDetailView: View {
                         locationCoordinates = coordinate
                         mapRegion = MKCoordinateRegion(
                             center: coordinate,
-                            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+                            span: MKCoordinateSpan(latitudeDelta: zoom, longitudeDelta: zoom)
                         )
                     }
                 }
@@ -618,7 +673,7 @@ struct EventDetailView: View {
         startDate: Date().addingTimeInterval(3600),
         endDate: Date().addingTimeInterval(7200),
         calendarID: "work-calendar",
-        calendarColor: UIColor.blue,
+        calendarColor: UIColor(red: 0.33, green: 0.33, blue: 0.33, alpha: 1.0),
         calendarTitle: "Mark",
         hasRecurrence: false,
         recurrenceRule: nil,

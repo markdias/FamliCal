@@ -15,14 +15,58 @@ struct AppSettingsView: View {
     @AppStorage("eventsFutureDays") private var eventsFutureDays: Int = 180
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
+    @AppStorage("defaultHomeScreen") private var defaultHomeScreenRawValue: String = DefaultHomeScreen.family.rawValue
 
     private let mapsAppOptions = ["Apple Maps", "Google Maps", "Waze"]
     private let refreshIntervalOptions: [Int] = [1, 5, 10, 15, 30, 60]
+    private var defaultHomeScreenBinding: Binding<DefaultHomeScreen> {
+        Binding(
+            get: { DefaultHomeScreen(rawValue: defaultHomeScreenRawValue) ?? .family },
+            set: { defaultHomeScreenRawValue = $0.rawValue }
+        )
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // Default Screen Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("App Start")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 16)
+
+                        VStack(spacing: 0) {
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Default screen")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    Text("Choose where the app opens")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.gray)
+                                }
+
+                                Spacer()
+
+                                Picker("Default Screen", selection: defaultHomeScreenBinding) {
+                                    ForEach(DefaultHomeScreen.allCases) { option in
+                                        Text(option.displayName).tag(option)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    }
+
                     // Number of Events Per Person Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Next Events")
@@ -247,7 +291,7 @@ struct AppSettingsView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                     }
                 }
             }

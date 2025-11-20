@@ -158,7 +158,7 @@ struct EventSearchView: View {
 
                 Text(result.event.calendarTitle)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                 if !result.owners.isEmpty {
                     Text("•")

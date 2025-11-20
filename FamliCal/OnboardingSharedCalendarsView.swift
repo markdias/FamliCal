@@ -68,7 +68,7 @@ struct OnboardingSharedCalendarsView: View {
                             ForEach(sharedCalendars, id: \.self) { calendar in
                                 HStack(spacing: 12) {
                                     Circle()
-                                        .fill(Color.fromHex(calendar.calendarColorHex ?? "#007AFF"))
+                                        .fill(Color.fromHex(calendar.calendarColorHex ?? "#555555"))
                                         .frame(width: 12, height: 12)
 
                                     VStack(alignment: .leading, spacing: 2) {

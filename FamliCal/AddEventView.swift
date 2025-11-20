@@ -64,6 +64,8 @@ struct AddEventView: View {
     @State private var startTime = Date()
     @State private var endTime = Date()
     @State private var repeatOption: RepeatOption = .none
+    @State private var recurrenceConfig = RecurrenceConfiguration.none(anchor: Date())
+    @State private var showingCustomRepeatSheet = false
     @State private var alertOption: AlertOption = .none
     @State private var notes: String = ""
     @State private var locationName: String = ""
@@ -74,6 +76,7 @@ struct AddEventView: View {
     // People selection
     @State private var selectedMembers: Set<NSManagedObjectID> = []
     @State private var selectEveryone = false
+    @State private var selectedMemberCalendars: [NSManagedObjectID: String] = [:] // Track calendar per member
 
     // Driver selection
     @State private var selectedDriver: DriverWrapper?
@@ -157,10 +160,10 @@ struct AddEventView: View {
                         locationSection
                         timeSection
                         attendeesSection
+                        calendarSection
                         driverSection
                         repeatSection
                         alertSection
-                        calendarSection
                         notesSection
                         Spacer()
                             .frame(height: 20)
@@ -208,6 +211,7 @@ struct AddEventView: View {
                 endTime = calendar.date(from: components) ?? startTime.addingTimeInterval(3600)
 
                 eventDate = now
+                recurrenceConfig = RecurrenceConfiguration.none(anchor: now)
 
                 // Build available calendars list
                 updateAvailableCalendars()
@@ -271,7 +275,7 @@ struct AddEventView: View {
                         for memberCal in memberCalendars {
                             if let calendarID = memberCal.calendarID, !calendarSet.contains(calendarID) {
                                 calendarSet.insert(calendarID)
-                                let color = UIColor(named: memberCal.calendarColorHex ?? "#007AFF") ?? .blue
+                                let color = UIColor(named: memberCal.calendarColorHex ?? "#555555") ?? UIColor(red: 0.33, green: 0.33, blue: 0.33, alpha: 1.0)
                                 availableCalendars.append(CalendarOption(
                                     calendarID: calendarID,
                                     calendarName: memberCal.calendarName ?? (member.name ?? "Unknown"),
@@ -375,7 +379,7 @@ struct AddEventView: View {
         let eventEndDate = combineDateAndTime(date: eventDate, time: endTime)
 
         // Create recurrence rule if needed
-        let recurrenceRule: EKRecurrenceRule? = createRecurrenceRule(from: repeatOption)
+        let recurrenceRule: EKRecurrenceRule? = selectedRecurrenceRule(startDate: eventStartDate)
 
         var createdEventIds: [String] = []
 
@@ -388,13 +392,13 @@ struct AddEventView: View {
             // Everyone selected: use the selected shared calendar
             targetCalendars = [selectedCalendarID]
         } else {
-            // Specific people selected: add to each person's first (main) calendar
+            // Specific people selected: add to each person's selected calendar
             for memberID in selectedMembers {
-                if let member = familyMembers.first(where: { $0.objectID == memberID }),
-                   let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar>,
-                   let firstCal = memberCalendars.first,
-                   let calendarID = firstCal.calendarID {
-                    targetCalendars.append(calendarID)
+                if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                    if let selectedCalendar = getSelectedCalendarForMember(member: member),
+                       let calendarID = selectedCalendar.calendarID {
+                        targetCalendars.append(calendarID)
+                    }
                 }
             }
         }
@@ -522,21 +526,49 @@ struct AddEventView: View {
         }
     }
 
-    private func createRecurrenceRule(from option: RepeatOption) -> EKRecurrenceRule? {
+    private func currentRecurrenceConfiguration(anchorDate: Date) -> RecurrenceConfiguration? {
+        if repeatOption == .custom {
+            return recurrenceConfig.isEnabled ? recurrenceConfig : nil
+        }
+
+        if let quickConfig = RecurrenceConfiguration.quick(option: repeatOption, anchor: anchorDate), quickConfig.isEnabled {
+            return quickConfig
+        }
+
+        return nil
+    }
+
+    private func recurrenceSummaryText(anchorDate: Date) -> String {
+        guard let config = currentRecurrenceConfiguration(anchorDate: anchorDate) else {
+            return "Does not repeat"
+        }
+        return config.summary(anchor: anchorDate)
+    }
+
+    private func selectedRecurrenceRule(startDate: Date) -> EKRecurrenceRule? {
+        currentRecurrenceConfiguration(anchorDate: startDate)?.toRecurrenceRule(anchor: startDate)
+    }
+
+    private var repeatDetailLabel: String {
+        switch repeatOption {
+        case .custom: return "Custom pattern"
+        case .none: return "Off"
+        default: return "Quick repeat"
+        }
+    }
+
+    private func handleRepeatSelection(_ option: RepeatOption) {
         switch option {
-        case .none:
-            return nil
-        case .daily:
-            return EKRecurrenceRule(recurrenceWith: .daily, interval: 1, end: nil)
-        case .weekly:
-            return EKRecurrenceRule(recurrenceWith: .weekly, interval: 1, end: nil)
-        case .monthly:
-            return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1, end: nil)
-        case .yearly:
-            return EKRecurrenceRule(recurrenceWith: .yearly, interval: 1, end: nil)
         case .custom:
-            // For custom, default to weekly for now
-            return EKRecurrenceRule(recurrenceWith: .weekly, interval: 1, end: nil)
+            if let existing = currentRecurrenceConfiguration(anchorDate: eventDate) {
+                recurrenceConfig = existing
+            } else if !recurrenceConfig.isEnabled {
+                recurrenceConfig = RecurrenceConfiguration.quick(option: .weekly, anchor: eventDate) ?? recurrenceConfig
+            }
+            repeatOption = .custom
+            showingCustomRepeatSheet = true
+        default:
+            repeatOption = option
         }
     }
 
@@ -913,7 +945,7 @@ struct AddEventView: View {
                                                     .frame(width: 12, height: 12)
                                             } else {
                                                 Circle()
-                                                    .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                                    .fill(Color.fromHex(member.colorHex ?? "#555555"))
                                                     .frame(width: 12, height: 12)
                                             }
                                             Text(member.name ?? "Unknown")
@@ -1040,7 +1072,7 @@ struct AddEventView: View {
                 Menu {
                     ForEach(RepeatOption.allCases, id: \.self) { option in
                         Button(option.rawValue) {
-                            repeatOption = option
+                            handleRepeatSelection(option)
                         }
                     }
                 } label: {
@@ -1061,6 +1093,53 @@ struct AddEventView: View {
                     .background(fieldBackground)
                     .cornerRadius(14)
                 }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(recurrenceSummaryText(anchorDate: eventDate))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(primaryTextColor)
+                    Text(repeatDetailLabel)
+                        .font(.system(size: 13))
+                        .foregroundColor(secondaryTextColor)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(fieldBackground)
+                )
+
+                Button {
+                    if let existing = currentRecurrenceConfiguration(anchorDate: eventDate) {
+                        recurrenceConfig = existing
+                    } else {
+                        recurrenceConfig = RecurrenceConfiguration.quick(option: .weekly, anchor: eventDate) ?? recurrenceConfig
+                    }
+                    repeatOption = .custom
+                    showingCustomRepeatSheet = true
+                } label: {
+                    HStack {
+                        Image(systemName: "slider.horizontal.3")
+                        Text("Custom repeat options")
+                            .font(.system(size: 15, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(accentColor)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .background(accentColor.opacity(0.1))
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showingCustomRepeatSheet) {
+            CustomRepeatView(
+                recurrence: $recurrenceConfig,
+                anchorDate: eventDate
+            ) { updated in
+                repeatOption = updated.isEnabled ? .custom : .none
             }
         }
     }
@@ -1102,6 +1181,7 @@ struct AddEventView: View {
     @ViewBuilder
     private var calendarSection: some View {
         if selectEveryone && availableCalendars.count > 1 {
+            // For "Everyone": Show shared calendars selection
             sectionCard {
                 VStack(alignment: .leading, spacing: 12) {
                     sectionHeading("Calendar")
@@ -1153,7 +1233,123 @@ struct AddEventView: View {
                     }
                 }
             }
+        } else if !selectEveryone && availableCalendars.count > 1 {
+            // For specific members: Show per-member calendar selection
+            sectionCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeading("Calendars")
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(selectedMembers.sorted { mem1, mem2 in
+                            let member1 = familyMembers.first(where: { $0.objectID == mem1 })?.name ?? "Unknown"
+                            let member2 = familyMembers.first(where: { $0.objectID == mem2 })?.name ?? "Unknown"
+                            return member1.localizedCaseInsensitiveCompare(member2) == .orderedAscending
+                        }, id: \.self) { memberID in
+                            if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                                memberCalendarSelector(for: member)
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    @ViewBuilder
+    private func memberCalendarSelector(for member: FamilyMember) -> some View {
+        if let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar>,
+           !memberCalendars.isEmpty {
+            let sortedCalendars = memberCalendars.sorted { cal1, cal2 in
+                // Auto-linked calendar first
+                if cal1.isAutoLinked && !cal2.isAutoLinked { return true }
+                if !cal1.isAutoLinked && cal2.isAutoLinked { return false }
+                // Then by name
+                return (cal1.calendarName ?? "") < (cal2.calendarName ?? "")
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(member.name ?? "Unknown")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(primaryTextColor)
+
+                Menu {
+                    ForEach(sortedCalendars, id: \.self) { calendar in
+                        Button(action: {
+                            // Store selected calendar per member
+                            updateSelectedCalendarForMember(member: member, calendar: calendar)
+                        }) {
+                            HStack {
+                                Circle()
+                                    .fill(Color.fromHex(calendar.calendarColorHex ?? "#555555"))
+                                    .frame(width: 12, height: 12)
+                                Text(calendar.calendarName ?? "Unknown")
+                                if isCalendarSelectedForMember(member: member, calendar: calendar) {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if let selectedCalendar = getSelectedCalendarForMember(member: member) {
+                            Circle()
+                                .fill(Color.fromHex(selectedCalendar.calendarColorHex ?? "#555555"))
+                                .frame(width: 10, height: 10)
+                            Text(selectedCalendar.calendarName ?? "Unknown")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(primaryTextColor)
+                        } else {
+                            Text("Select calendar")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(secondaryTextColor)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(secondaryTextColor)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(fieldBackground)
+                    .cornerRadius(12)
+                }
+            }
+        }
+    }
+
+    // MARK: - Member Calendar Selection Helpers
+
+    private func updateSelectedCalendarForMember(member: FamilyMember, calendar: FamilyMemberCalendar) {
+        if let calendarID = calendar.calendarID {
+            selectedMemberCalendars[member.objectID] = calendarID
+            selectedCalendarID = calendarID // Also update main selection
+        }
+    }
+
+    private func getSelectedCalendarForMember(member: FamilyMember) -> FamilyMemberCalendar? {
+        if let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar> {
+            // Check if there's a manually selected calendar for this member
+            if let selectedCalID = selectedMemberCalendars[member.objectID],
+               let selected = memberCalendars.first(where: { $0.calendarID == selectedCalID }) {
+                return selected
+            }
+
+            // Otherwise return the first auto-linked calendar (predefined default)
+            if let autoLinked = memberCalendars.first(where: { $0.isAutoLinked }) {
+                return autoLinked
+            }
+            // If no auto-linked, return first calendar
+            return memberCalendars.sorted { ($0.calendarName ?? "") < ($1.calendarName ?? "") }.first
+        }
+        return nil
+    }
+
+    private func isCalendarSelectedForMember(member: FamilyMember, calendar: FamilyMemberCalendar) -> Bool {
+        if let selected = getSelectedCalendarForMember(member: member),
+           selected.objectID == calendar.objectID {
+            return true
+        }
+        return false
     }
     @ViewBuilder
     private var notesSection: some View {

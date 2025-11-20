@@ -26,7 +26,7 @@ struct SettingsView: View {
                     VStack(spacing: 18) {
                         SettingsRowView(
                             iconName: "person.2.fill",
-                            iconColor: Color.blue,
+                            iconColor: Color(red: 0.33, green: 0.33, blue: 0.33),
                             title: "Family Members",
                             subtitle: "Manage members and linked calendars",
                             action: { showingFamilyMembers = true }
@@ -184,7 +184,7 @@ private struct SettingsCardView: View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: iconName)
                 .font(.system(size: 20))
-                .foregroundColor(.blue)
+                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                 .frame(width: 44, height: 44)
                 .background(Color(.systemBlue).opacity(0.1))
                 .cornerRadius(16)

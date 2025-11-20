@@ -11,7 +11,7 @@ import CoreData
 @main
 struct FamliCalApp: App {
     let persistenceController = PersistenceController.shared
-    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @State private var hasCompletedOnboarding: Bool?
     @StateObject private var themeManager = ThemeManager()
 
     init() {
@@ -29,22 +29,36 @@ struct FamliCalApp: App {
             defaults.set(180, forKey: "eventsFutureDays")
         }
 
-        // Print diagnostics on app launch
-        PersistenceController.printStoreDiagnostics()
-        print("🚀 FamliCal app launched")
+        // Load onboarding state on first access
+        _hasCompletedOnboarding = State(initialValue: nil)
+
+        // Move diagnostics off main thread to prevent blocking UI
+        DispatchQueue.global(qos: .utility).async {
+            PersistenceController.printStoreDiagnostics()
+            print("🚀 FamliCal app launched")
+        }
     }
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if hasCompletedOnboarding {
-                    MainTabView()
-                        .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                        .environmentObject(themeManager)
+                if let completed = hasCompletedOnboarding {
+                    if completed {
+                        MainTabView()
+                            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                            .environmentObject(themeManager)
+                    } else {
+                        OnboardingView()
+                            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                            .environmentObject(themeManager)
+                    }
                 } else {
                     OnboardingView()
                         .environment(\.managedObjectContext, persistenceController.container.viewContext)
                         .environmentObject(themeManager)
+                        .onAppear {
+                            hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+                        }
                 }
             }
             .preferredColorScheme(themeManager.selectedTheme.prefersDarkInterface ? .dark : .light)

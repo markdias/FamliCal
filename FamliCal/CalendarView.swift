@@ -41,7 +41,14 @@ struct CalendarView: View {
     @State private var contextMenuEvent: UpcomingCalendarEvent? = nil
     @State private var showingDeleteOptions = false
     @State private var availableCalendars: [EKCalendar] = []
+    @State private var memberColors: [NSManagedObjectID: UIColor] = [:]
     @Namespace private var animationNamespace
+    @State private var calendarDisplayMode: CalendarDisplayMode
+
+    private enum CalendarDisplayMode: String, CaseIterable {
+        case month = "Month"
+        case day = "Day"
+    }
 
     private let calendar: Calendar = {
         var calendar = Calendar.current
@@ -76,120 +83,23 @@ struct CalendarView: View {
         return formatter
     }()
 
+    init(startInDayMode: Bool = false) {
+        _calendarDisplayMode = State(initialValue: startInDayMode ? .day : .month)
+    }
+
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomLeading) {
                 theme.backgroundLayer()
                     .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Header with month/year and Today button
-                        HStack {
-                            Spacer()
-                            Text(Self.monthFormatter.string(from: currentMonth))
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.primary)
-                            Spacer()
-
-                            Button(action: {
-                                currentMonth = Date()
-                                selectedDate = Date()
-                            }) {
-                                Text("Today")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                            .fill(theme.accentFillStyle())
-                                    )
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-
-                        // Calendar grid
-                        VStack(spacing: 8) {
-                            // Day headers (Mon ... Sun)
-                            HStack(spacing: 0) {
-                                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
-                                    Text(day)
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(secondaryTextColor)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 8)
-                                }
-                            }
-                            .padding(.bottom, 4)
-
-                            // Calendar days
-                            LazyVGrid(columns: columns, spacing: 8) {
-                                ForEach(getDaysInMonth(), id: \.self) { date in
-                                    calendarDayCell(for: date)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(theme.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(theme.cardStroke, lineWidth: 1)
-                        )
-                        .gesture(
-                            DragGesture()
-                                .onEnded { value in
-                                    if value.translation.width > 50 {
-                                        previousMonth()
-                                    } else if value.translation.width < -50 {
-                                        nextMonth()
-                                    }
-                                }
-                        )
-
-                        // Selected day details
-                        if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {
-                            dayDetailsView(for: events)
-                        } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(Self.fullDateFormatter.string(from: selectedDate))
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .padding(.horizontal, 2)
-
-                                HStack {
-                                    Image(systemName: "calendar.badge.exclamationmark")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(secondaryTextColor)
-
-                                    Text("No events scheduled")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(secondaryTextColor)
-
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(theme.cardBackground)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(theme.cardStroke, lineWidth: 1)
-                                )
-                            }
-                        }
+                if calendarDisplayMode == .month {
+                    ScrollView {
+                        content
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 120)
+                } else {
+                    content
                 }
-                .background(Color.clear)
             }
             .navigationBarHidden(true)
         }
@@ -200,10 +110,173 @@ struct CalendarView: View {
         }
         .onAppear(perform: setupView)
         .onChange(of: currentMonth) { _, _ in loadEvents() }
+        .onChange(of: selectedDate) { _, _ in
+            if calendarDisplayMode == .day {
+                loadEvents()
+            }
+        }
         .onChange(of: familyMembers.count) { _, _ in loadEvents() }
         .onChange(of: memberCalendarLinks.count) { _, _ in loadEvents() }
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
         .onDisappear(perform: cleanupView)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Header with month/year and Today button
+            HStack {
+                Text(Self.monthFormatter.string(from: currentMonth))
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .padding(.leading)
+
+                Spacer()
+
+                Button(action: {
+                    withAnimation {
+                        currentMonth = Date()
+                        selectedDate = Date()
+                    }
+                }) {
+                    Text("Today")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(theme.accentFillStyle())
+                        )
+                }
+                .padding(.trailing)
+            }
+            .padding(.vertical, 12)
+
+            Picker("View Mode", selection: $calendarDisplayMode.animation()) {
+                ForEach(CalendarDisplayMode.allCases, id: \.self) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal)
+
+            // Calendar grid
+            if calendarDisplayMode == .month {
+                monthView
+                    .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
+            } else {
+                dailyView
+                    .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 120)
+    }
+
+    private var monthView: some View {
+        VStack {
+            VStack(spacing: 8) {
+                // Day headers (Mon ... Sun)
+                HStack(spacing: 0) {
+                    ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                        Text(day)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(secondaryTextColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                }
+                .padding(.bottom, 4)
+
+                // Calendar days
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(getDaysInMonth(), id: \.self) { date in
+                        calendarDayCell(for: date)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(theme.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(theme.cardStroke, lineWidth: 1)
+            )
+            .gesture(
+                DragGesture()
+                    .onEnded { value in
+                        if value.translation.width > 50 {
+                            previousMonth()
+                        } else if value.translation.width < -50 {
+                            nextMonth()
+                        }
+                    }
+            )
+
+            // Selected day details
+            if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {
+                dayDetailsView(for: events)
+            } else {
+                noEventsView
+            }
+        }
+    }
+
+    private var noEventsView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(Self.fullDateFormatter.string(from: selectedDate))
+                .font(.system(size: 16, weight: .semibold))
+                .padding(.horizontal, 2)
+
+            HStack {
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .font(.system(size: 16))
+                    .foregroundColor(secondaryTextColor)
+
+                Text("No events scheduled")
+                    .font(.system(size: 14))
+                    .foregroundColor(secondaryTextColor)
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(theme.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(theme.cardStroke, lineWidth: 1)
+            )
+        }
+    }
+
+    private var dailyView: some View {
+        let eventsForSelectedDate = dayEvents[formatDateKey(selectedDate)] ?? []
+        return DailyEventsView(
+            events: eventsForSelectedDate,
+            selectedDate: selectedDate,
+            selectedDateString: Self.fullDateFormatter.string(from: selectedDate),
+            familyMembers: Array(familyMembers),
+            memberColors: memberColors
+        )
+        .frame(minHeight: 300)
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width > 50 {
+                        previousDay()
+                    } else if value.translation.width < -50 {
+                        nextDay()
+                    }
+                }
+        )
     }
 
     @ViewBuilder
@@ -437,7 +510,7 @@ struct CalendarView: View {
             let key = "\(event.title)|\(event.timeRange ?? "all-day")|\(event.location ?? "")"
 
             if var existing = grouped[key] {
-                existing.memberNames.append(event.memberName)
+                existing.memberNames.append(contentsOf: event.memberNames)
                 // Add color if it's not already in the list
                 if !existing.memberColors.contains(where: { $0.cgColor == event.memberColor.cgColor }) {
                     existing.memberColors.append(event.memberColor)
@@ -449,7 +522,7 @@ struct CalendarView: View {
                     title: event.title,
                     timeRange: event.timeRange,
                     location: event.location,
-                    memberNames: [event.memberName],
+                    memberNames: event.memberNames,
                     memberInitials: event.memberInitials,
                     memberColor: event.memberColor,
                     color: event.color,
@@ -494,8 +567,8 @@ struct CalendarView: View {
                 .background(
                     ZStack {
                         if isSelected {
-                            theme.accentFillStyle()
-                                .clipShape(Circle())
+                            Circle()
+                                .fill(theme.accentFillStyle())
                                 .matchedGeometryEffect(id: "selectedDate", in: animationNamespace)
                         }
                         if isToday && !isSelected {
@@ -600,6 +673,22 @@ struct CalendarView: View {
         }
     }
 
+    private func previousDay() {
+        withAnimation {
+            if let newDate = calendar.date(byAdding: .day, value: -1, to: selectedDate) {
+                selectedDate = newDate
+            }
+        }
+    }
+
+    private func nextDay() {
+        withAnimation {
+            if let newDate = calendar.date(byAdding: .day, value: 1, to: selectedDate) {
+                selectedDate = newDate
+            }
+        }
+    }
+
     private func updateSelectedDateForMonth(_ month: Date) {
         let today = Date()
         if calendar.isDate(month, equalTo: today, toGranularity: .month) {
@@ -630,7 +719,8 @@ struct CalendarView: View {
     private func loadEvents() {
         isLoadingEvents = true
 
-        var eventsDict: [String: [DayEventItem]] = [:]
+        var tempEventsDict: [String: [DayEventItem]] = [:]
+        var memberColors: [NSManagedObjectID: UIColor] = [:]
 
         let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentMonth))!
         let endOfMonth = calendar.date(byAdding: .day, value: -1, to: calendar.date(byAdding: .month, value: 1, to: startOfMonth)!)!
@@ -644,6 +734,10 @@ struct CalendarView: View {
             var entry = memberCalendarMap[member.objectID] ?? ([], member)
             entry.0.insert(calendarID)
             memberCalendarMap[member.objectID] = entry
+            
+            if memberColors[member.objectID] == nil, let calendar = eventStore.calendar(withIdentifier: calendarID) {
+                memberColors[member.objectID] = UIColor(cgColor: calendar.cgColor)
+            }
         }
 
         // Add shared calendars
@@ -660,6 +754,18 @@ struct CalendarView: View {
                 memberCalendarMap[member.objectID] = entry
             }
         }
+        
+        for member in familyMembers {
+            if memberColors[member.objectID] == nil {
+                if let firstCalID = memberCalendarMap[member.objectID]?.0.first,
+                   let calendar = eventStore.calendar(withIdentifier: firstCalID) {
+                    memberColors[member.objectID] = UIColor(cgColor: calendar.cgColor)
+                } else {
+                    memberColors[member.objectID] = .gray
+                }
+            }
+        }
+        self.memberColors = memberColors
 
         // Fetch events for each member
         for (_, (calendarIDs, member)) in memberCalendarMap {
@@ -686,7 +792,8 @@ struct CalendarView: View {
                         title: event.title,
                         timeRange: timeRange,
                         location: event.location,
-                        memberName: member.name ?? "Unknown",
+                        memberNames: [member.name ?? "Unknown"],
+                        memberIDs: [member.objectID],
                         memberInitials: initials,
                         memberColor: event.calendarColor,
                         color: event.calendarColor,
@@ -701,15 +808,31 @@ struct CalendarView: View {
                         driverName: driverName
                     )
 
-                    if eventsDict[dateKey] == nil {
-                        eventsDict[dateKey] = []
+                    if tempEventsDict[dateKey] == nil {
+                        tempEventsDict[dateKey] = []
                     }
-                    eventsDict[dateKey]?.append(dayEvent)
+                    tempEventsDict[dateKey]?.append(dayEvent)
                 }
             }
         }
 
-        dayEvents = eventsDict
+        // De-duplicate events
+        var finalEventsDict: [String: [DayEventItem]] = [:]
+        for (dateKey, dayEventItems) in tempEventsDict {
+            var uniqueEvents: [String: DayEventItem] = [:]
+            for event in dayEventItems {
+                if var existingEvent = uniqueEvents[event.eventIdentifier] {
+                    existingEvent.memberNames.append(contentsOf: event.memberNames)
+                    existingEvent.memberIDs.append(contentsOf: event.memberIDs)
+                    uniqueEvents[event.eventIdentifier] = existingEvent
+                } else {
+                    uniqueEvents[event.eventIdentifier] = event
+                }
+            }
+            finalEventsDict[dateKey] = Array(uniqueEvents.values)
+        }
+
+        dayEvents = finalEventsDict
         isLoadingEvents = false
     }
 
@@ -853,7 +976,8 @@ struct DayEventItem: Identifiable {
     let title: String
     let timeRange: String?
     let location: String?
-    let memberName: String
+    var memberNames: [String]
+    var memberIDs: [NSManagedObjectID]
     let memberInitials: String
     let memberColor: UIColor
     let color: UIColor

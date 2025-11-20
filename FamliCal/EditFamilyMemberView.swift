@@ -47,7 +47,7 @@ struct EditFamilyMemberView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "car.fill")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                 .frame(width: 24)
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -75,7 +75,7 @@ struct EditFamilyMemberView: View {
                     if isLoading {
                         HStack(spacing: 12) {
                             ProgressView()
-                                .tint(.blue)
+                                .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                             Text("Searching for calendar...")
                                 .font(.system(size: 15, weight: .regular, design: .default))
@@ -161,7 +161,7 @@ struct EditFamilyMemberView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(name.isEmpty ? Color.gray : Color.blue)
+                            .background(name.isEmpty ? Color.gray : Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
                     .disabled(name.isEmpty)
@@ -169,7 +169,7 @@ struct EditFamilyMemberView: View {
                     Button(action: { dismiss() }) {
                         Text("Cancel")
                             .font(.system(size: 16, weight: .semibold, design: .default))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color(.systemGray6))
@@ -271,7 +271,7 @@ struct EditFamilyMemberView: View {
     let testMember = FamilyMember(context: context)
     testMember.id = UUID()
     testMember.name = "John Doe"
-    testMember.colorHex = "#007AFF"
+    testMember.colorHex = "#555555"
     testMember.avatarInitials = "JD"
 
     return EditFamilyMemberView(member: testMember)

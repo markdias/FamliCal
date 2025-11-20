@@ -78,7 +78,7 @@ struct FamilySettingsView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(Color.blue)
+                            .background(Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
                     .padding(.horizontal, 16)
@@ -98,7 +98,7 @@ struct FamilySettingsView: View {
 
                             Text("Back")
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                     }
                 }
             }
@@ -142,7 +142,7 @@ struct FamilyMemberRow: View {
             // Colored dot from first linked calendar
             if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
                 Circle()
-                    .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                    .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#555555"))
                     .frame(width: 12, height: 12)
             } else {
                 Circle()
@@ -185,7 +185,7 @@ struct FamilyMemberRow: View {
             Button(action: onSpotlight) {
                 Image(systemName: "spotlight")
                     .font(.system(size: 16))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
             }
             .padding(.horizontal, 4)
 

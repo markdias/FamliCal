@@ -65,8 +65,8 @@ struct SelectMemberCalendarsView: View {
                         ZStack {
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF").opacity(0.1),
-                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF").opacity(0.05)
+                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#555555").opacity(0.1),
+                                    Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#555555").opacity(0.05)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -76,7 +76,7 @@ struct SelectMemberCalendarsView: View {
                                 // Colored dot from first linked calendar
                                 if let firstCalendar = memberCalendars.first {
                                     Circle()
-                                        .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                                        .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#555555"))
                                         .frame(width: 16, height: 16)
                                 } else {
                                     Circle()
@@ -92,7 +92,7 @@ struct SelectMemberCalendarsView: View {
                                     HStack(spacing: 4) {
                                         Image(systemName: "calendar.circle.fill")
                                             .font(.system(size: 12))
-                                            .foregroundColor(Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#007AFF"))
+                                            .foregroundColor(Color.fromHex((autoLinkedCalendar?.calendarColorHex) ?? "#555555"))
 
                                         Text("\(memberCalendars.count) calendar\(memberCalendars.count != 1 ? "s" : "") linked")
                                             .font(.system(size: 13))
@@ -114,7 +114,7 @@ struct SelectMemberCalendarsView: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: "calendar.badge.checkmark")
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                        .foregroundColor(Color.fromHex(member.colorHex ?? "#555555"))
 
                                     Text("Linked Calendars")
                                         .font(.system(size: 14, weight: .semibold))
@@ -126,7 +126,7 @@ struct SelectMemberCalendarsView: View {
                                     if let autoLinked = autoLinkedCalendar {
                                         HStack(spacing: 12) {
                                             Circle()
-                                                .fill(Color.fromHex(autoLinked.calendarColorHex ?? "#007AFF"))
+                                                .fill(Color.fromHex(autoLinked.calendarColorHex ?? "#555555"))
                                                 .frame(width: 12, height: 12)
 
                                             VStack(alignment: .leading, spacing: 2) {
@@ -164,7 +164,7 @@ struct SelectMemberCalendarsView: View {
                                     ForEach(manualCalendars, id: \.self) { calendar in
                                         HStack(spacing: 12) {
                                             Circle()
-                                                .fill(Color.fromHex(calendar.calendarColorHex ?? "#007AFF"))
+                                                .fill(Color.fromHex(calendar.calendarColorHex ?? "#555555"))
                                                 .frame(width: 12, height: 12)
 
                                             VStack(alignment: .leading, spacing: 2) {
@@ -203,7 +203,7 @@ struct SelectMemberCalendarsView: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: "person.2.badge.glow.fill")
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                                     Text("Shared Calendars")
                                         .font(.system(size: 14, weight: .semibold))
@@ -215,7 +215,7 @@ struct SelectMemberCalendarsView: View {
                                     ForEach(sharedCalendars, id: \.self) { calendar in
                                         HStack(spacing: 12) {
                                             Circle()
-                                                .fill(Color.fromHex(calendar.calendarColorHex ?? "#007AFF"))
+                                                .fill(Color.fromHex(calendar.calendarColorHex ?? "#555555"))
                                                 .frame(width: 12, height: 12)
 
                                             VStack(alignment: .leading, spacing: 2) {
@@ -226,7 +226,7 @@ struct SelectMemberCalendarsView: View {
                                                 HStack(spacing: 4) {
                                                     Image(systemName: "person.2.fill")
                                                         .font(.system(size: 12))
-                                                        .foregroundColor(.blue)
+                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                                                     Text("Shared with all")
                                                         .font(.system(size: 12))
@@ -256,7 +256,7 @@ struct SelectMemberCalendarsView: View {
                         if isLoading {
                             VStack(spacing: 12) {
                                 ProgressView()
-                                    .tint(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                    .tint(Color.fromHex(member.colorHex ?? "#555555"))
 
                                 Text("Loading calendars...")
                                     .font(.system(size: 15, weight: .regular))
@@ -304,7 +304,7 @@ struct SelectMemberCalendarsView: View {
 
                                                             Image(systemName: "plus.circle.fill")
                                                                 .font(.system(size: 20))
-                                                                .foregroundColor(.blue)
+                                                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                                         }
                                                         .padding(.horizontal, 16)
                                                         .padding(.vertical, 12)
@@ -341,7 +341,7 @@ struct SelectMemberCalendarsView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.blue)
+                            .background(Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
                     .padding(.horizontal, 16)
@@ -402,7 +402,7 @@ struct SelectMemberCalendarsView: View {
     let member = FamilyMember(context: context)
     member.id = UUID()
     member.name = "John Doe"
-    member.colorHex = "#007AFF"
+    member.colorHex = "#555555"
     member.avatarInitials = "JD"
 
     return SelectMemberCalendarsView(member: member)

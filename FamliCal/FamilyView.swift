@@ -227,7 +227,7 @@ struct FamilyView: View {
                 Image(systemName: imageName)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(theme.floatingControlForeground)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 32, height: 32)
                     .background(
                         Circle()
                             .fill(theme.chromeOverlay)
@@ -412,52 +412,68 @@ struct FamilyView: View {
     private func nextEventCard(for memberGroup: MemberEventGroup, event: GroupedEvent) -> some View {
         let (statusText, _) = getEventStatus(event)
         let barColor = Color(uiColor: event.memberColor)
+        let barWidth: CGFloat = 5
 
-        return HStack(spacing: 0) {
-            // Left color bar with rounded corners
-            barColor
-                .frame(width: 4)
+        return ZStack(alignment: .topLeading) {
+            // Card background
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(theme.cardBackground)
 
             // Card content
-            VStack(alignment: .leading, spacing: 6) {
-                // Member name
-                Text(memberGroup.memberName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
+            HStack(spacing: 0) {
+                // Left side bar inside the card
+                VStack(spacing: 0) {
+                    barColor
+                        .frame(width: barWidth)
+                        .cornerRadius(barWidth / 2, corners: [.topLeft])
 
-                // Event title
-                Text(event.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                    barColor
+                        .frame(width: barWidth)
 
-                Spacer(minLength: 0)
+                    barColor
+                        .frame(width: barWidth)
+                        .cornerRadius(barWidth / 2, corners: [.bottomLeft])
+                }
+                .frame(maxWidth: barWidth, maxHeight: .infinity, alignment: .topLeading)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                // Day name and date
-                Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(secondaryTextColor)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Member name
+                    Text(memberGroup.memberName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
 
-                // Time on its own line to avoid truncation
-                if let timeRange = event.timeRange {
-                    Text(timeRange)
+                    // Event title
+                    Text(event.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    Spacer(minLength: 0)
+
+                    // Day name and date
+                    Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(secondaryTextColor)
+
+                    // Time on its own line to avoid truncation
+                    if let timeRange = event.timeRange {
+                        Text(timeRange)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(secondaryTextColor)
+                    }
+
+                    // Status on separate line
+                    Text(statusText)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(secondaryTextColor)
                 }
-
-                // Status on separate line
-                Text(statusText)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(secondaryTextColor)
+                .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
+                .padding(12)
             }
-            .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
-            .padding(12)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(theme.cardBackground)
-        )
+        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(theme.cardStroke, lineWidth: 1)
@@ -779,7 +795,7 @@ struct FamilyView: View {
                 let limitedEvents = Array(sortedGroupedEvents.prefix(eventsPerPerson))
 
                 // Create member event group
-                let memberColor = Color.fromHex(member.colorHex ?? "#007AFF")
+                let memberColor = Color.fromHex(member.colorHex ?? "#555555")
                 // Get next non-all-day event for spotlight
                 let nextNonAllDayEvent = sortedGroupedEvents.first { !$0.isAllDay && $0.timeRange != nil }
                 let memberGroup = MemberEventGroup(
@@ -991,7 +1007,7 @@ struct FamilyView: View {
         // Check if event is upcoming soon (within 1 hour)
         let oneHourFromNow = now.addingTimeInterval(3600)
         if event.startDate > now && event.startDate <= oneHourFromNow {
-            return ("Starting Soon", .blue)
+            return ("Starting Soon", Color(red: 0.33, green: 0.33, blue: 0.33))
         }
 
         // Default to upcoming

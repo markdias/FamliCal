@@ -23,7 +23,10 @@ struct MainTabView: View {
         }
     }
 
-    @State private var activeView: ActiveView = .events
+    @AppStorage("defaultHomeScreen") private var defaultHomeScreenRawValue: String = DefaultHomeScreen.family.rawValue
+
+    @State private var activeView: ActiveView
+    @State private var startCalendarInDayMode: Bool
     @State private var showingSettings = false
     @State private var showingAddEvent = false
     @State private var showingSearch = false
@@ -32,6 +35,12 @@ struct MainTabView: View {
 
     private var theme: AppTheme {
         themeManager.selectedTheme
+    }
+
+    init() {
+        let savedDefault = DefaultHomeScreen(rawValue: UserDefaults.standard.string(forKey: "defaultHomeScreen") ?? "") ?? .family
+        _activeView = State(initialValue: MainTabView.activeView(for: savedDefault))
+        _startCalendarInDayMode = State(initialValue: savedDefault == .calendarDay)
     }
 
     var body: some View {
@@ -45,7 +54,8 @@ struct MainTabView: View {
                         onChangeViewRequested: { switchToView(.calendar) }
                     )
                 case .calendar:
-                    CalendarView()
+                    CalendarView(startInDayMode: startCalendarInDayMode)
+                        .id(startCalendarInDayMode ? "calendar-day" : "calendar-month")
                 }
             }
 
@@ -78,6 +88,14 @@ struct MainTabView: View {
         .sheet(isPresented: $showingAddEvent) {
             AddEventView()
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .onChange(of: defaultHomeScreenRawValue) { _, newValue in
+            let screen = DefaultHomeScreen(rawValue: newValue) ?? .family
+            startCalendarInDayMode = screen == .calendarDay
+            let targetView = MainTabView.activeView(for: screen)
+            if activeView != targetView {
+                activeView = targetView
+            }
         }
     }
 
@@ -136,7 +154,7 @@ struct MainTabView: View {
                 Image(systemName: imageName)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(theme.floatingControlForeground)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 32, height: 32)
                     .background(
                         Circle()
                             .fill(theme.chromeOverlay)
@@ -151,6 +169,15 @@ struct MainTabView: View {
         guard activeView != target else { return }
         withAnimation(.spring()) {
             activeView = target
+        }
+    }
+
+    private static func activeView(for screen: DefaultHomeScreen) -> ActiveView {
+        switch screen {
+        case .family:
+            return .events
+        case .calendarMonth, .calendarDay:
+            return .calendar
         }
     }
 

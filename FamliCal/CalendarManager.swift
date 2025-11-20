@@ -274,7 +274,10 @@ final class CalendarManager {
                      endDate: Date,
                      location: String?,
                      notes: String?,
-                     isAllDay: Bool = false) -> Bool {
+                     isAllDay: Bool = false,
+                     recurrenceRule: EKRecurrenceRule? = nil,
+                     updateRecurrence: Bool = false,
+                     span: EKSpan = .thisEvent) -> Bool {
         // First, find the specific calendar
         guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
             print("❌ Could not find calendar with ID: \(calendarID)")
@@ -309,9 +312,16 @@ final class CalendarManager {
         event.location = location
         event.notes = notes
         event.isAllDay = isAllDay
+        if updateRecurrence {
+            if let recurrenceRule = recurrenceRule {
+                event.recurrenceRules = [recurrenceRule]
+            } else {
+                event.recurrenceRules = []
+            }
+        }
 
         do {
-            try eventStore.save(event, span: .thisEvent)
+            try eventStore.save(event, span: span)
             print("✅ Event updated successfully")
             return true
         } catch {

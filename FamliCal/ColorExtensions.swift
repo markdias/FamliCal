@@ -11,7 +11,7 @@ import UIKit
 extension UIColor {
     func hex() -> String {
         guard let components = cgColor.components, components.count >= 3 else {
-            return "#007AFF"
+            return "#555555"
         }
         let r = Int(components[0] * 255)
         let g = Int(components[1] * 255)
@@ -22,7 +22,7 @@ extension UIColor {
 
 extension Color {
     static let familyColors: [Color] = [
-        .blue,
+        Color(red: 0.33, green: 0.33, blue: 0.33),
         .red,
         .green,
         .orange,
@@ -35,7 +35,7 @@ extension Color {
 
     func toHex() -> String {
         guard let components = UIColor(self).cgColor.components, components.count >= 3 else {
-            return "#007AFF"
+            return "#555555"
         }
         let r = Int(components[0] * 255)
         let g = Int(components[1] * 255)

@@ -64,6 +64,8 @@ struct EditEventView: View {
     @State private var isAllDay: Bool = false
     @State private var showAsOption: ShowAsOption = .busy
     @State private var repeatOption: RepeatOption = .none
+    @State private var recurrenceConfig = RecurrenceConfiguration.none(anchor: Date())
+    @State private var showingCustomRepeatSheet = false
     @State private var alertOption: AlertOption = .none
 
     // Location search
@@ -72,6 +74,7 @@ struct EditEventView: View {
 
     // Calendar info for updating
     @State private var calendarId: String? = nil
+    @State private var selectedMemberCalendars: [NSManagedObjectID: String] = [:] // Track calendar per member
 
     // Driver selection
     @State private var selectedDriver: DriverWrapper?
@@ -123,6 +126,7 @@ struct EditEventView: View {
                         timeSection
                         repeatSection
                         alertSection
+                        calendarSection
                         driverSection
                         notesSection
                         Spacer()
@@ -188,6 +192,15 @@ struct EditEventView: View {
                 locationAddress = upcomingEvent.location ?? ""
                 isApplyingLocationSelection = true
                 locationName = upcomingEvent.location ?? ""
+                recurrenceConfig = RecurrenceConfiguration.none(anchor: upcomingEvent.startDate)
+                if let rule = upcomingEvent.recurrenceRule,
+                   let parsed = RecurrenceConfiguration.from(rule: rule, anchor: upcomingEvent.startDate) {
+                    recurrenceConfig = parsed
+                    repeatOption = parsed.suggestedRepeatOption(anchor: upcomingEvent.startDate)
+                } else if upcomingEvent.hasRecurrence {
+                    recurrenceConfig.isEnabled = true
+                    repeatOption = .custom
+                }
 
                 // Fetch calendar ID from CoreData
                 fetchCalendarId()
@@ -281,6 +294,9 @@ struct EditEventView: View {
         print("   End: \(eventEndDate)")
         print("   Location: \(locationAddress.isEmpty ? "(none)" : locationAddress)")
 
+        let recurrenceRule = selectedRecurrenceRule(startDate: eventStartDate)
+        let updateSpan: EKSpan = (upcomingEvent.hasRecurrence || recurrenceRule != nil) ? .futureEvents : .thisEvent
+
         let success = CalendarManager.shared.updateEvent(
             withIdentifier: upcomingEvent.id,
             occurrenceStartDate: upcomingEvent.startDate,
@@ -290,7 +306,10 @@ struct EditEventView: View {
             endDate: eventEndDate,
             location: locationAddress.isEmpty ? nil : locationAddress,
             notes: notes.isEmpty ? nil : notes,
-            isAllDay: isAllDay
+            isAllDay: isAllDay,
+            recurrenceRule: recurrenceRule,
+            updateRecurrence: true,
+            span: updateSpan
         )
 
         if success {
@@ -749,6 +768,52 @@ struct EditEventView: View {
         .buttonStyle(.plain)
     }
 
+    private func currentRecurrenceConfiguration(anchorDate: Date) -> RecurrenceConfiguration? {
+        if repeatOption == .custom {
+            return recurrenceConfig.isEnabled ? recurrenceConfig : nil
+        }
+
+        if let quickConfig = RecurrenceConfiguration.quick(option: repeatOption, anchor: anchorDate), quickConfig.isEnabled {
+            return quickConfig
+        }
+
+        return nil
+    }
+
+    private func recurrenceSummaryText(anchorDate: Date) -> String {
+        guard let config = currentRecurrenceConfiguration(anchorDate: anchorDate) else {
+            return "Does not repeat"
+        }
+        return config.summary(anchor: anchorDate)
+    }
+
+    private func selectedRecurrenceRule(startDate: Date) -> EKRecurrenceRule? {
+        currentRecurrenceConfiguration(anchorDate: startDate)?.toRecurrenceRule(anchor: startDate)
+    }
+
+    private func handleRepeatSelection(_ option: RepeatOption) {
+        switch option {
+        case .custom:
+            if let existing = currentRecurrenceConfiguration(anchorDate: eventDate) {
+                recurrenceConfig = existing
+            } else if !recurrenceConfig.isEnabled {
+                recurrenceConfig = RecurrenceConfiguration.quick(option: .weekly, anchor: eventDate) ?? recurrenceConfig
+            }
+            repeatOption = .custom
+            showingCustomRepeatSheet = true
+        default:
+            repeatOption = option
+        }
+    }
+
+    private var repeatDetailLabel: String {
+        switch repeatOption {
+        case .custom: return "Custom pattern"
+        case .none: return "Off"
+        default: return "Quick repeat"
+        }
+    }
+
     @ViewBuilder
     private var repeatSection: some View {
         sectionCard {
@@ -758,7 +823,7 @@ struct EditEventView: View {
                 Menu {
                     ForEach(RepeatOption.allCases, id: \.self) { option in
                         Button(option.rawValue) {
-                            repeatOption = option
+                            handleRepeatSelection(option)
                         }
                     }
                 } label: {
@@ -779,6 +844,53 @@ struct EditEventView: View {
                     .background(fieldBackground)
                     .cornerRadius(14)
                 }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(recurrenceSummaryText(anchorDate: eventDate))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(primaryTextColor)
+                    Text(repeatDetailLabel)
+                        .font(.system(size: 13))
+                        .foregroundColor(secondaryTextColor)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(fieldBackground)
+                )
+
+                Button {
+                    if let existing = currentRecurrenceConfiguration(anchorDate: eventDate) {
+                        recurrenceConfig = existing
+                    } else {
+                        recurrenceConfig = RecurrenceConfiguration.quick(option: .weekly, anchor: eventDate) ?? recurrenceConfig
+                    }
+                    repeatOption = .custom
+                    showingCustomRepeatSheet = true
+                } label: {
+                    HStack {
+                        Image(systemName: "slider.horizontal.3")
+                        Text("Custom repeat options")
+                            .font(.system(size: 15, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(accentColor)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .background(accentColor.opacity(0.1))
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showingCustomRepeatSheet) {
+            CustomRepeatView(
+                recurrence: $recurrenceConfig,
+                anchorDate: eventDate
+            ) { updated in
+                repeatOption = updated.isEnabled ? .custom : .none
             }
         }
     }
@@ -818,6 +930,82 @@ struct EditEventView: View {
     }
 
     @ViewBuilder
+    private var calendarSection: some View {
+        sectionCard {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeading("Calendar")
+
+                if let member = getEventMember() {
+                    memberCalendarSelector(for: member)
+                } else {
+                    Text("Calendar: \(upcomingEvent.calendarTitle)")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(primaryTextColor)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func memberCalendarSelector(for member: FamilyMember) -> some View {
+        if let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar>,
+           !memberCalendars.isEmpty {
+            let sortedCalendars = memberCalendars.sorted { cal1, cal2 in
+                // Auto-linked calendar first
+                if cal1.isAutoLinked && !cal2.isAutoLinked { return true }
+                if !cal1.isAutoLinked && cal2.isAutoLinked { return false }
+                // Then by name
+                return (cal1.calendarName ?? "") < (cal2.calendarName ?? "")
+            }
+
+            Menu {
+                ForEach(sortedCalendars, id: \.self) { calendar in
+                    Button(action: {
+                        updateSelectedCalendarForMember(member: member, calendar: calendar)
+                    }) {
+                        HStack {
+                            Circle()
+                                .fill(Color.fromHex(calendar.calendarColorHex ?? "#555555"))
+                                .frame(width: 12, height: 12)
+                            Text(calendar.calendarName ?? "Unknown")
+                            if isCalendarSelectedForMember(member: member, calendar: calendar) {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    if let selectedCalendar = getSelectedCalendarForMember(member: member) {
+                        Circle()
+                            .fill(Color.fromHex(selectedCalendar.calendarColorHex ?? "#555555"))
+                            .frame(width: 10, height: 10)
+                        Text(selectedCalendar.calendarName ?? "Unknown")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(primaryTextColor)
+                    } else {
+                        Text("Select calendar")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(secondaryTextColor)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(secondaryTextColor)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(fieldBackground)
+                .cornerRadius(12)
+            }
+        } else {
+            Text("Calendar: \(upcomingEvent.calendarTitle)")
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(primaryTextColor)
+        }
+    }
+
+    @ViewBuilder
     private var notesSection: some View {
         sectionCard {
             VStack(alignment: .leading, spacing: 8) {
@@ -833,6 +1021,66 @@ struct EditEventView: View {
                     .frame(height: 120)
             }
         }
+    }
+
+    // MARK: - Calendar Selection Helpers
+
+    private func getEventMember() -> FamilyMember? {
+        // Try to find which member this event belongs to
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", upcomingEvent.id)
+
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            if let familyEvent = results.first {
+                if let attendees = familyEvent.attendees as? Set<FamilyMember>, !attendees.isEmpty {
+                    return attendees.first
+                }
+            }
+        } catch {
+            print("Error fetching event member: \(error.localizedDescription)")
+        }
+
+        return nil
+    }
+
+    private func updateSelectedCalendarForMember(member: FamilyMember, calendar: FamilyMemberCalendar) {
+        if let calendarID = calendar.calendarID {
+            selectedMemberCalendars[member.objectID] = calendarID
+            calendarId = calendarID
+        }
+    }
+
+    private func getSelectedCalendarForMember(member: FamilyMember) -> FamilyMemberCalendar? {
+        if let memberCalendars = member.memberCalendars as? Set<FamilyMemberCalendar> {
+            // Check if there's a manually selected calendar for this member
+            if let selectedCalID = selectedMemberCalendars[member.objectID],
+               let selected = memberCalendars.first(where: { $0.calendarID == selectedCalID }) {
+                return selected
+            }
+
+            // Check if current event's calendar matches one of the member's calendars
+            if let eventCalID = calendarId,
+               let selected = memberCalendars.first(where: { $0.calendarID == eventCalID }) {
+                return selected
+            }
+
+            // Otherwise return the first auto-linked calendar (predefined default)
+            if let autoLinked = memberCalendars.first(where: { $0.isAutoLinked }) {
+                return autoLinked
+            }
+            // If no auto-linked, return first calendar
+            return memberCalendars.sorted { ($0.calendarName ?? "") < ($1.calendarName ?? "") }.first
+        }
+        return nil
+    }
+
+    private func isCalendarSelectedForMember(member: FamilyMember, calendar: FamilyMemberCalendar) -> Bool {
+        if let selected = getSelectedCalendarForMember(member: member),
+           selected.objectID == calendar.objectID {
+            return true
+        }
+        return false
     }
 
     @ViewBuilder
@@ -1056,7 +1304,7 @@ struct EditEventView: View {
         startDate: Date().addingTimeInterval(3600),
         endDate: Date().addingTimeInterval(7200),
         calendarID: "demo-calendar",
-        calendarColor: UIColor.blue,
+        calendarColor: UIColor(red: 0.33, green: 0.33, blue: 0.33, alpha: 1.0),
         calendarTitle: "Work",
         hasRecurrence: false, recurrenceRule: nil, isAllDay: false
     )

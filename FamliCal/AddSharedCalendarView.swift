@@ -42,7 +42,7 @@ struct AddSharedCalendarView: View {
                 if isLoading {
                     VStack(spacing: 12) {
                         ProgressView()
-                            .tint(.blue)
+                            .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                         Text("Loading calendars...")
                             .font(.system(size: 15, weight: .regular, design: .default))
@@ -134,7 +134,7 @@ struct AddSharedCalendarView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.blue)
+                            .background(Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
                     .padding(.horizontal, 16)

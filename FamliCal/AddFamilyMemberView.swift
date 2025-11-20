@@ -45,7 +45,7 @@ struct AddFamilyMemberView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "car.fill")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                 .frame(width: 24)
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -73,7 +73,7 @@ struct AddFamilyMemberView: View {
                     if isLoading {
                         HStack(spacing: 12) {
                             ProgressView()
-                                .tint(.blue)
+                                .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
 
                             Text("Searching for calendar...")
                                 .font(.system(size: 15, weight: .regular, design: .default))
@@ -159,7 +159,7 @@ struct AddFamilyMemberView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(name.isEmpty ? Color.gray : Color.blue)
+                            .background(name.isEmpty ? Color.gray : Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
                     .disabled(name.isEmpty)
@@ -167,7 +167,7 @@ struct AddFamilyMemberView: View {
                     Button(action: { dismiss() }) {
                         Text("Cancel")
                             .font(.system(size: 16, weight: .semibold, design: .default))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color(.systemGray6))
@@ -240,7 +240,7 @@ struct AddFamilyMemberView: View {
     }
 
     private func getRandomColor() -> Color {
-        Color.familyColors.randomElement() ?? Color.blue
+        Color.familyColors.randomElement() ?? Color(red: 0.33, green: 0.33, blue: 0.33)
     }
 
     private func getInitials(from name: String) -> String {

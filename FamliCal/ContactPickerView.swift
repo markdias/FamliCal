@@ -23,7 +23,7 @@ struct ContactPickerView: View {
                 if isLoading {
                     VStack(spacing: 12) {
                         ProgressView()
-                            .tint(.blue)
+                            .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
                         Text("Loading Contacts...")
                             .font(.system(size: 16))
                             .foregroundColor(.gray)

@@ -69,7 +69,7 @@ struct OnboardingFamilySetupView: View {
                             ForEach(familyMembers, id: \.self) { member in
                                 HStack(spacing: 12) {
                                     Circle()
-                                        .fill(Color.fromHex(member.colorHex ?? "#007AFF"))
+                                        .fill(Color.fromHex(member.colorHex ?? "#555555"))
                                         .frame(width: 12, height: 12)
 
                                     VStack(alignment: .leading, spacing: 2) {
