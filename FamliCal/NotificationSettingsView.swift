@@ -136,38 +136,45 @@ struct NotificationSettingsView: View {
 
     private var morningBriefTimePicker: some View {
         VStack(spacing: 12) {
-            HStack {
-                Text("Notification Time")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
+            Text("Notification Time")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
 
-                Spacer()
+            HStack(spacing: 16) {
+                VStack(spacing: 8) {
+                    Text("Hour")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.gray)
 
-                HStack(spacing: 8) {
                     Picker("Hour", selection: $notificationManager.morningBriefTime.hour) {
                         ForEach(0..<24, id: \.self) { hour in
                             Text(String(format: "%02d", hour)).tag(hour)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 60)
+                    .pickerStyle(.wheel)
+                    .frame(height: 80)
+                }
 
-                    Text(":")
-                        .font(.system(size: 14, weight: .semibold))
+                VStack(spacing: 8) {
+                    Text("Minute")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.gray)
 
                     Picker("Minute", selection: $notificationManager.morningBriefTime.minute) {
                         ForEach(Array(stride(from: 0, to: 60, by: 15)), id: \.self) { minute in
                             Text(String(format: "%02d", minute)).tag(minute)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 60)
+                    .pickerStyle(.wheel)
+                    .frame(height: 80)
                 }
             }
             .padding(12)
-            .background(Color(UIColor.secondarySystemBackground))
-            .cornerRadius(12)
         }
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(12)
         .onChange(of: notificationManager.morningBriefTime) { _, _ in
             notificationManager.saveSettings()
             notificationManager.scheduleMorningBrief()
