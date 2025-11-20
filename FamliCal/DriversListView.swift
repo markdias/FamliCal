@@ -1,62 +1,102 @@
+//
+//  DriversListView.swift
+//  FamliCal
+//
+//  Created by Codex on 20/11/2025.
+//
+
 import SwiftUI
 import CoreData
 
 struct DriversListView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @FetchRequest(entity: Driver.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)]) private var drivers: FetchedResults<Driver>
 
     @State private var showingAddDriver = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if drivers.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "car.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
-                        Text("No Drivers")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        Text("Add drivers to manage who can drive to events")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
-                } else {
-                    List {
-                        ForEach(drivers, id: \.self) { driver in
-                            NavigationLink(destination: EditDriverView(driver: driver)) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(driver.name ?? "Unknown")
-                                        .font(.headline)
-                                    if let phone = driver.phone, !phone.isEmpty {
-                                        Text(phone)
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
+        NavigationView {
+            GlassyBackground {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if drivers.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "car.fill")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                Text("No Drivers")
+                                    .font(.headline)
+                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .gray)
+                                Text("Add drivers to manage who can drive to events")
+                                    .font(.subheadline)
+                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 48)
+                            .glassyCard(padding: 0)
+                            .padding(.horizontal, 16)
+                        } else {
+                            VStack(spacing: 0) {
+                                ForEach(drivers, id: \.self) { driver in
+                                    NavigationLink(destination: EditDriverView(driver: driver)) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(driver.name ?? "Unknown")
+                                                    .font(.headline)
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                                if let phone = driver.phone, !phone.isEmpty {
+                                                    Text(phone)
+                                                        .font(.subheadline)
+                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                }
+                                                if let email = driver.email, !email.isEmpty {
+                                                    Text(email)
+                                                        .font(.subheadline)
+                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                }
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                        }
+                                        .padding()
                                     }
-                                    if let email = driver.email, !email.isEmpty {
-                                        Text(email)
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
+                                    .buttonStyle(.plain)
+
+                                    if driver.id != drivers.last?.id {
+                                        Divider()
+                                            .padding(.horizontal, 16)
+                                            .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
                                     }
                                 }
-                                .padding(.vertical, 4)
                             }
+                            .glassyCard(padding: 0)
+                            .padding(.horizontal, 16)
                         }
-                        .onDelete(perform: deleteDrivers)
                     }
+                    .padding(.top, 24)
                 }
             }
             .navigationTitle("Drivers")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Back")
+                        }
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button(action: { showingAddDriver = true }) {
                         Image(systemName: "plus")
-                            .foregroundColor(.blue)
+                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
                     }
                 }
             }
@@ -85,4 +125,5 @@ struct DriversListView: View {
 #Preview {
     DriversListView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }

@@ -13,37 +13,39 @@ struct ThemeSettingsView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text("Pick a theme")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.gray)
+            GlassyBackground {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Text("Pick a theme")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
 
-                    VStack(spacing: 18) {
-                        ForEach(AppTheme.allThemes) { theme in
-                            Button(action: {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                    themeManager.select(theme: theme)
+                        VStack(spacing: 18) {
+                            ForEach(AppTheme.allThemes) { theme in
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                        themeManager.select(theme: theme)
+                                    }
+                                }) {
+                                    ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
                                 }
-                            }) {
-                        ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Select \(theme.displayName) theme")
+                                .accessibilityHint(theme.description)
+                                .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Select \(theme.displayName) theme")
-                    .accessibilityHint(theme.description)
-                    .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
+                    .padding(.horizontal, 20)
+                    .padding(.top, 28)
+                    .padding(.bottom, 48)
                 }
             }
-        }
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 48)
-            }
-            .background(Color(.systemGroupedBackground))
             .navigationTitle("Themes")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
                 }
             }
         }
@@ -51,6 +53,7 @@ struct ThemeSettingsView: View {
 }
 
 private struct ThemeOptionCard: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let theme: AppTheme
     let isSelected: Bool
 

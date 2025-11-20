@@ -11,6 +11,7 @@ import Contacts
 
 struct PermissionsView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var calendarPermissionStatus = ""
     @State private var contactsPermissionStatus = ""
     @State private var showingPermissionAlert = false
@@ -18,163 +19,160 @@ struct PermissionsView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Calendar Permissions Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Calendar Access")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 16)
-
-                        VStack(spacing: 0) {
-                            HStack(spacing: 16) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Calendar Permission")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-
-                                    Text("Access to your calendar events")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-
-                                Spacer()
-
-                                HStack(spacing: 8) {
-                                    Image(systemName: getPermissionIcon())
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(getPermissionColor())
-
-                                    Text(getPermissionText())
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(getPermissionColor())
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                        }
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 16)
-                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-                    }
-
-                    // Contacts Permissions Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Contacts Access")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 16)
-
-                        VStack(spacing: 0) {
-                            HStack(spacing: 16) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Contacts Permission")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-
-                                    Text("Quick add drivers from contacts")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-
-                                Spacer()
-
-                                HStack(spacing: 8) {
-                                    Image(systemName: getContactsPermissionIcon())
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(getContactsPermissionColor())
-
-                                    Text(getContactsPermissionText())
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(getContactsPermissionColor())
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                        }
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 16)
-                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-                    }
-
-                    // Permission Info Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("About Permissions")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 16)
-
+            GlassyBackground {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Calendar Permissions Section
                         VStack(alignment: .leading, spacing: 12) {
-                            PermissionInfoRow(
-                                icon: "calendar",
-                                title: "Calendar Access",
-                                description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
-                            )
+                            Text("Calendar Access")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .padding(.horizontal, 16)
 
-                            Divider()
-                                .padding(.vertical, 8)
+                            VStack(spacing: 0) {
+                                HStack(spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Calendar Permission")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                            PermissionInfoRow(
-                                icon: "person.crop.circle.fill.badge.plus",
-                                title: "Contacts Access",
-                                description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
-                            )
+                                        Text("Access to your calendar events")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    }
+
+                                    Spacer()
+
+                                    HStack(spacing: 8) {
+                                        Image(systemName: getPermissionIcon())
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(getPermissionColor())
+
+                                        Text(getPermissionText())
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(getPermissionColor())
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            .glassyCard(padding: 0)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(12)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
+
+                        // Contacts Permissions Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Contacts Access")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .padding(.horizontal, 16)
+
+                            VStack(spacing: 0) {
+                                HStack(spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Contacts Permission")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+
+                                        Text("Quick add drivers from contacts")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    }
+
+                                    Spacer()
+
+                                    HStack(spacing: 8) {
+                                        Image(systemName: getContactsPermissionIcon())
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(getContactsPermissionColor())
+
+                                        Text(getContactsPermissionText())
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(getContactsPermissionColor())
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            .glassyCard(padding: 0)
+                            .padding(.horizontal, 16)
+                        }
+
+                        // Permission Info Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("About Permissions")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .padding(.horizontal, 16)
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                PermissionInfoRow(
+                                    icon: "calendar",
+                                    title: "Calendar Access",
+                                    description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
+                                )
+
+                                Divider()
+                                    .padding(.vertical, 8)
+                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+
+                                PermissionInfoRow(
+                                    icon: "person.crop.circle.fill.badge.plus",
+                                    title: "Contacts Access",
+                                    description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
+                                )
+                            }
+                            .padding(12)
+                            .glassyCard(padding: 0)
+                            .padding(.horizontal, 16)
+                        }
+
+                        // Request Permission Buttons
+                        VStack(spacing: 12) {
+                            if getPermissionText() != "Granted" {
+                                Button(action: requestCalendarPermission) {
+                                    Text("Request Calendar Permission")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+
+                            if getContactsPermissionText() != "Granted" {
+                                Button(action: requestContactsPermission) {
+                                    Text("Request Contacts Permission")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
                         .padding(.horizontal, 16)
-                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+
+                        Spacer()
                     }
-
-                    // Request Permission Buttons
-                    VStack(spacing: 12) {
-                        if getPermissionText() != "Granted" {
-                            Button(action: requestCalendarPermission) {
-                                Text("Request Calendar Permission")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(Color.blue)
-                                    .cornerRadius(12)
-                            }
-                        }
-
-                        if getContactsPermissionText() != "Granted" {
-                            Button(action: requestContactsPermission) {
-                                Text("Request Contacts Permission")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(Color.blue)
-                                    .cornerRadius(12)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-
-                    Spacer()
+                    .padding(.vertical, 16)
                 }
-                .padding(.vertical, 16)
             }
-            .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .principal) {
                     Text("Permissions")
                         .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .primary)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
                     }
                 }
             }
@@ -304,6 +302,7 @@ struct PermissionsView: View {
 }
 
 private struct PermissionInfoRow: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let icon: String
     let title: String
     let description: String
@@ -312,18 +311,18 @@ private struct PermissionInfoRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.blue)
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                 .frame(width: 24, height: 24)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
                 Text(description)
                     .font(.system(size: 13))
-                    .foregroundColor(.gray)
+                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                     .lineLimit(nil)
             }
 
@@ -334,4 +333,5 @@ private struct PermissionInfoRow: View {
 
 #Preview {
     PermissionsView()
+        .environmentObject(ThemeManager())
 }

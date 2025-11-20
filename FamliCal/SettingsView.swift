@@ -21,87 +21,89 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    VStack(spacing: 18) {
-                        SettingsRowView(
-                            iconName: "person.2.fill",
-                            iconColor: Color(red: 0.33, green: 0.33, blue: 0.33),
-                            title: "Family Members",
-                            subtitle: "Manage members and linked calendars",
-                            action: { showingFamilyMembers = true }
-                        )
+            GlassyBackground {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        VStack(spacing: 18) {
+                            SettingsRowView(
+                                iconName: "person.2.fill",
+                                iconColor: Color(red: 0.33, green: 0.33, blue: 0.33),
+                                title: "Family Members",
+                                subtitle: "Manage members and linked calendars",
+                                action: { showingFamilyMembers = true }
+                            )
 
-                        SettingsRowView(
-                            iconName: "calendar",
-                            iconColor: Color.green,
-                            title: "Visible Calendars",
-                            subtitle: "Choose which calendars appear",
-                            action: { showingVisibleCalendars = true }
-                        )
+                            SettingsRowView(
+                                iconName: "calendar",
+                                iconColor: Color.green,
+                                title: "Visible Calendars",
+                                subtitle: "Choose which calendars appear",
+                                action: { showingVisibleCalendars = true }
+                            )
 
-                        SettingsRowView(
-                            iconName: "car.fill",
-                            iconColor: Color.orange,
-                            title: "Drivers",
-                            subtitle: "Manage drivers for events",
-                            action: { showingDrivers = true }
-                        )
+                            SettingsRowView(
+                                iconName: "car.fill",
+                                iconColor: Color.orange,
+                                title: "Drivers",
+                                subtitle: "Manage drivers for events",
+                                action: { showingDrivers = true }
+                            )
 
-                        SettingsRowView(
-                            iconName: "paintbrush",
-                            iconColor: Color.purple,
-                            title: "Theme",
-                            subtitle: themeManager.selectedTheme.displayName,
-                            action: { showingThemeSettings = true }
-                        )
-                    }
+                            SettingsRowView(
+                                iconName: "paintbrush",
+                                iconColor: Color.purple,
+                                title: "Theme",
+                                subtitle: themeManager.selectedTheme.displayName,
+                                action: { showingThemeSettings = true }
+                            )
+                        }
 
-                    VStack(alignment: .center, spacing: 8) {
-                        Text("Layout & Localization")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.gray)
+                        VStack(alignment: .center, spacing: 8) {
+                            Text("Layout & Localization")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
 
-                        HStack(spacing: 12) {
-                            Button(action: { showingAppSettings = true }) {
+                            HStack(spacing: 12) {
+                                Button(action: { showingAppSettings = true }) {
+                                    SettingsCardView(
+                                        iconName: "square.grid.2x2",
+                                        title: "App Settings",
+                                        subtitle: "Calendar grid, week start, events"
+                                    )
+                                }
+                                .buttonStyle(.plain)
+
                                 SettingsCardView(
-                                    iconName: "square.grid.2x2",
-                                    title: "App Settings",
-                                    subtitle: "Calendar grid, week start, events"
+                                    iconName: "rectangle.grid.2x2",
+                                    title: "Widget Settings",
+                                    subtitle: "Header placement, density, grid"
+                                )
+                            }
+                        }
+
+                        VStack(spacing: 12) {
+                            Button(action: { showingPermissions = true }) {
+                                SettingsRowView(
+                                    iconName: "lock.fill",
+                                    iconColor: Color.orange,
+                                    title: "Permissions",
+                                    subtitle: "Manage app access and permissions",
+                                    action: { showingPermissions = true }
                                 )
                             }
                             .buttonStyle(.plain)
-
-                            SettingsCardView(
-                                iconName: "rectangle.grid.2x2",
-                                title: "Widget Settings",
-                                subtitle: "Header placement, density, grid"
-                            )
                         }
                     }
-
-                    VStack(spacing: 12) {
-                        Button(action: { showingPermissions = true }) {
-                            SettingsRowView(
-                                iconName: "lock.fill",
-                                iconColor: Color.orange,
-                                title: "Permissions",
-                                subtitle: "Manage app access and permissions",
-                                action: { showingPermissions = true }
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    .padding(24)
                 }
-                .padding(24)
             }
-            .background(Color(.systemGroupedBackground))
             .navigationTitle("Settings")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .primary)
                     }
                 }
             }
@@ -131,6 +133,7 @@ struct SettingsView: View {
 }
 
 private struct SettingsRowView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let iconName: String
     let iconColor: Color
     let title: String
@@ -138,7 +141,7 @@ private struct SettingsRowView: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        GlassyRow(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: iconName)
                     .font(.system(size: 16, weight: .semibold))
@@ -150,32 +153,19 @@ private struct SettingsRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
                     Text(subtitle)
                         .font(.system(size: 11))
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.gray)
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
     }
 }
 
 private struct SettingsCardView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let iconName: String
     let title: String
     let subtitle: String
@@ -184,28 +174,27 @@ private struct SettingsCardView: View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: iconName)
                 .font(.system(size: 20))
-                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : Color(red: 0.33, green: 0.33, blue: 0.33))
                 .frame(width: 44, height: 44)
-                .background(Color(.systemBlue).opacity(0.1))
+                .background(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor.opacity(0.2) : Color(.systemBlue).opacity(0.1))
                 .cornerRadius(16)
 
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
             Text(subtitle)
                 .font(.system(size: 11))
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                 .lineLimit(2)
         }
-        .padding()
+        .glassyCard()
         .frame(maxWidth: .infinity)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(20)
     }
 }
 
 #Preview {
     SettingsView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }
