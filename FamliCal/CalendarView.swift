@@ -17,6 +17,9 @@ struct CalendarView: View {
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
 
+    var onAddEventRequested: ((Date) -> Void)? = nil
+    @Binding var selectedDateBinding: Date
+
     @FetchRequest(
         entity: FamilyMember.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
@@ -29,7 +32,6 @@ struct CalendarView: View {
     )
     private var memberCalendarLinks: FetchedResults<FamilyMemberCalendar>
 
-    @State private var selectedDate: Date = Date()
     @State private var currentMonth: Date = Date()
     @State private var dayEvents: [String: [DayEventItem]] = [:]
     @State private var isLoadingEvents = false
@@ -65,6 +67,7 @@ struct CalendarView: View {
     }()
     private var theme: AppTheme { themeManager.selectedTheme }
     private var secondaryTextColor: Color { theme.mutedTagColor }
+    private var selectedDate: Binding<Date> { $selectedDateBinding }
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     private static let monthFormatter: DateFormatter = {
@@ -91,8 +94,10 @@ struct CalendarView: View {
         return formatter
     }()
 
-    init(startInDayMode: Bool = false) {
+    init(startInDayMode: Bool = false, selectedDateBinding: Binding<Date>, onAddEventRequested: ((Date) -> Void)? = nil) {
         _calendarDisplayMode = State(initialValue: startInDayMode ? .day : .month)
+        self._selectedDateBinding = selectedDateBinding
+        self.onAddEventRequested = onAddEventRequested
     }
 
     var body: some View {

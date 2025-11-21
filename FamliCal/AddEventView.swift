@@ -17,6 +17,8 @@ struct AddEventView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @AppStorage("defaultAlertOption") private var defaultAlertOptionRawValue: String = AlertOption.none.rawValue
 
+    let initialDate: Date?
+
     @FetchRequest(
         entity: FamilyMember.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
@@ -111,6 +113,17 @@ struct AddEventView: View {
     @State private var showingCalendarPicker = false
     @State private var showingCreateEventForDriverAlert = false
     @State private var driverToCreateEventFor: DriverWrapper?
+
+    init(initialDate: Date? = nil) {
+        self.initialDate = initialDate
+
+        if let date = initialDate {
+            _eventDate = State(initialValue: date)
+            _startTime = State(initialValue: date)
+            // Set end time to 1 hour after start time
+            _endTime = State(initialValue: date.addingTimeInterval(3600))
+        }
+    }
 
     private var theme: AppTheme { themeManager.selectedTheme }
     private var primaryTextColor: Color { Color.black.opacity(0.9) }

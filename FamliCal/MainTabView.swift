@@ -30,6 +30,8 @@ struct MainTabView: View {
     @State private var showingSettings = false
     @State private var showingAddEvent = false
     @State private var showingSearch = false
+    @State private var addEventInitialDate: Date? = nil
+    @State private var calendarSelectedDate: Date = Date()
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var themeManager: ThemeManager
 
@@ -54,7 +56,10 @@ struct MainTabView: View {
                         onChangeViewRequested: { switchToView(.calendar) }
                     )
                 case .calendar:
-                    CalendarView(startInDayMode: startCalendarInDayMode)
+                    CalendarView(startInDayMode: startCalendarInDayMode, selectedDateBinding: $calendarSelectedDate, onAddEventRequested: { date in
+                        addEventInitialDate = date
+                        showingAddEvent = true
+                    })
                         .id(startCalendarInDayMode ? "calendar-day" : "calendar-month")
                 }
             }
@@ -86,7 +91,7 @@ struct MainTabView: View {
                 .environment(\.managedObjectContext, viewContext)
         }
         .sheet(isPresented: $showingAddEvent) {
-            AddEventView()
+            AddEventView(initialDate: addEventInitialDate)
                 .environment(\.managedObjectContext, viewContext)
         }
         .onChange(of: defaultHomeScreenRawValue) { _, newValue in
@@ -129,7 +134,16 @@ struct MainTabView: View {
     }
 
     private var primaryActionButton: some View {
-        Button(action: { showingAddEvent = true }) {
+        Button(action: {
+            if activeView == .calendar {
+                // For calendar view, use the selected date from the calendar
+                addEventInitialDate = calendarSelectedDate
+                showingAddEvent = true
+            } else {
+                addEventInitialDate = nil
+                showingAddEvent = true
+            }
+        }) {
             Image(systemName: "plus")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
