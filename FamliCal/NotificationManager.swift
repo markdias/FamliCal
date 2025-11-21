@@ -388,20 +388,12 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
     }
 
     private func openMapsForLocation(_ address: String) {
-        // Use default San Francisco location for now (same as notification view)
-        let coordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
-        let clLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        let mapItem = MKMapItem(location: clLocation, address: nil)
-        mapItem.name = address
+        // Get the user's preferred maps app from app settings
+        let preferredMapsApp = UserDefaults.standard.string(forKey: "defaultMapsApp") ?? "Apple Maps"
 
-        let launchOptions: [String: Any] = [
-            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: coordinate),
-            MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)),
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-        ]
-
-        mapItem.openInMaps(launchOptions: launchOptions)
-        print("🗺️ Opening Maps for location: \(address)")
+        // Use MapsUtility with the user's preferred app
+        MapsUtility.openLocation(address, in: preferredMapsApp)
+        print("🗺️ Opening \(preferredMapsApp) for location: \(address)")
     }
 }
 
