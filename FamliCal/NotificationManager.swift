@@ -118,7 +118,8 @@ class NotificationManager: NSObject, ObservableObject {
         event: EKEvent,
         alertOption: AlertOption,
         familyMembers: [String] = [],
-        drivers: String? = nil
+        drivers: String? = nil,
+        location: String? = nil
     ) {
         guard notificationsEnabled else {
             Task {
@@ -135,7 +136,8 @@ class NotificationManager: NSObject, ObservableObject {
                         event: event,
                         alertOption: alertOption,
                         familyMembers: familyMembers,
-                        drivers: drivers
+                        drivers: drivers,
+                        location: location
                     )
                 } else {
                     print("⚠️ System permission not granted, requesting...")
@@ -151,7 +153,8 @@ class NotificationManager: NSObject, ObservableObject {
                             event: event,
                             alertOption: alertOption,
                             familyMembers: familyMembers,
-                            drivers: drivers
+                            drivers: drivers,
+                            location: location
                         )
                     } else {
                         print("❌ Permission denied by user")
@@ -183,10 +186,32 @@ class NotificationManager: NSObject, ObservableObject {
         content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = [
+
+        // Build userInfo with all relevant data
+        var userInfoDict: [AnyHashable: Any] = [
             "eventIdentifier": event.eventIdentifier ?? "",
             "eventStart": event.startDate.timeIntervalSince1970
         ]
+
+        if let location = location, !location.isEmpty {
+            userInfoDict["location"] = location
+        }
+
+        if !familyMembers.isEmpty {
+            userInfoDict["familyMembers"] = familyMembers.joined(separator: ", ")
+        }
+
+        if let drivers = drivers, !drivers.isEmpty {
+            userInfoDict["drivers"] = drivers
+        }
+
+        content.userInfo = userInfoDict
+
+        // Set category for custom notification UI
+        content.categoryIdentifier = "EVENT_NOTIFICATION"
+
+        // Allow interruption for important events
+        content.interruptionLevel = .timeSensitive
 
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate),
@@ -194,7 +219,7 @@ class NotificationManager: NSObject, ObservableObject {
         )
 
         let request = UNNotificationRequest(
-            identifier: (event.eventIdentifier ?? UUID().uuidString) + "_" + UUID().uuidString,
+            identifier: event.eventIdentifier ?? UUID().uuidString,
             content: content,
             trigger: trigger
         )
@@ -202,6 +227,8 @@ class NotificationManager: NSObject, ObservableObject {
         notificationCenter.add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error)")
+            } else {
+                print("✅ Event notification scheduled for '\(title)' at \(triggerDate)")
             }
         }
     }

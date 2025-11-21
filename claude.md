@@ -304,10 +304,58 @@ Using Settings Layout.png as a design guide for settings
     - `duplicateEvent()`: Creates new event with same details, 1 hour later
   - **Fixed async/await warnings** (Nov 20): Removed unnecessary Task wrapper and await keyword from loadAvailableCalendars() since eventStore.calendars(for:) is synchronous
 
+### Consolidated Event Notifications with Map Preview (Nov 21, 2025)
+- **NotificationManager.swift**: Enhanced notification scheduling
+  - Added `location` parameter to `scheduleEventNotification()`
+  - Consolidated notifications: ONE notification for all members instead of separate notifications per member
+  - Fixed notification identifier to use event's unique ID (was generating duplicate with UUID suffix)
+  - Added `categoryIdentifier = "EVENT_NOTIFICATION"` for custom notification handling
+  - Set `interruptionLevel = .timeSensitive` for important events
+  - Stores all event metadata in `userInfo`: location, family members, drivers
+  - Improved logging with confirmation messages
+
+- **AddEventView.swift**: Modified event creation flow
+  - Collects all attendees before creating events (lines 431-441)
+  - Creates events in all target calendars (lines 443-543)
+  - Sends ONE consolidated notification with all member names (lines 545-552)
+  - Updated `scheduleNotificationForCreatedEvent()` signature:
+    - Removed `calendarId` parameter (derives from first member's calendar)
+    - Accepts array of attending members
+    - Accepts location parameter
+  - Passes location address to notification system
+
+- **EventNotificationView.swift** (NEW): Custom notification UI (iOS 16.2+)
+  - SwiftUI view for rich notification presentation
+  - Displays:
+    - Event title + all member names in single notification
+    - Time with clock icon
+    - All members (driver, attendees) with icons
+    - Location with real-time geocoding
+    - Interactive map preview showing event location
+    - "Get Directions" button for route planning in Apple Maps
+  - Features:
+    - Automatic address geocoding to coordinates
+    - Map preview with pin showing exact location
+    - One-tap route planning with driving/walking options
+    - Responsive layout with proper text truncation
+    - Clean, modern UI with color-coded icons
+
+## Design Decisions (Consolidated Notifications)
+1. **One Notification Per Event**: Regardless of how many members are assigned, sends single notification with all names concatenated
+2. **Location Geocoding**: Uses CLGeocoder to convert address to coordinates for map display
+3. **Map Preview**: Shows interactive map with pin at exact event location
+4. **Route Planning**: Opens Apple Maps with route options (driving/walking)
+5. **Member Listing**: Fits all names on notification; truncates with text limit if needed
+6. **Notification ID**: Uses event's unique identifier to prevent duplicates
+7. **Time Sensitive**: Marked as `.timeSensitive` interrupt level for visibility
+8. **Custom Category**: Uses "EVENT_NOTIFICATION" for future custom actions
+9. **Backward Compatibility**: Location parameter is optional, won't break existing code
+
 ## To Do for Future Development
+- [ ] Add custom notification actions (e.g., "Join Event", "Decline")
 - [ ] Add calendar event display to FamilyView
-- [ ] Implement event creation functionality
 - [ ] Set up CloudKit sync for family sharing
 - [ ] Add custom avatar/photo support
-- [ ] Implement push notifications for family events
 - [ ] Add family group/organization features
+- [ ] Implement notification sounds for different event types
+- [ ] Add notification history/logs

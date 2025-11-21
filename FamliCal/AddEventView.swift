@@ -428,7 +428,20 @@ struct AddEventView: View {
             }
         }
 
+        // Collect all attendees for consolidated notification
+        var allAttendees: [FamilyMember] = []
+        if selectEveryone {
+            allAttendees = Array(familyMembers)
+        } else {
+            for memberID in selectedMembers {
+                if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                    allAttendees.append(member)
+                }
+            }
+        }
+
         // Create event in all target calendars
+        var firstEventId: String? = nil
         for target in targets {
             var eventId: String?
 
@@ -460,6 +473,11 @@ struct AddEventView: View {
             print("📅 Created event with ID: \(eventId ?? "nil") in calendar: \(target.calendarID)")
 
             if let eventId = eventId {
+                // Store first event ID for notification scheduling
+                if firstEventId == nil {
+                    firstEventId = eventId
+                }
+
                 createdEventIds.append(eventId)
 
                 // Store in CoreData
@@ -521,14 +539,16 @@ struct AddEventView: View {
                 }
 
                 print("✅ FamilyEvent saved for eventId: \(eventId)")
-
-                // Schedule local notification if enabled and allowed
-                scheduleNotificationForCreatedEvent(
-                    eventIdentifier: eventId,
-                    calendarId: target.calendarID,
-                    attendingMembers: target.member.map { [$0] } ?? Array(familyMembers)
-                )
             }
+        }
+
+        // Schedule ONE consolidated notification for all attendees
+        if let eventId = firstEventId {
+            scheduleNotificationForCreatedEvent(
+                eventIdentifier: eventId,
+                attendingMembers: allAttendees,
+                location: locationAddress.isEmpty ? nil : locationAddress
+            )
         }
 
         // Save CoreData changes and show success
@@ -593,11 +613,9 @@ struct AddEventView: View {
 
     private func scheduleNotificationForCreatedEvent(
         eventIdentifier: String,
-        calendarId: String,
-        attendingMembers: [FamilyMember]
+        attendingMembers: [FamilyMember],
+        location: String? = nil
     ) {
-
-
         // Clear any stale pending notifications for this identifier
         Task {
             await notificationManager.cancelEventNotifications(for: eventIdentifier)
@@ -605,6 +623,21 @@ struct AddEventView: View {
             guard alertOption != .none else { return }
 
             let memberIds = attendingMembers.compactMap { $0.id }
+
+            // Get first member's calendar to check notification settings
+            let firstCalendarId: String? = {
+                if selectEveryone, let sharedCal = sharedCalendars.first {
+                    return sharedCal.calendarID
+                } else if let member = attendingMembers.first,
+                          let memberCals = member.memberCalendars as? Set<FamilyMemberCalendar>,
+                          let firstCal = memberCals.first {
+                    return firstCal.calendarID
+                }
+                return nil
+            }()
+
+            guard let calendarId = firstCalendarId else { return }
+
             guard notificationManager.shouldNotifyForEvent(
                 calendarId: calendarId,
                 memberIds: memberIds
@@ -628,7 +661,8 @@ struct AddEventView: View {
                 event: ekEvent,
                 alertOption: alertOption,
                 familyMembers: memberNames,
-                drivers: driverName
+                drivers: driverName,
+                location: location
             )
         }
     }
