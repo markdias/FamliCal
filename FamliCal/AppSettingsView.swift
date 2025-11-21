@@ -55,12 +55,12 @@ struct AppSettingsView: View {
                         // MARK: - General Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("General")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
-                                settingRow(
+                            VStack(spacing: 12) {
+                                settingCard(
                                     title: "Default screen",
                                     subtitle: "Choose where the app opens",
                                     picker: AnyView(
@@ -74,11 +74,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Auto refresh interval",
                                     subtitle: "Minutes between auto-refresh",
                                     picker: AnyView(
@@ -93,11 +89,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Default maps app",
                                     subtitle: "App to use for location links",
                                     picker: AnyView(
@@ -111,104 +103,82 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                GlassyRow(action: {}) {
+                                    NavigationLink(destination: DriversListView().environment(\.managedObjectContext, viewContext)) {
+                                        HStack(spacing: 16) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Drivers")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                                NavigationLink(destination: DriversListView().environment(\.managedObjectContext, viewContext)) {
-                                    HStack(spacing: 16) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Drivers")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                                            Text("Manage drivers for events")
-                                                .font(.system(size: 13))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                Text("Manage drivers for events")
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                            }
                                         }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 16)
                                 }
-                                .buttonStyle(.plain)
+                                .padding(.horizontal, 16)
                             }
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Display Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Display")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
-                                NavigationLink(destination: ThemeSettingsView()) {
+                            VStack(spacing: 12) {
+                                GlassyRow(action: {}) {
+                                    NavigationLink(destination: ThemeSettingsView()) {
+                                        HStack(spacing: 16) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Theme")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+
+                                                Text(themeManager.selectedTheme.displayName)
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+
+                                GlassyGridItem(action: {}) {
                                     HStack(spacing: 16) {
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text("Theme")
+                                            Text("Dark mode")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                                            Text(themeManager.selectedTheme.displayName)
+                                            Text("Apply dark colors to current theme")
                                                 .font(.system(size: 13))
                                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                         }
 
                                         Spacer()
 
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                        Toggle("", isOn: darkModeBinding)
+                                            .tint(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 16)
                                 }
-                                .buttonStyle(.plain)
-
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                HStack(spacing: 16) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Dark mode")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                                        Text("Apply dark colors to current theme")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                    }
-
-                                    Spacer()
-
-                                    Toggle("", isOn: darkModeBinding)
-                                        .tint(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                }
+                                .allowsHitTesting(true) // Ensure toggle works
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
                             }
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Event Settings Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Event Settings")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
-                                settingRow(
+                            VStack(spacing: 12) {
+                                settingCard(
                                     title: "Events per person",
                                     subtitle: "How many upcoming events to show",
                                     picker: AnyView(
@@ -222,11 +192,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Spotlight events",
                                     subtitle: "Events to show in spotlight view",
                                     picker: AnyView(
@@ -240,11 +206,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Default alert",
                                     subtitle: "Alert time for new events",
                                     picker: AnyView(
@@ -258,11 +220,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Show past events",
                                     subtitle: "Days to look back",
                                     picker: AnyView(
@@ -279,11 +237,7 @@ struct AppSettingsView: View {
                                     )
                                 )
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                settingRow(
+                                settingCard(
                                     title: "Look ahead",
                                     subtitle: "Days to look forward",
                                     picker: AnyView(
@@ -299,70 +253,50 @@ struct AppSettingsView: View {
                                     )
                                 )
                             }
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Calendar Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Calendar")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
-                                NavigationLink(destination: SharedCalendarsView().environment(\.managedObjectContext, viewContext)) {
-                                    HStack(spacing: 16) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Shared calendars")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                            VStack(spacing: 12) {
+                                GlassyRow(action: {}) {
+                                    NavigationLink(destination: SharedCalendarsView().environment(\.managedObjectContext, viewContext)) {
+                                        HStack(spacing: 16) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Shared calendars")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                                            Text("Calendars shared with all members")
-                                                .font(.system(size: 13))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                Text("Calendars shared with all members")
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                            }
                                         }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 16)
                                 }
-                                .buttonStyle(.plain)
+                                .padding(.horizontal, 16)
 
-                                Divider()
-                                    .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                GlassyRow(action: {}) {
+                                    NavigationLink(destination: SavedAddressesSettingsView().environment(\.managedObjectContext, viewContext)) {
+                                        HStack(spacing: 16) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Saved places")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                                NavigationLink(destination: SavedAddressesSettingsView().environment(\.managedObjectContext, viewContext)) {
-                                    HStack(spacing: 16) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Saved places")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                                            Text("Manage favorite locations")
-                                                .font(.system(size: 13))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                Text("Manage favorite locations")
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                            }
                                         }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 16)
                                 }
-                                .buttonStyle(.plain)
+                                .padding(.horizontal, 16)
                             }
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
                         }
 
                         Spacer()
@@ -389,24 +323,26 @@ struct AppSettingsView: View {
         }
     }
 
-    private func settingRow<V: View>(title: String, subtitle: String, picker: V) -> some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+    private func settingCard<V: View>(title: String, subtitle: String, picker: V) -> some View {
+        GlassyGridItem(action: {}) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
-                Text(subtitle)
-                    .font(.system(size: 13))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                }
+
+                Spacer()
+
+                picker
             }
-
-            Spacer()
-
-            picker
         }
+        .allowsHitTesting(true) // Ensure picker works
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
     }
 }
 

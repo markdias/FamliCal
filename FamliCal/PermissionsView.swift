@@ -23,13 +23,13 @@ struct PermissionsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         // Calendar Permissions Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Calendar Access")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            GlassyGridItem(action: {}) {
                                 HStack(spacing: 16) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Calendar Permission")
@@ -53,21 +53,19 @@ struct PermissionsView: View {
                                             .foregroundColor(getPermissionColor())
                                     }
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
                             }
-                            .glassyCard(padding: 0)
+                            .allowsHitTesting(false)
                             .padding(.horizontal, 16)
                         }
 
                         // Contacts Permissions Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Contacts Access")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            GlassyGridItem(action: {}) {
                                 HStack(spacing: 16) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Contacts Permission")
@@ -91,40 +89,39 @@ struct PermissionsView: View {
                                             .foregroundColor(getContactsPermissionColor())
                                     }
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
                             }
-                            .glassyCard(padding: 0)
+                            .allowsHitTesting(false)
                             .padding(.horizontal, 16)
                         }
 
                         // Permission Info Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("About Permissions")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 .padding(.horizontal, 16)
 
-                            VStack(alignment: .leading, spacing: 12) {
-                                PermissionInfoRow(
-                                    icon: "calendar",
-                                    title: "Calendar Access",
-                                    description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
-                                )
+                            VStack(spacing: 12) {
+                                GlassyGridItem(action: {}) {
+                                    PermissionInfoRow(
+                                        icon: "calendar",
+                                        title: "Calendar Access",
+                                        description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
+                                    )
+                                }
+                                .allowsHitTesting(false)
+                                .padding(.horizontal, 16)
 
-                                Divider()
-                                    .padding(.vertical, 8)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                PermissionInfoRow(
-                                    icon: "person.crop.circle.fill.badge.plus",
-                                    title: "Contacts Access",
-                                    description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
-                                )
+                                GlassyGridItem(action: {}) {
+                                    PermissionInfoRow(
+                                        icon: "person.crop.circle.fill.badge.plus",
+                                        title: "Contacts Access",
+                                        description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
+                                    )
+                                }
+                                .allowsHitTesting(false)
+                                .padding(.horizontal, 16)
                             }
-                            .padding(12)
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
                         }
 
                         // Request Permission Buttons

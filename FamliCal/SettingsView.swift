@@ -28,13 +28,6 @@ struct SettingsView: View {
             GlassyBackground {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Hero Section
-                        FamilyHeroView()
-                            .padding(.horizontal, 16)
-                            .onTapGesture {
-                                showingFamilySettings = true
-                            }
-
                         // Grid Settings
                         LazyVGrid(columns: columns, spacing: 16) {
                             SettingsGridItem(
@@ -77,6 +70,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
@@ -109,52 +103,7 @@ struct SettingsView: View {
     }
 }
 
-private struct FamilyHeroView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
-    @FetchRequest(
-        entity: FamilyMember.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
-    )
-    private var familyMembers: FetchedResults<FamilyMember>
 
-    var body: some View {
-        GlassyGridItem(action: {}) {
-            HStack(spacing: 16) {
-                // Family Avatar/Icon
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(
-                            colors: [Color.blue.opacity(0.8), Color.purple.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-                        .frame(width: 60, height: 60)
-
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("The Family")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                    Text("\(familyMembers.count) Member\(familyMembers.count != 1 ? "s" : "")")
-                        .font(.system(size: 14))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-            }
-        }
-        .allowsHitTesting(false) // The tap is handled by the parent container
-    }
-}
 
 private struct SettingsGridItem: View {
     @EnvironmentObject private var themeManager: ThemeManager

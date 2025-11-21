@@ -20,12 +20,11 @@ struct NotificationSettingsView: View {
                         // Notifications Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("General")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.primary) // Theme manager not injected here, assuming primary works or need to inject
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.gray)
                                 .padding(.horizontal, 16)
 
                             notificationsToggle
-                                .glassyCard(padding: 0)
                                 .padding(.horizontal, 16)
                         }
 
@@ -33,13 +32,11 @@ struct NotificationSettingsView: View {
                             // Morning Brief Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Morning Brief")
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.primary)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.gray)
                                     .padding(.horizontal, 16)
 
                                 morningBriefSection
-                                    .glassyCard(padding: 0)
-                                    .padding(.horizontal, 16)
                             }
                         }
 
@@ -49,6 +46,7 @@ struct NotificationSettingsView: View {
                 }
             }
             .navigationTitle("Notifications")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
@@ -62,7 +60,7 @@ struct NotificationSettingsView: View {
     }
 
     private var notificationsToggle: some View {
-        VStack(spacing: 0) {
+        GlassyGridItem(action: {}) {
             HStack(spacing: 16) {
                 Image(systemName: "bell.fill")
                     .font(.system(size: 20, weight: .semibold))
@@ -93,90 +91,90 @@ struct NotificationSettingsView: View {
                         }
                     }
             }
-            .padding(16)
         }
+        .allowsHitTesting(true)
     }
 
     private var morningBriefSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Image(systemName: "sunrise.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Color.orange)
-                    .cornerRadius(14)
+        VStack(spacing: 12) {
+            GlassyGridItem(action: {}) {
+                HStack(spacing: 16) {
+                    Image(systemName: "sunrise.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 48)
+                        .background(Color.orange)
+                        .cornerRadius(14)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Morning Brief")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Morning Brief")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
 
-                    Text("Daily event summary")
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
-                }
-
-                Spacer()
-
-                Toggle("", isOn: $notificationManager.morningBriefEnabled)
-                    .onChange(of: notificationManager.morningBriefEnabled) { _, _ in
-                        notificationManager.saveSettings()
-                        notificationManager.scheduleMorningBrief()
+                        Text("Daily event summary")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
                     }
+
+                    Spacer()
+
+                    Toggle("", isOn: $notificationManager.morningBriefEnabled)
+                        .onChange(of: notificationManager.morningBriefEnabled) { _, _ in
+                            notificationManager.saveSettings()
+                            notificationManager.scheduleMorningBrief()
+                        }
+                }
             }
-            .padding(16)
+            .allowsHitTesting(true)
+            .padding(.horizontal, 16)
 
             if notificationManager.morningBriefEnabled {
-                Divider()
-                    .padding(.horizontal, 16)
-
                 morningBriefTimePicker
+                    .padding(.horizontal, 16)
             }
         }
     }
 
     private var morningBriefTimePicker: some View {
-        VStack(spacing: 16) {
-            Text("Notification Time")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+        GlassyGridItem(action: {}) {
+            VStack(spacing: 16) {
+                Text("Notification Time")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 16) {
-                VStack(spacing: 8) {
-                    Text("Hour")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
+                HStack(spacing: 16) {
+                    VStack(spacing: 8) {
+                        Text("Hour")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
 
-                    Picker("Hour", selection: $notificationManager.morningBriefTime.hour) {
-                        ForEach(0..<24, id: \.self) { hour in
-                            Text(String(format: "%02d", hour)).tag(hour)
+                        Picker("Hour", selection: $notificationManager.morningBriefTime.hour) {
+                            ForEach(0..<24, id: \.self) { hour in
+                                Text(String(format: "%02d", hour)).tag(hour)
+                            }
                         }
+                        .pickerStyle(.wheel)
+                        .frame(height: 100)
                     }
-                    .pickerStyle(.wheel)
-                    .frame(height: 100)
-                }
 
-                VStack(spacing: 8) {
-                    Text("Minute")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
+                    VStack(spacing: 8) {
+                        Text("Minute")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
 
-                    Picker("Minute", selection: $notificationManager.morningBriefTime.minute) {
-                        ForEach(Array(stride(from: 0, to: 60, by: 15)), id: \.self) { minute in
-                            Text(String(format: "%02d", minute)).tag(minute)
+                        Picker("Minute", selection: $notificationManager.morningBriefTime.minute) {
+                            ForEach(Array(stride(from: 0, to: 60, by: 15)), id: \.self) { minute in
+                                Text(String(format: "%02d", minute)).tag(minute)
+                            }
                         }
+                        .pickerStyle(.wheel)
+                        .frame(height: 100)
                     }
-                    .pickerStyle(.wheel)
-                    .frame(height: 100)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
         }
+        .allowsHitTesting(true)
         .onChange(of: notificationManager.morningBriefTime) { _, _ in
             notificationManager.saveSettings()
             notificationManager.scheduleMorningBrief()
