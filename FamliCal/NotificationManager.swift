@@ -170,7 +170,7 @@ class NotificationManager: NSObject, ObservableObject {
         let triggerDate = calculateTriggerDate(from: event.startDate, alertOption: alertOption)
 
         // Build notification content
-        var title = event.title ?? "Event"
+        let title = event.title ?? "Event"
 
         var body = ""
         let timeFormatter = DateFormatter()
@@ -221,11 +221,8 @@ class NotificationManager: NSObject, ObservableObject {
         // Allow interruption for important events
         content.interruptionLevel = .timeSensitive
 
-        // Add preview thumbnail if available
+        // Create custom actions for location if available
         if let location = location, !location.isEmpty {
-            content.summaryArgument = location
-
-            // Create custom actions for location
             let openMapsAction = UNNotificationAction(
                 identifier: "OPEN_MAPS",
                 title: "Get Directions",
