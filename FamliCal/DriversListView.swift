@@ -42,35 +42,37 @@ struct DriversListView: View {
                         } else {
                             VStack(spacing: 0) {
                                 ForEach(drivers, id: \.self) { driver in
-                                    NavigationLink(destination: EditDriverView(driver: driver)) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(driver.name ?? "Unknown")
-                                                    .font(.headline)
-                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-                                                if let phone = driver.phone, !phone.isEmpty {
-                                                    Text(phone)
-                                                        .font(.subheadline)
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    VStack(spacing: 0) {
+                                        NavigationLink(destination: EditDriverView(driver: driver)) {
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(driver.name ?? "Unknown")
+                                                        .font(.headline)
+                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                                    if let phone = driver.phone, !phone.isEmpty {
+                                                        Text(phone)
+                                                            .font(.subheadline)
+                                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                    }
+                                                    if let email = driver.email, !email.isEmpty {
+                                                        Text(email)
+                                                            .font(.subheadline)
+                                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                    }
                                                 }
-                                                if let email = driver.email, !email.isEmpty {
-                                                    Text(email)
-                                                        .font(.subheadline)
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                                }
+                                                Spacer()
+                                                Image(systemName: "chevron.right")
+                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                             }
-                                            Spacer()
-                                            Image(systemName: "chevron.right")
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                            .padding()
                                         }
-                                        .padding()
-                                    }
-                                    .buttonStyle(.plain)
+                                        .buttonStyle(.plain)
 
-                                    if driver.id != drivers.last?.id {
-                                        Divider()
-                                            .padding(.horizontal, 16)
-                                            .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                        if driver.id != drivers.last?.id {
+                                            Divider()
+                                                .padding(.horizontal, 16)
+                                                .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                        }
                                     }
                                 }
                                 .onDelete(perform: deleteDrivers)
