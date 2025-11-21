@@ -169,17 +169,23 @@ class NotificationManager: NSObject, ObservableObject {
 
         // Build notification content
         var title = event.title ?? "Event"
-        if !familyMembers.isEmpty {
-            title += " - \(familyMembers.joined(separator: ", "))"
-        }
 
         var body = ""
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
         body = timeFormatter.string(from: event.startDate)
 
+        // Add family members to body
+        if !familyMembers.isEmpty {
+            body += "\nWith: \(familyMembers.joined(separator: ", "))"
+        }
+
         if let drivers = drivers, !drivers.isEmpty {
             body += "\nDriver: \(drivers)"
+        }
+
+        if let location = location, !location.isEmpty {
+            body += "\n📍 \(location)"
         }
 
         let content = UNMutableNotificationContent()
@@ -212,6 +218,28 @@ class NotificationManager: NSObject, ObservableObject {
 
         // Allow interruption for important events
         content.interruptionLevel = .timeSensitive
+
+        // Add preview thumbnail if available
+        if let location = location, !location.isEmpty {
+            content.summaryArgument = location
+
+            // Create custom actions for location
+            let openMapsAction = UNNotificationAction(
+                identifier: "OPEN_MAPS",
+                title: "Get Directions",
+                options: [.foreground]
+            )
+
+            let category = UNNotificationCategory(
+                identifier: "EVENT_NOTIFICATION",
+                actions: [openMapsAction],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: "Event scheduled",
+                options: []
+            )
+
+            UNUserNotificationCenter.current().setNotificationCategories([category])
+        }
 
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate),

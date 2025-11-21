@@ -544,11 +544,16 @@ struct AddEventView: View {
 
         // Schedule ONE consolidated notification for all attendees
         if let eventId = firstEventId {
+            print("🔔 Scheduling ONE consolidated notification for event: \(eventId)")
+            print("📋 Attendees: \(allAttendees.map { $0.name ?? "Unknown" }.joined(separator: ", "))")
+            print("📍 Location: \(locationAddress.isEmpty ? "None" : locationAddress)")
             scheduleNotificationForCreatedEvent(
                 eventIdentifier: eventId,
                 attendingMembers: allAttendees,
                 location: locationAddress.isEmpty ? nil : locationAddress
             )
+        } else {
+            print("❌ ERROR: No firstEventId was set! Created \(createdEventIds.count) events but couldn't schedule notification")
         }
 
         // Save CoreData changes and show success
