@@ -110,8 +110,8 @@ struct NextEventProvider: TimelineProvider {
 
             // Fetch all family members with their calendars
             let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "FamilyMember")
-            fetchRequest.returnsAsObjects = false
             fetchRequest.returnsObjectsAsFaults = false
+            fetchRequest.resultType = .dictionaryResultType
 
             guard let results = try context.fetch(fetchRequest) as? [[String: Any]], !results.isEmpty else {
                 return NextEventEntry(errorMessage: "No family members configured")
