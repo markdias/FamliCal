@@ -16,14 +16,36 @@ struct NotificationSettingsView: View {
         NavigationView {
             GlassyBackground {
                 ScrollView {
-                    VStack(spacing: 24) {
-                        notificationsToggle
+                    VStack(alignment: .leading, spacing: 32) {
+                        // Notifications Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("General")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary) // Theme manager not injected here, assuming primary works or need to inject
+                                .padding(.horizontal, 16)
+
+                            notificationsToggle
+                                .glassyCard(padding: 0)
+                                .padding(.horizontal, 16)
+                        }
 
                         if notificationManager.notificationsEnabled {
-                            morningBriefSection
+                            // Morning Brief Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Morning Brief")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 16)
+
+                                morningBriefSection
+                                    .glassyCard(padding: 0)
+                                    .padding(.horizontal, 16)
+                            }
                         }
+
+                        Spacer()
                     }
-                    .padding(24)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationTitle("Notifications")
@@ -40,25 +62,23 @@ struct NotificationSettingsView: View {
     }
 
     private var notificationsToggle: some View {
-        VStack(spacing: 12) {
-            HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "bell.fill")
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
+                    .background(Color.blue)
+                    .cornerRadius(14)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Notifications")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                        .foregroundColor(.primary)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Notifications")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-
-                        Text("Receive event notifications")
-                            .font(.system(size: 11))
-                            .foregroundColor(.gray)
-                    }
+                    Text("Receive event notifications")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
                 }
 
                 Spacer()
@@ -73,61 +93,57 @@ struct NotificationSettingsView: View {
                         }
                     }
             }
-            .padding(12)
-            .background(Color(UIColor.secondarySystemBackground))
-            .cornerRadius(12)
+            .padding(16)
         }
     }
 
     private var morningBriefSection: some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 12) {
-                HStack {
-                    HStack(spacing: 12) {
-                        Image(systemName: "sunrise.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.orange)
-                            .cornerRadius(12)
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Image(systemName: "sunrise.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
+                    .background(Color.orange)
+                    .cornerRadius(14)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Morning Brief")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.primary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Morning Brief")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
 
-                            Text("Daily event summary")
-                                .font(.system(size: 11))
-                                .foregroundColor(.gray)
-                        }
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: $notificationManager.morningBriefEnabled)
-                        .onChange(of: notificationManager.morningBriefEnabled) { _, _ in
-                            notificationManager.saveSettings()
-                            notificationManager.scheduleMorningBrief()
-                        }
+                    Text("Daily event summary")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
                 }
-                .padding(12)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
+
+                Spacer()
+
+                Toggle("", isOn: $notificationManager.morningBriefEnabled)
+                    .onChange(of: notificationManager.morningBriefEnabled) { _, _ in
+                        notificationManager.saveSettings()
+                        notificationManager.scheduleMorningBrief()
+                    }
             }
+            .padding(16)
 
             if notificationManager.morningBriefEnabled {
+                Divider()
+                    .padding(.horizontal, 16)
+
                 morningBriefTimePicker
             }
         }
     }
 
     private var morningBriefTimePicker: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Text("Notification Time")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
 
             HStack(spacing: 16) {
                 VStack(spacing: 8) {
@@ -141,7 +157,7 @@ struct NotificationSettingsView: View {
                         }
                     }
                     .pickerStyle(.wheel)
-                    .frame(height: 80)
+                    .frame(height: 100)
                 }
 
                 VStack(spacing: 8) {
@@ -155,13 +171,12 @@ struct NotificationSettingsView: View {
                         }
                     }
                     .pickerStyle(.wheel)
-                    .frame(height: 80)
+                    .frame(height: 100)
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(12)
         .onChange(of: notificationManager.morningBriefTime) { _, _ in
             notificationManager.saveSettings()
             notificationManager.scheduleMorningBrief()

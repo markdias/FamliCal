@@ -51,12 +51,12 @@ struct AppSettingsView: View {
         NavigationView {
             GlassyBackground {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 32) {
                         // MARK: - General Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("General")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
                                 .padding(.horizontal, 16)
 
                             VStack(spacing: 0) {
@@ -134,7 +134,7 @@ struct AppSettingsView: View {
                                             .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 16)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -143,10 +143,10 @@ struct AppSettingsView: View {
                         }
 
                         // MARK: - Display Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Display")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
                                 .padding(.horizontal, 16)
 
                             VStack(spacing: 0) {
@@ -169,7 +169,7 @@ struct AppSettingsView: View {
                                             .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 16)
                                 }
                                 .buttonStyle(.plain)
 
@@ -194,17 +194,17 @@ struct AppSettingsView: View {
                                         .tint(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 16)
                             }
                             .glassyCard(padding: 0)
                             .padding(.horizontal, 16)
                         }
 
                         // MARK: - Event Settings Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Event Settings")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
                                 .padding(.horizontal, 16)
 
                             VStack(spacing: 0) {
@@ -304,10 +304,10 @@ struct AppSettingsView: View {
                         }
 
                         // MARK: - Calendar Section
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Calendar")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
                                 .padding(.horizontal, 16)
 
                             VStack(spacing: 0) {
@@ -330,7 +330,7 @@ struct AppSettingsView: View {
                                             .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 16)
                                 }
                                 .buttonStyle(.plain)
 
@@ -357,7 +357,7 @@ struct AppSettingsView: View {
                                             .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                     }
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 16)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -367,7 +367,7 @@ struct AppSettingsView: View {
 
                         Spacer()
                     }
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -406,7 +406,7 @@ struct AppSettingsView: View {
             picker
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)
     }
 }
 

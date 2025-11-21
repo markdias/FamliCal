@@ -14,6 +14,7 @@ struct SpotlightView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
+    @AppStorage("spotlightShowGapsBetweenEvents") private var spotlightShowGapsBetweenEvents: Bool = true
 
     let member: FamilyMember
 
@@ -79,7 +80,13 @@ struct SpotlightView: View {
                             emptyStateView
                         } else {
                             VStack(alignment: .leading, spacing: 12) {
-                                ForEach(events) { event in
+                                ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                                    if spotlightShowGapsBetweenEvents,
+                                       index > 0,
+                                       let gapText = gapText(between: events[index - 1], and: event) {
+                                        gapLabel(gapText)
+                                    }
+
                                     Button(action: {
                                         selectedEvent = UpcomingCalendarEvent(
                                             id: event.eventIdentifier,
@@ -279,6 +286,23 @@ struct SpotlightView: View {
         )
     }
 
+    private func gapLabel(_ text: String) -> some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(Color(.systemGray4))
+                .frame(width: 24, height: 1)
+
+            Text(text)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.gray)
+
+            Rectangle()
+                .fill(Color(.systemGray4))
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 16)
+    }
+
     // MARK: - Private Methods
 
     private func fetchDriverForEvent(_ eventIdentifier: String) -> String? {
@@ -370,6 +394,32 @@ struct SpotlightView: View {
 
         events = Array(sorted.prefix(spotlightEventsPerPerson))
         isLoadingEvents = false
+    }
+
+    private func gapText(between first: GroupedEvent, and second: GroupedEvent) -> String? {
+        guard !first.isAllDay, !second.isAllDay else { return nil }
+        guard calendar.isDate(first.startDate, inSameDayAs: second.startDate) else { return nil }
+
+        if second.startDate <= first.endDate {
+            return "Back to Back"
+        }
+
+        let interval = second.startDate.timeIntervalSince(first.endDate)
+        let totalMinutes = Int(interval / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        var parts: [String] = []
+        if hours > 0 {
+            parts.append("\(hours)h")
+        }
+        if minutes > 0 {
+            parts.append("\(minutes) mins")
+        }
+
+        guard !parts.isEmpty else { return "Back to Back" }
+        let gap = parts.joined(separator: " ")
+        return "\(gap) inbetween"
     }
 
     private func groupEventsByDetails(_ events: [EventItem]) -> [GroupedEvent] {

@@ -103,3 +103,42 @@ extension View {
         modifier(GlassyCard(padding: padding))
     }
 }
+
+struct GlassyGridItem<Content: View>: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let action: () -> Void
+    let content: Content
+
+    init(action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
+        self.action = action
+        self.content = content()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            if themeManager.selectedTheme.id == AppTheme.launchFlow.id {
+                VStack(alignment: .leading, spacing: 12) {
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(themeManager.selectedTheme.cardBackground)
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(themeManager.selectedTheme.cardStroke, lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}

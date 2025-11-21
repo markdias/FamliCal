@@ -109,6 +109,8 @@ struct AddEventView: View {
     @State private var selectedCalendarID: String = ""
     @State private var availableCalendars: [CalendarOption] = []
     @State private var showingCalendarPicker = false
+    @State private var showingCreateEventForDriverAlert = false
+    @State private var driverToCreateEventFor: DriverWrapper?
 
     private var theme: AppTheme { themeManager.selectedTheme }
     private var primaryTextColor: Color { Color.black.opacity(0.9) }
@@ -264,6 +266,20 @@ struct AddEventView: View {
                 }
             } message: {
                 Text("Your event has been added successfully!")
+            }
+            .alert("Create Event for Driver?", isPresented: $showingCreateEventForDriverAlert) {
+                Button("Yes") {
+                    if let driver = driverToCreateEventFor {
+                        createEventForDriver(driver)
+                    }
+                }
+                Button("No") {
+                    driverToCreateEventFor = nil
+                }
+            } message: {
+                if let driver = driverToCreateEventFor {
+                    Text("Would you like to create a separate event for \(driver.name)'s drive?")
+                }
             }
             .tint(accentColor)
         }
@@ -1132,7 +1148,14 @@ struct AddEventView: View {
                                 Divider()
 
                                 ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
-                                    Button(action: { selectedDriver = driverWrapper }) {
+                                    Button(action: {
+                                        selectedDriver = driverWrapper
+                                        // Only show alert if selecting a family member driver
+                                        if case .familyMember(_) = driverWrapper {
+                                            driverToCreateEventFor = driverWrapper
+                                            showingCreateEventForDriverAlert = true
+                                        }
+                                    }) {
                                         HStack {
                                             Text(driverWrapper.name)
                                             if selectedDriver?.id == driverWrapper.id {
@@ -1502,6 +1525,33 @@ struct AddEventView: View {
                     .cornerRadius(12)
                     .frame(height: 120)
             }
+        }
+    }
+
+    private func createEventForDriver(_ driver: DriverWrapper) {
+        // Create a new event for the driver in the first available shared calendar
+        // Note: startTime and endTime already contain the full date and time
+        let driverEventTitle = "\(eventTitle) - \(driver.name)'s drive"
+
+        if let firstCalendar = availableCalendars.first {
+            let eventId = CalendarManager.shared.createEvent(
+                title: driverEventTitle,
+                startDate: startTime,
+                endDate: endTime,
+                location: locationAddress.isEmpty ? nil : locationAddress,
+                notes: notes.isEmpty ? nil : notes,
+                isAllDay: isAllDay,
+                in: firstCalendar.calendarID,
+                alertOption: alertOption
+            )
+
+            if let eventId = eventId {
+                print("✅ Created event for \(driver.name): \(eventId)")
+            } else {
+                print("❌ Failed to create event for driver")
+            }
+        } else {
+            print("❌ No available calendars to create driver event")
         }
     }
 }

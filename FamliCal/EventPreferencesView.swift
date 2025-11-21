@@ -15,6 +15,7 @@ struct EventPreferencesView: View {
     @AppStorage("eventsPastDays") private var eventsPastDays: Int = 90
     @AppStorage("eventsFutureDays") private var eventsFutureDays: Int = 180
     @AppStorage("defaultAlertOption") private var defaultAlertOptionRawValue: String = AlertOption.none.rawValue
+    @AppStorage("spotlightShowGapsBetweenEvents") private var spotlightShowGapsBetweenEvents: Bool = true
 
     private var defaultAlertBinding: Binding<AlertOption> {
         Binding(
@@ -188,6 +189,30 @@ struct EventPreferencesView: View {
                                 }
                                 .pickerStyle(.menu)
                                 .tint(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            Divider()
+                                .padding(.horizontal, 16)
+                                .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Spotlight gaps")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+
+                                    Text("Show time between same-day events")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                }
+
+                                Spacer()
+
+                                Toggle("", isOn: $spotlightShowGapsBetweenEvents)
+                                    .labelsHidden()
+                                    .tint(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)

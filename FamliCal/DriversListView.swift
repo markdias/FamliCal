@@ -73,6 +73,7 @@ struct DriversListView: View {
                                             .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
                                     }
                                 }
+                                .onDelete(perform: deleteDrivers)
                             }
                             .glassyCard(padding: 0)
                             .padding(.horizontal, 16)

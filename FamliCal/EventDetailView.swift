@@ -36,9 +36,77 @@ struct EventDetailView: View {
     @State private var pendingDeleteSpan: EKSpan = .thisEvent
     @State private var pendingDeleteScope: DeleteScope = .single
     @State private var driver: Driver?
+    @State private var selectedDriver: DriverWrapper?
+    @State private var driverTravelTimeMinutes: Int = 15
     @State private var eventStore = EKEventStore()
     @State private var availableCalendars: [EKCalendar] = []
     @State private var geocodeTask: Task<Void, Never>?
+    @State private var selectedCalendarID: String?
+    @State private var pendingAlerts: [EKAlarm] = []
+    @State private var showingAlertPicker = false
+    @State private var selectedAlertMinutes: Int = 15
+    @State private var showingCreateEventForDriverAlert = false
+    @State private var driverToCreateEventFor: DriverWrapper?
+
+    @FetchRequest(
+        entity: Driver.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)]
+    )
+    private var drivers: FetchedResults<Driver>
+
+    @FetchRequest(
+        entity: FamilyMember.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
+    )
+    private var familyMembers: FetchedResults<FamilyMember>
+
+    @FetchRequest(
+        entity: SharedCalendar.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \SharedCalendar.calendarName, ascending: true)]
+    )
+    private var sharedCalendars: FetchedResults<SharedCalendar>
+
+    private var driverFamilyMembers: [FamilyMember] {
+        familyMembers.filter { $0.isDriver }
+    }
+
+    private var allAvailableDrivers: [DriverWrapper] {
+        var combined: [DriverWrapper] = []
+        for driver in drivers {
+            combined.append(.regular(driver))
+        }
+        // Only include family members that are not already selected as the driver
+        for member in driverFamilyMembers {
+            if selectedDriver?.id != member.id {
+                combined.append(.familyMember(member))
+            }
+        }
+        return combined
+    }
+
+    private var relevantCalendars: [EKCalendar] {
+        // Get all calendar IDs from family members and shared calendars
+        var calendarIDs = Set<String>()
+
+        for member in familyMembers {
+            if let memberCals = member.memberCalendars?.allObjects as? [FamilyMemberCalendar] {
+                for cal in memberCals {
+                    if let calID = cal.calendarID {
+                        calendarIDs.insert(calID)
+                    }
+                }
+            }
+        }
+
+        for sharedCal in sharedCalendars {
+            if let calID = sharedCal.calendarID {
+                calendarIDs.insert(calID)
+            }
+        }
+
+        // Filter availableCalendars to only include relevant ones
+        return availableCalendars.filter { calendarIDs.contains($0.calendarIdentifier) }
+    }
 
     private static let fullDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -187,143 +255,125 @@ struct EventDetailView: View {
                             .padding(.horizontal, 20)
 
                         HStack(spacing: 12) {
-                            Circle()
-                                .fill(Color(uiColor: event.calendarColor))
-                                .frame(width: 14, height: 14)
+                            Menu {
+                                ForEach(relevantCalendars, id: \.calendarIdentifier) { calendar in
+                                    Button(action: {
+                                        selectedCalendarID = calendar.calendarIdentifier
+                                        moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
+                                    }) {
+                                        HStack {
+                                            Text(calendar.title)
+                                            if calendar.calendarIdentifier == event.calendarID {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(Color(uiColor: event.calendarColor))
+                                        .frame(width: 12, height: 12)
 
-                            Text(event.calendarTitle)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
+                                    Text(event.calendarTitle)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.primary)
+
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
+                            }
 
                             Spacer()
-
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.gray)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(10)
                         .padding(.horizontal, 20)
                     }
 
                     // Driver section
-                    if let driver = driver {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Driver")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 20)
-
-                            VStack(spacing: 0) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "car.fill")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-                                        .frame(width: 24)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(driver.name ?? "Unknown Driver")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.primary)
-
-                                        if let phone = driver.phone, !phone.isEmpty {
-                                            Button(action: { callDriver(phone: phone) }) {
-                                                HStack(spacing: 6) {
-                                                    Image(systemName: "phone.fill")
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-
-                                                    Text(phone)
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-                                                }
-                                            }
-                                        }
-
-                                        if let email = driver.email, !email.isEmpty {
-                                            Button(action: { emailDriver(email: email) }) {
-                                                HStack(spacing: 6) {
-                                                    Image(systemName: "envelope.fill")
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-
-                                                    Text(email)
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-
-                                if let notes = driver.notes, !notes.isEmpty {
-                                    Divider()
-                                        .padding(.horizontal, 16)
-
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Notes")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.gray)
-
-                                        Text(notes)
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.primary)
-                                            .lineLimit(5)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                }
-                            }
-                            .background(Color(.systemBackground))
-                            .cornerRadius(10)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Driver")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
                             .padding(.horizontal, 20)
+
+                        HStack(spacing: 12) {
+                            Menu {
+                                Button(action: { selectedDriver = nil }) {
+                                    HStack {
+                                        Text("None")
+                                        if selectedDriver == nil {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+
+                                if !allAvailableDrivers.isEmpty {
+                                    Divider()
+
+                                    ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
+                                        Button(action: {
+                                            selectedDriver = driverWrapper
+                                            // Only show alert if selecting a family member driver
+                                            if case .familyMember(_) = driverWrapper {
+                                                driverToCreateEventFor = driverWrapper
+                                                showingCreateEventForDriverAlert = true
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text(driverWrapper.name)
+                                                if selectedDriver?.id == driverWrapper.id {
+                                                    Image(systemName: "checkmark")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "car.fill")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+
+                                    Text(selectedDriver?.name ?? "None")
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundColor(.primary)
+
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
+                            }
+
+                            Spacer()
                         }
+                        .padding(.horizontal, 20)
                     }
 
-                    // Alerts section
-                    if !alerts.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Alerts")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 20)
-
-                            VStack(spacing: 0) {
-                                ForEach(Array(alerts.enumerated()), id: \.offset) { index, alarm in
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "bell.fill")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-
-                                        Text(alertDisplayText(alarm))
-                                            .font(.system(size: 15, weight: .regular))
-                                            .foregroundColor(.gray)
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-
-                                    if index < alerts.count - 1 {
-                                        Divider()
-                                            .padding(.horizontal, 16)
-                                    }
-                                }
-                            }
-                            .background(Color(.systemBackground))
-                            .cornerRadius(10)
+                    // Alert section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Alert")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
                             .padding(.horizontal, 20)
+
+                        HStack(spacing: 12) {
+                            AlertMenuButton(
+                                currentAlert: alerts.first,
+                                onSelect: { updateAlert(minutes: $0) }
+                            )
+
+                            Spacer()
                         }
+                        .padding(.horizontal, 20)
                     }
 
                     // Map section with location header
@@ -453,6 +503,20 @@ struct EventDetailView: View {
             } message: {
                 Text("This event is linked to other calendars. Delete only here or everywhere?")
             }
+            .alert("Create Event for Driver?", isPresented: $showingCreateEventForDriverAlert) {
+                Button("Yes") {
+                    if let driver = driverToCreateEventFor {
+                        createEventForDriver(driver)
+                    }
+                }
+                Button("No") {
+                    driverToCreateEventFor = nil
+                }
+            } message: {
+                if let driver = driverToCreateEventFor {
+                    Text("Would you like to create a separate event for \(driver.name)'s drive?")
+                }
+            }
             .onAppear {
                 // Load available calendars for context menu
                 loadAvailableCalendars()
@@ -490,6 +554,10 @@ struct EventDetailView: View {
 
             if let familyEvent = results.first {
                 self.driver = familyEvent.driver
+                // Set selectedDriver for editing
+                if let driver = familyEvent.driver {
+                    self.selectedDriver = .regular(driver)
+                }
                 print("✅ Driver loaded: \(familyEvent.driver?.name ?? "nil")")
             } else {
                 print("ℹ️ No FamilyEvent found for this event")
@@ -544,11 +612,11 @@ struct EventDetailView: View {
             do {
                 let coordinate: CLLocationCoordinate2D? = try await {
                     if #available(iOS 17.0, *) {
-                        var request = MKLocalSearch.Request()
+                        let request = MKLocalSearch.Request()
                         request.naturalLanguageQuery = trimmedLocation
                         let search = MKLocalSearch(request: request)
                         let response = try await search.start()
-                        return response.mapItems.first?.placemark.coordinate
+                        return response.mapItems.first?.location.coordinate
                     } else {
                         let geocoder = CLGeocoder()
                         let placemarks = try await geocoder.geocodeAddressString(trimmedLocation)
@@ -819,6 +887,166 @@ struct EventDetailView: View {
         }
     }
 
+    private func updateAlert(minutes: Int) {
+        guard let ekEvent = ekEvent else { return }
+
+        // Remove all existing alarms
+        for alarm in ekEvent.alarms ?? [] {
+            ekEvent.removeAlarm(alarm)
+        }
+
+        // Add the new alarm
+        let alarm = EKAlarm(relativeOffset: -Double(minutes * 60))
+        ekEvent.addAlarm(alarm)
+
+        do {
+            try eventStore.save(ekEvent, span: .thisEvent, commit: true)
+            // Refresh alerts from the updated event
+            self.alerts = ekEvent.alarms ?? []
+            print("✅ Alert updated: \(alertTimeText(minutes))")
+        } catch {
+            print("❌ Failed to update alert: \(error.localizedDescription)")
+        }
+    }
+
+    private func alertTimeText(_ minutes: Int) -> String {
+        if minutes == 0 {
+            return "At time of event"
+        } else if minutes < 60 {
+            return minutes == 1 ? "1 minute before" : "\(minutes) minutes before"
+        } else if minutes < 1440 {
+            let hours = minutes / 60
+            return hours == 1 ? "1 hour before" : "\(hours) hours before"
+        } else {
+            let days = minutes / 1440
+            return days == 1 ? "1 day before" : "\(days) days before"
+        }
+    }
+
+    private func createEventForDriver(_ driver: DriverWrapper) {
+        // Create a new event for the driver using the event's calendar
+        let driverEventTitle = "\(event.title) - \(driver.name)'s drive"
+
+        let eventId = CalendarManager.shared.createEvent(
+            title: driverEventTitle,
+            startDate: event.startDate,
+            endDate: event.endDate,
+            location: event.location?.isEmpty == true ? nil : event.location,
+            notes: "Driving event for \(event.title)",
+            isAllDay: event.isAllDay,
+            in: event.calendarID,
+            alertOption: AlertOption.none
+        )
+
+        if let eventId = eventId {
+            print("✅ Created event for \(driver.name): \(eventId)")
+        } else {
+            print("❌ Failed to create event for driver")
+        }
+    }
+}
+
+private struct AlertMenuButton: View {
+    let currentAlert: EKAlarm?
+    let onSelect: (Int) -> Void
+
+    var currentAlertText: String {
+        guard let alert = currentAlert else { return "None" }
+        let minutes = abs(Int(alert.relativeOffset / 60))
+        return Self.formatAlert(minutes)
+    }
+
+    var body: some View {
+        Menu {
+            MenuItemFor0Minutes()
+            MenuItemFor5Minutes()
+            MenuItemFor10Minutes()
+            MenuItemFor15Minutes()
+            MenuItemFor30Minutes()
+            MenuItemFor60Minutes()
+            MenuItemFor1440Minutes()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+
+                Text(currentAlertText)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.primary)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+        }
+    }
+
+    @ViewBuilder
+    private func makeMenuItem(_ minutes: Int) -> some View {
+        let isSelected = currentAlert != nil && abs(Int(currentAlert!.relativeOffset)) == minutes * 60
+        Button(action: { onSelect(minutes) }) {
+            HStack {
+                Text(Self.formatAlert(minutes))
+                if isSelected {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func MenuItemFor0Minutes() -> some View {
+        makeMenuItem(0)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor5Minutes() -> some View {
+        makeMenuItem(5)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor10Minutes() -> some View {
+        makeMenuItem(10)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor15Minutes() -> some View {
+        makeMenuItem(15)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor30Minutes() -> some View {
+        makeMenuItem(30)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor60Minutes() -> some View {
+        makeMenuItem(60)
+    }
+
+    @ViewBuilder
+    private func MenuItemFor1440Minutes() -> some View {
+        makeMenuItem(1440)
+    }
+
+    private static func formatAlert(_ minutes: Int) -> String {
+        if minutes == 0 {
+            return "At time of event"
+        } else if minutes < 60 {
+            return minutes == 1 ? "1 minute before" : "\(minutes) minutes before"
+        } else if minutes < 1440 {
+            let hours = minutes / 60
+            return hours == 1 ? "1 hour before" : "\(hours) hours before"
+        } else {
+            let days = minutes / 1440
+            return days == 1 ? "1 day before" : "\(days) days before"
+        }
+    }
 }
 
 #Preview {

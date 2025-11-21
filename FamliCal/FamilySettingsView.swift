@@ -33,13 +33,13 @@ struct FamilySettingsView: View {
         NavigationView {
             GlassyBackground {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 32) {
                         // MARK: - Family Members Section
                         familyMembersSection
 
                         Spacer()
                     }
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -88,24 +88,24 @@ struct FamilySettingsView: View {
 
     // MARK: - Family Members Section
     private var familyMembersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Family Members")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
                 .padding(.horizontal, 16)
 
             if familyMembers.isEmpty {
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     Image(systemName: "person.2.circle")
                         .font(.system(size: 48))
                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
 
                     Text("No family members yet")
-                        .font(.system(size: 15, weight: .regular, design: .default))
+                        .font(.system(size: 16, weight: .medium, design: .default))
                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
+                .padding(.vertical, 48)
                 .glassyCard(padding: 0)
                 .padding(.horizontal, 16)
             } else {
@@ -122,29 +122,29 @@ struct FamilySettingsView: View {
                                     }
                                 }
                             }) {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 16) {
                                     if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
                                         Circle()
                                             .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
-                                            .frame(width: 12, height: 12)
+                                            .frame(width: 16, height: 16)
                                     } else {
                                         Circle()
                                             .fill(Color.gray)
-                                            .frame(width: 12, height: 12)
+                                            .frame(width: 16, height: 16)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 2) {
+                                    VStack(alignment: .leading, spacing: 4) {
                                         Text(member.name ?? "Unknown")
                                             .font(.system(size: 16, weight: .semibold, design: .default))
                                             .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
 
                                         HStack(spacing: 4) {
                                             Image(systemName: "calendar")
-                                                .font(.system(size: 11, weight: .regular))
+                                                .font(.system(size: 12, weight: .regular))
                                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
 
                                             Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
-                                                .font(.system(size: 12, weight: .regular, design: .default))
+                                                .font(.system(size: 13, weight: .regular, design: .default))
                                                 .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                         }
                                     }
@@ -156,7 +156,7 @@ struct FamilySettingsView: View {
                                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 16)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -174,7 +174,7 @@ struct FamilySettingsView: View {
                                         HStack(spacing: 12) {
                                             Circle()
                                                 .fill(Color.fromHex(cal.calendarColorHex ?? "#007AFF"))
-                                                .frame(width: 8, height: 8)
+                                                .frame(width: 10, height: 10)
 
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(cal.calendarName ?? "Unknown")
@@ -191,7 +191,7 @@ struct FamilySettingsView: View {
                                             }
                                         }
                                         .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
+                                        .padding(.vertical, 12)
                                         .opacity(cal.isAutoLinked ? 0.6 : 1.0)
 
                                         if cal.id != sortedCals.last?.id {
@@ -219,7 +219,7 @@ struct FamilySettingsView: View {
                                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                                         .frame(maxWidth: .infinity)
                                         .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
+                                        .padding(.vertical, 12)
                                     }
                                     .buttonStyle(.plain)
 
@@ -238,7 +238,7 @@ struct FamilySettingsView: View {
                                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
                                         .frame(maxWidth: .infinity)
                                         .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
+                                        .padding(.vertical, 12)
                                     }
                                     .buttonStyle(.plain)
 
@@ -257,7 +257,7 @@ struct FamilySettingsView: View {
                                         .foregroundColor(.red)
                                         .frame(maxWidth: .infinity)
                                         .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
+                                        .padding(.vertical, 12)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -280,9 +280,9 @@ struct FamilySettingsView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: 56)
                     .background(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentFillStyle() : AnyShapeStyle(Color(red: 0.33, green: 0.33, blue: 0.33)))
-                    .cornerRadius(12)
+                    .cornerRadius(16)
                     .shadow(color: themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
             }
             .padding(.horizontal, 16)
