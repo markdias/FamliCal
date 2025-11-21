@@ -40,6 +40,9 @@ struct CalendarView: View {
     @State private var showingCalendarPicker = false
     @State private var contextMenuEvent: UpcomingCalendarEvent? = nil
     @State private var showingDeleteOptions = false
+    @State private var showingLinkedDeleteDialog = false
+    @State private var pendingDeleteEvent: UpcomingCalendarEvent? = nil
+    @State private var pendingDeleteSpan: EKSpan = .thisEvent
     @State private var availableCalendars: [EKCalendar] = []
     @State private var memberColors: [NSManagedObjectID: UIColor] = [:]
     @Namespace private var animationNamespace
@@ -48,6 +51,11 @@ struct CalendarView: View {
     private enum CalendarDisplayMode: String, CaseIterable {
         case month = "Month"
         case day = "Day"
+    }
+
+    private enum DeleteScope {
+        case single
+        case allLinked
     }
 
     private let calendar: Calendar = {
@@ -107,6 +115,35 @@ struct CalendarView: View {
             if let event = selectedEvent {
                 EventDetailView(event: event)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+            loadEvents()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
+            loadEvents()
+        }
+        .confirmationDialog(
+            "Delete Linked Copies?",
+            isPresented: $showingLinkedDeleteDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Delete only this calendar", role: .destructive) {
+                if let event = pendingDeleteEvent {
+                    showingLinkedDeleteDialog = false
+                    deleteEvent(event, span: pendingDeleteSpan, scope: .single)
+                }
+            }
+            Button("Delete in all linked calendars", role: .destructive) {
+                if let event = pendingDeleteEvent {
+                    showingLinkedDeleteDialog = false
+                    deleteEvent(event, span: pendingDeleteSpan, scope: .allLinked)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeleteEvent = nil
+            }
+        } message: {
+            Text("This event is linked to other calendars. Delete only here or everywhere?")
         }
         .onAppear(perform: setupView)
         .onChange(of: currentMonth) { _, _ in loadEvents() }
@@ -478,17 +515,17 @@ struct CalendarView: View {
         // Delete action
         if event.hasRecurrence {
             Menu {
-                Button(action: { deleteEvent(event, span: .thisEvent) }) {
+                Button(action: { confirmDelete(event, span: .thisEvent) }) {
                     Label("Delete This Event", systemImage: "trash")
                 }
-                Button(role: .destructive, action: { deleteEvent(event, span: .futureEvents) }) {
+                Button(role: .destructive, action: { confirmDelete(event, span: .futureEvents) }) {
                     Label("Delete This & Future Events", systemImage: "trash")
                 }
             } label: {
                 Label("Delete", systemImage: "trash")
             }
         } else {
-            Button(role: .destructive, action: { deleteEvent(event, span: .thisEvent) }) {
+            Button(role: .destructive, action: { confirmDelete(event, span: .thisEvent) }) {
                 Label("Delete", systemImage: "trash")
             }
         }
@@ -963,30 +1000,111 @@ struct CalendarView: View {
         }
     }
 
-    private func deleteEvent(_ event: UpcomingCalendarEvent, span: EKSpan = .thisEvent) {
-        let success = CalendarManager.shared.deleteEvent(
-            withIdentifier: event.id,
-            occurrenceStartDate: event.startDate,
-            from: event.calendarID,
-            span: span
-        )
+    private func confirmDelete(_ event: UpcomingCalendarEvent, span: EKSpan) {
+        pendingDeleteEvent = event
+        pendingDeleteSpan = span
 
-        if success {
-            // Cancel any scheduled notifications for this event
-            Task {
-                await NotificationManager.shared.cancelEventNotifications(for: event.id)
+        let linked = linkedFamilyEvents(for: event.id)
+        if linked.count > 1 {
+            showingLinkedDeleteDialog = true
+        } else {
+            deleteEvent(event, span: span, scope: .single)
+        }
+    }
+
+    private func deleteEvent(_ event: UpcomingCalendarEvent, span: EKSpan = .thisEvent, scope: DeleteScope = .single) {
+        Task {
+            await deleteEventAndLinked(event: event, span: span, scope: scope)
+            pendingDeleteEvent = nil
+        }
+    }
+
+    private func deleteEventAndLinked(event: UpcomingCalendarEvent, span: EKSpan, scope: DeleteScope) async {
+        let linked = linkedFamilyEvents(for: event.id)
+        let includeLinked = scope == .allLinked && !linked.isEmpty
+
+        var targets: [UpcomingCalendarEvent] = [event]
+
+        if includeLinked {
+            let extras = linked.compactMap { familyEvent -> UpcomingCalendarEvent? in
+                guard let identifier = familyEvent.eventIdentifier,
+                      let calendarId = familyEvent.calendarId else { return nil }
+                let startDate = CalendarManager.shared.fetchEventDetails(withIdentifier: identifier)?.startDate ?? event.startDate
+                return UpcomingCalendarEvent(
+                    id: identifier,
+                    title: event.title,
+                    location: event.location,
+                    startDate: startDate,
+                    endDate: event.endDate,
+                    calendarID: calendarId,
+                    calendarColor: event.calendarColor,
+                    calendarTitle: event.calendarTitle,
+                    hasRecurrence: event.hasRecurrence,
+                    recurrenceRule: event.recurrenceRule,
+                    isAllDay: event.isAllDay
+                )
+            }
+            targets.append(contentsOf: extras)
+        }
+
+        var anyDeleted = false
+
+        for target in targets {
+            let success = CalendarManager.shared.deleteEvent(
+                withIdentifier: target.id,
+                occurrenceStartDate: target.startDate,
+                from: target.calendarID,
+                span: span
+            )
+
+            if success {
+                anyDeleted = true
+
+                await NotificationManager.shared.cancelEventNotifications(for: target.id)
+
+                let fetchRequest = FamilyEvent.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", target.id)
+                if let familyEvent = try? viewContext.fetch(fetchRequest).first {
+                    viewContext.delete(familyEvent)
+                }
+            } else {
+                print("⚠️ Failed to delete event \(target.id) in calendar \(target.calendarID)")
+            }
+        }
+
+        if anyDeleted {
+            try? viewContext.save()
+            print("✅ Deleted \(targets.count) linked event(s)")
+            await MainActor.run {
+                loadEvents()
+            }
+        }
+    }
+
+    private func linkedFamilyEvents(for eventId: String) -> [FamilyEvent] {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", eventId)
+
+        do {
+            guard let current = try viewContext.fetch(fetchRequest).first else { return [] }
+
+            var results: [FamilyEvent] = [current]
+            if let groupId = current.eventGroupId {
+                let groupFetch = FamilyEvent.fetchRequest()
+                groupFetch.predicate = NSPredicate(format: "eventGroupId == %@", groupId as CVarArg)
+                let groupResults = try viewContext.fetch(groupFetch)
+                results.append(contentsOf: groupResults)
             }
 
-            // Delete from CoreData
-            let fetchRequest = FamilyEvent.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", event.id)
-            if let familyEvent = try? viewContext.fetch(fetchRequest).first {
-                viewContext.delete(familyEvent)
-                try? viewContext.save()
+            let keyed = results.compactMap { familyEvent -> (String, FamilyEvent)? in
+                guard let identifier = familyEvent.eventIdentifier else { return nil }
+                return (identifier, familyEvent)
             }
-
-            print("✅ Event deleted successfully")
-            loadEvents()
+            let grouped = Dictionary(grouping: keyed, by: { $0.0 })
+            return grouped.compactMap { _, value in value.first?.1 }
+        } catch {
+            print("⚠️ Failed to load linked events: \(error.localizedDescription)")
+            return []
         }
     }
 }

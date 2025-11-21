@@ -16,6 +16,11 @@ struct EditEventView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
 
+    private enum DeleteScope {
+        case singleCalendar
+        case allLinked
+    }
+
     let upcomingEvent: UpcomingCalendarEvent
 
     @FetchRequest(
@@ -91,6 +96,11 @@ struct EditEventView: View {
     @State private var showingRecurringDeleteOptions = false
     @State private var showingSuccessMessage = false
     @State private var showingDeleteSuccess = false
+    @State private var showingUpdateScopeDialog = false
+    @State private var showingLinkedDeleteOptions = false
+    @State private var pendingDeleteScope: DeleteScope = .singleCalendar
+    @State private var linkedFamilyEvents: [FamilyEvent] = []
+    @State private var externalEditCalendars: [String] = []
     private let notificationManager = NotificationManager.shared
 
     private var theme: AppTheme { themeManager.selectedTheme }
@@ -114,128 +124,179 @@ struct EditEventView: View {
         !eventTitle.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    @ViewBuilder
+    private var eventForm: some View {
+        ZStack {
+            formBackground
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    titleSection
+                    locationSection
+                    timeSection
+                    repeatSection
+                    alertSection
+                    calendarSection
+                    driverSection
+                    notesSection
+                    Spacer()
+                        .frame(height: 20)
+                }
+                .padding(16)
+            }
+            .background(Color.clear)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button("Cancel") {
+                dismiss()
+            }
+        }
+
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 16) {
+                Button(action: handleDeleteTap) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+
+                Button(action: handleSaveTapped) {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                }
+                .disabled(!isFormValid || isSaving)
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                formBackground
-                    .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        titleSection
-                        locationSection
-                        timeSection
-                        repeatSection
-                        alertSection
-                        calendarSection
-                        driverSection
-                        notesSection
-                        Spacer()
-                            .frame(height: 20)
+            eventForm
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { toolbarContent }
+                .confirmationDialog("Delete Event", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+                    Button("Delete", role: .destructive) {
+                        Task { await deleteEvent(scope: pendingDeleteScope) }
                     }
-                    .padding(16)
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("Are you sure you want to delete this event? This cannot be undone.")
                 }
-                .background(Color.clear)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                .confirmationDialog("Update Linked Calendars?", isPresented: $showingUpdateScopeDialog, titleVisibility: .visible) {
+                    Button("Update all linked calendars") {
+                        Task { await saveEvent(applyToGroup: true) }
+                    }
+                    Button("Update only this calendar") {
+                        Task { await saveEvent(applyToGroup: false) }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    if externalEditCalendars.isEmpty {
+                        Text("This event exists in multiple calendars. Do you want to apply these changes to all linked copies?")
+                    } else {
+                        let calendars = externalEditCalendars.joined(separator: ", ")
+                        Text("This event exists in multiple calendars. Changes were detected outside this app on: \(calendars). Overwrite them with your updates?")
+                    }
+                }
+                .confirmationDialog("Delete Linked Copies?", isPresented: $showingLinkedDeleteOptions, titleVisibility: .visible) {
+                    Button("Delete only in this calendar", role: .destructive) {
+                        pendingDeleteScope = .singleCalendar
+                        if upcomingEvent.hasRecurrence {
+                            showingRecurringDeleteOptions = true
+                        } else {
+                            Task { await deleteEvent(scope: .singleCalendar) }
+                        }
+                    }
+                    Button("Delete in all linked calendars", role: .destructive) {
+                        pendingDeleteScope = .allLinked
+                        if upcomingEvent.hasRecurrence {
+                            showingRecurringDeleteOptions = true
+                        } else {
+                            Task { await deleteEvent(scope: .allLinked) }
+                        }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    if externalEditCalendars.isEmpty {
+                        Text("This event is linked to other calendars. Do you want to delete it only here or everywhere?")
+                    } else {
+                        let calendars = externalEditCalendars.joined(separator: ", ")
+                        Text("This event is linked to other calendars. Some copies were edited outside this app (\(calendars)). Delete only here or everywhere?")
+                    }
+                }
+                .confirmationDialog("Delete Recurring Event?", isPresented: $showingRecurringDeleteOptions, titleVisibility: .visible) {
+                    Button("Delete Only This Event", role: .destructive) {
+                        Task { await deleteEvent(scope: pendingDeleteScope, span: .thisEvent) }
+                    }
+                    Button("Delete This and Future Events", role: .destructive) {
+                        Task { await deleteEvent(scope: pendingDeleteScope, span: .futureEvents) }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                }
+                .onAppear {
+                    // Populate fields from existing event
+                    eventTitle = upcomingEvent.title
+                    startTime = upcomingEvent.startDate
+                    endTime = upcomingEvent.endDate
+                    eventDate = upcomingEvent.startDate
+                    locationAddress = upcomingEvent.location ?? ""
+                    locationAddress = upcomingEvent.location ?? ""
+                    locationName = upcomingEvent.location ?? ""
+                    recurrenceConfig = RecurrenceConfiguration.none(anchor: upcomingEvent.startDate)
+                    if let rule = upcomingEvent.recurrenceRule,
+                       let parsed = RecurrenceConfiguration.from(rule: rule, anchor: upcomingEvent.startDate) {
+                        recurrenceConfig = parsed
+                        repeatOption = parsed.suggestedRepeatOption(anchor: upcomingEvent.startDate)
+                    } else if upcomingEvent.hasRecurrence {
+                        recurrenceConfig.isEnabled = true
+                        repeatOption = .custom
+                    }
+
+                    // Fetch calendar ID from CoreData
+                    fetchCalendarId()
+
+                    // Fetch driver from CoreData
+                    fetchDriver()
+
+                    // Load existing alert from the saved event so edits keep prior value
+                    loadExistingAlertOption()
+
+                    // Load linked copies so we can offer update/delete choices
+                    loadLinkedFamilyEvents()
+
+                    // Clean up stale selected members (in case they were deleted)
+                    let validMemberIDs = Set(familyMembers.map { $0.objectID })
+                    selectedMemberCalendars = selectedMemberCalendars.filter { validMemberIDs.contains($0.key) }
+                }
+                .alert("Error", isPresented: $showingError) {
+                    Button("OK") { }
+                } message: {
+                    Text(errorMessage)
+                }
+                .alert("Event Updated", isPresented: $showingSuccessMessage) {
+                    Button("Done") {
                         dismiss()
                     }
+                } message: {
+                    Text("Your event has been updated successfully!")
                 }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button(action: handleDeleteTap) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.red)
-                        }
-
-                        Button(action: {
-                            Task { await saveEvent() }
-                        }) {
-                            if isSaving {
-                                ProgressView()
-                            } else {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
-                        }
-                        .disabled(!isFormValid || isSaving)
+                .alert("Event Deleted", isPresented: $showingDeleteSuccess) {
+                    Button("Done") {
+                        dismiss()
                     }
+                } message: {
+                    Text("Your event has been deleted successfully!")
                 }
-            }
-            .confirmationDialog("Delete Event", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    Task { await deleteEvent() }
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Are you sure you want to delete this event? This cannot be undone.")
-            }
-            .confirmationDialog("Delete Recurring Event?", isPresented: $showingRecurringDeleteOptions, titleVisibility: .visible) {
-                Button("Delete Only This Event", role: .destructive) {
-                    Task { await deleteEvent(span: .thisEvent) }
-                }
-                Button("Delete This and Future Events", role: .destructive) {
-                    Task { await deleteEvent(span: .futureEvents) }
-                }
-                Button("Cancel", role: .cancel) { }
-            }
-            .onAppear {
-                // Populate fields from existing event
-                eventTitle = upcomingEvent.title
-                startTime = upcomingEvent.startDate
-                endTime = upcomingEvent.endDate
-                eventDate = upcomingEvent.startDate
-                locationAddress = upcomingEvent.location ?? ""
-                locationAddress = upcomingEvent.location ?? ""
-                locationName = upcomingEvent.location ?? ""
-                recurrenceConfig = RecurrenceConfiguration.none(anchor: upcomingEvent.startDate)
-                if let rule = upcomingEvent.recurrenceRule,
-                   let parsed = RecurrenceConfiguration.from(rule: rule, anchor: upcomingEvent.startDate) {
-                    recurrenceConfig = parsed
-                    repeatOption = parsed.suggestedRepeatOption(anchor: upcomingEvent.startDate)
-                } else if upcomingEvent.hasRecurrence {
-                    recurrenceConfig.isEnabled = true
-                    repeatOption = .custom
-                }
-
-                // Fetch calendar ID from CoreData
-                fetchCalendarId()
-
-                // Fetch driver from CoreData
-                fetchDriver()
-
-                // Load existing alert from the saved event so edits keep prior value
-                loadExistingAlertOption()
-
-                // Clean up stale selected members (in case they were deleted)
-                let validMemberIDs = Set(familyMembers.map { $0.objectID })
-                selectedMemberCalendars = selectedMemberCalendars.filter { validMemberIDs.contains($0.key) }
-            }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK") { }
-            } message: {
-                Text(errorMessage)
-            }
-            .alert("Event Updated", isPresented: $showingSuccessMessage) {
-                Button("Done") {
-                    dismiss()
-                }
-            } message: {
-                Text("Your event has been updated successfully!")
-            }
-            .alert("Event Deleted", isPresented: $showingDeleteSuccess) {
-                Button("Done") {
-                    dismiss()
-                }
-            } message: {
-                Text("Your event has been deleted successfully!")
-            }
-            .tint(accentColor)
+                .tint(accentColor)
         }
     }
 
@@ -335,7 +396,131 @@ struct EditEventView: View {
         }
     }
 
-    private func saveEvent() async {
+    private func loadLinkedFamilyEvents() {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", upcomingEvent.id)
+
+        do {
+            if let current = try viewContext.fetch(fetchRequest).first {
+                var results: [FamilyEvent] = [current]
+
+                if let groupId = current.eventGroupId {
+                    let groupFetch = FamilyEvent.fetchRequest()
+                    groupFetch.predicate = NSPredicate(format: "eventGroupId == %@", groupId as CVarArg)
+                    results = try viewContext.fetch(groupFetch)
+                }
+
+                // Deduplicate and keep only entries with identifiers
+                let keyed: [(String, FamilyEvent)] = results.compactMap { familyEvent in
+                    guard let identifier = familyEvent.eventIdentifier else { return nil }
+                    return (identifier, familyEvent)
+                }
+
+                let grouped = Dictionary(grouping: keyed, by: { pair in pair.0 })
+                let unique: [FamilyEvent] = grouped.compactMap { _, value in
+                    value.first?.1
+                }
+
+                linkedFamilyEvents = unique
+                print("🔗 Loaded \(linkedFamilyEvents.count) linked event(s) for group.")
+            } else {
+                linkedFamilyEvents = []
+            }
+        } catch {
+            print("❌ Failed to load linked events: \(error.localizedDescription)")
+            linkedFamilyEvents = []
+        }
+    }
+
+    private func handleSaveTapped() {
+        externalEditCalendars = []
+
+        if linkedFamilyEvents.count > 1 {
+            externalEditCalendars = detectExternalChanges(in: linkedFamilyEvents)
+            showingUpdateScopeDialog = true
+        } else {
+            Task { await saveEvent(applyToGroup: false) }
+        }
+    }
+
+    private func detectExternalChanges(in familyEvents: [FamilyEvent]) -> [String] {
+        var externallyEditedCalendars: Set<String> = []
+
+        for familyEvent in familyEvents {
+            guard let identifier = familyEvent.eventIdentifier else { continue }
+            let ekEvent = CalendarManager.shared.fetchEventDetails(
+                withIdentifier: identifier,
+                occurrenceStartDate: upcomingEvent.startDate
+            ) ?? CalendarManager.shared.fetchEventDetails(withIdentifier: identifier)
+
+            guard let ekEvent else { continue }
+
+            if let modifiedDate = ekEvent.lastModifiedDate {
+                let lastUpdated = familyEvent.createdAt ?? .distantPast
+                if modifiedDate > lastUpdated.addingTimeInterval(1) {
+                    externallyEditedCalendars.insert(ekEvent.calendar.title)
+                }
+            }
+        }
+
+        return Array(externallyEditedCalendars)
+    }
+
+    private func propagateUpdateToLinkedEvents(
+        title: String,
+        startDate: Date,
+        endDate: Date,
+        location: String?,
+        notes: String?,
+        isAllDay: Bool,
+        recurrenceRule: EKRecurrenceRule?,
+        span: EKSpan,
+        alertOption: AlertOption?
+    ) async {
+        let otherEvents = linkedFamilyEvents.filter { $0.eventIdentifier != upcomingEvent.id }
+        guard !otherEvents.isEmpty else { return }
+
+        print("🔗 Propagating updates to \(otherEvents.count) linked event(s)")
+
+        for familyEvent in otherEvents {
+            guard let calId = familyEvent.calendarId,
+                  let eventId = familyEvent.eventIdentifier else { continue }
+
+            let occurrenceDate = CalendarManager.shared.fetchEventDetails(withIdentifier: eventId)?.startDate
+
+            let success = CalendarManager.shared.updateEvent(
+                withIdentifier: eventId,
+                occurrenceStartDate: occurrenceDate,
+                in: calId,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                location: location,
+                notes: notes,
+                isAllDay: isAllDay,
+                recurrenceRule: recurrenceRule,
+                updateRecurrence: true,
+                span: span,
+                alertOption: alertOption
+            )
+
+            if success {
+                await MainActor.run {
+                    familyEvent.createdAt = Date()
+                }
+            } else {
+                print("⚠️ Failed to update linked event \(eventId) in calendar \(calId)")
+            }
+        }
+
+        await MainActor.run {
+            if viewContext.hasChanges {
+                try? viewContext.save()
+            }
+        }
+    }
+
+    private func saveEvent(applyToGroup: Bool = false) async {
         await MainActor.run {
             isSaving = true
             print("📝 Starting save event for: \(upcomingEvent.title)")
@@ -385,8 +570,26 @@ struct EditEventView: View {
         )
 
         if success {
+            if applyToGroup {
+                await propagateUpdateToLinkedEvents(
+                    title: title,
+                    startDate: eventStartDate,
+                    endDate: eventEndDate,
+                    location: locationAddress.isEmpty ? nil : locationAddress,
+                    notes: notes.isEmpty ? nil : notes,
+                    isAllDay: isAllDay,
+                    recurrenceRule: recurrenceRule,
+                    span: updateSpan,
+                    alertOption: alertOption
+                )
+            }
+
             // Update CoreData record if needed
             updateFamilyEvent()
+
+            await MainActor.run {
+                loadLinkedFamilyEvents()
+            }
 
             // Refresh local notifications to mirror the new alert setting
             Task {
@@ -590,6 +793,15 @@ struct EditEventView: View {
     }
 
     private func handleDeleteTap() {
+        pendingDeleteScope = .singleCalendar
+        externalEditCalendars = []
+
+        if linkedFamilyEvents.count > 1 {
+            externalEditCalendars = detectExternalChanges(in: linkedFamilyEvents)
+            showingLinkedDeleteOptions = true
+            return
+        }
+
         if upcomingEvent.hasRecurrence {
             showingRecurringDeleteOptions = true
         } else {
@@ -597,7 +809,7 @@ struct EditEventView: View {
         }
     }
 
-    private func deleteEvent(span: EKSpan = .thisEvent) async {
+    private func deleteEvent(scope: DeleteScope = .singleCalendar, span: EKSpan = .thisEvent) async {
         await MainActor.run {
             isSaving = true
             print("🗑️  Starting delete event for: \(upcomingEvent.title)")
@@ -616,17 +828,9 @@ struct EditEventView: View {
             return
         }
 
-        let success = CalendarManager.shared.deleteEvent(
-            withIdentifier: upcomingEvent.id,
-            occurrenceStartDate: upcomingEvent.startDate,
-            from: calId,
-            span: span
-        )
+        let success = await deleteLinkedEvents(scope: scope, span: span, primaryCalendarId: calId)
 
         if success {
-            // Delete from CoreData
-            deleteFamilyEvent()
-
             await MainActor.run {
                 // Trigger haptic feedback
                 let notificationFeedback = UINotificationFeedbackGenerator()
@@ -650,20 +854,58 @@ struct EditEventView: View {
         }
     }
 
-    private func deleteFamilyEvent() {
-        let fetchRequest = FamilyEvent.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", upcomingEvent.id)
+    private func deleteLinkedEvents(scope: DeleteScope, span: EKSpan, primaryCalendarId: String) async -> Bool {
+        let linked = linkedFamilyEvents.filter { $0.eventIdentifier != upcomingEvent.id }
+        let includeLinked = scope == .allLinked && !linked.isEmpty
 
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            for familyEvent in results {
-                viewContext.delete(familyEvent)
+        var targets: [(id: String, calendarId: String, occurrence: Date)] = []
+        targets.append((id: upcomingEvent.id, calendarId: primaryCalendarId, occurrence: upcomingEvent.startDate))
+
+        if includeLinked {
+            print("🗑️ Deleting \(linked.count) linked event(s)")
+            for familyEvent in linked {
+                guard let eid = familyEvent.eventIdentifier,
+                      let calId = familyEvent.calendarId else { continue }
+
+                let occurrence = CalendarManager.shared
+                    .fetchEventDetails(withIdentifier: eid)?
+                    .startDate ?? upcomingEvent.startDate
+
+                targets.append((id: eid, calendarId: calId, occurrence: occurrence))
             }
-            try viewContext.save()
-        } catch {
-            print("Failed to delete FamilyEvent record: \(error.localizedDescription)")
-            // Don't show error for this - the event was already deleted from the calendar
         }
+
+        var anyDeleted = false
+
+        for target in targets {
+            let success = CalendarManager.shared.deleteEvent(
+                withIdentifier: target.id,
+                occurrenceStartDate: target.occurrence,
+                from: target.calendarId,
+                span: span
+            )
+
+            if success {
+                anyDeleted = true
+                await NotificationManager.shared.cancelEventNotifications(for: target.id)
+
+                let fetchRequest = FamilyEvent.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", target.id)
+                if let familyEvent = try? viewContext.fetch(fetchRequest).first {
+                    viewContext.delete(familyEvent)
+                }
+            } else {
+                print("⚠️ Failed to delete event \(target.id) in calendar \(target.calendarId)")
+            }
+        }
+
+        await MainActor.run {
+            if viewContext.hasChanges {
+                try? viewContext.save()
+            }
+        }
+
+        return anyDeleted
     }
 
     private func formattedDate(_ date: Date) -> String {

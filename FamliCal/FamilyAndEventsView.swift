@@ -1,5 +1,5 @@
 //
-//  FamilySettingsView.swift
+//  FamilyAndEventsView.swift
 //  FamliCal
 //
 //  Created by Mark Dias on 21/11/2025.
@@ -8,7 +8,7 @@
 import SwiftUI
 import CoreData
 
-struct FamilySettingsView: View {
+struct FamilyAndEventsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
@@ -19,11 +19,19 @@ struct FamilySettingsView: View {
     )
     private var familyMembers: FetchedResults<FamilyMember>
 
+    @FetchRequest(
+        entity: SharedCalendar.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \SharedCalendar.calendarName, ascending: true)]
+    )
+    private var sharedCalendars: FetchedResults<SharedCalendar>
+
     @State private var showingAddMember = false
     @State private var editingMember: FamilyMember? = nil
     @State private var spotlightMember: FamilyMember? = nil
     @State private var expandedMember: FamilyMember? = nil
     @State private var selectedMember: FamilyMember? = nil
+    @State private var showingAddSharedCalendar = false
+    @State private var navigationSelection: String? = nil
 
     private var linkedCalendars: [FamilyMember] {
         familyMembers.filter { ($0.memberCalendars?.count ?? 0) > 0 }
@@ -36,6 +44,28 @@ struct FamilySettingsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // MARK: - Family Members Section
                         familyMembersSection
+
+                        // MARK: - Submenu Items
+                        VStack(spacing: 12) {
+                            NavigationLink(destination: DriversListView().environment(\.managedObjectContext, viewContext)) {
+                                SettingsMenuRow(
+                                    iconName: "car.fill",
+                                    iconColor: Color.orange,
+                                    title: "Drivers",
+                                    subtitle: "Manage drivers for events"
+                                )
+                            }
+
+                            NavigationLink(destination: EventPreferencesView()) {
+                                SettingsMenuRow(
+                                    iconName: "calendar.badge.clock",
+                                    iconColor: Color.blue,
+                                    title: "Event Preferences",
+                                    subtitle: "Display and alert settings"
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 16)
 
                         Spacer()
                     }
@@ -69,20 +99,13 @@ struct FamilySettingsView: View {
             SpotlightView(member: member)
                 .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(isPresented: $showingAddSharedCalendar) {
+            AddSharedCalendarView()
+                .environment(\.managedObjectContext, viewContext)
+        }
         .sheet(item: $selectedMember) { member in
             SelectMemberCalendarsView(member: member)
                 .environment(\.managedObjectContext, viewContext)
-        }
-    }
-
-    private func deleteMember(_ member: FamilyMember) {
-        viewContext.delete(member)
-
-        do {
-            try viewContext.save()
-        } catch {
-            let nsError = error as NSError
-            print("Error deleting family member: \(nsError), \(nsError.userInfo)")
         }
     }
 
@@ -202,59 +225,68 @@ struct FamilySettingsView: View {
                                     }
                                 }
 
-                                Divider()
+                                // Edit button in expanded section
+                                Button(action: { selectedMember = member }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "pencil.circle.fill")
+                                            .font(.system(size: 16))
+
+                                        Text("Select Calendars")
+                                            .font(.system(size: 14, weight: .semibold))
+                                    }
+                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
+                                    .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 16)
-                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                    .padding(.vertical, 10)
+                                }
+                                .buttonStyle(.plain)
 
-                                // Action buttons in expanded section
-                                VStack(spacing: 0) {
-                                    Button(action: { selectedMember = member }) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "pencil.circle.fill")
-                                                .font(.system(size: 16))
-
-                                            Text("Select Calendars")
-                                                .font(.system(size: 14, weight: .semibold))
-                                        }
-                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
-                                    }
-                                    .buttonStyle(.plain)
-
+                                // Shared calendars in expanded view
+                                if !sharedCalendars.isEmpty {
                                     Divider()
                                         .padding(.horizontal, 16)
                                         .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
 
-                                    Button(action: { editingMember = member }) {
+                                    VStack(spacing: 0) {
+                                        ForEach(sharedCalendars, id: \.self) { calendar in
+                                            HStack(spacing: 12) {
+                                                Circle()
+                                                    .fill(Color.fromHex(calendar.calendarColorHex ?? "#007AFF"))
+                                                    .frame(width: 8, height: 8)
+
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(calendar.calendarName ?? "Unknown")
+                                                        .font(.system(size: 14, weight: .regular))
+                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+
+                                                    Text("Shared")
+                                                        .font(.system(size: 11, weight: .regular))
+                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                }
+
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 10)
+                                            .opacity(0.7)
+
+                                            if calendar.id != sharedCalendars.last?.id {
+                                                Divider()
+                                                    .padding(.horizontal, 16)
+                                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                            }
+                                        }
+                                    }
+
+                                    Button(action: { showingAddSharedCalendar = true }) {
                                         HStack(spacing: 8) {
-                                            Image(systemName: "square.and.pencil")
+                                            Image(systemName: "plus.circle.fill")
                                                 .font(.system(size: 16))
 
-                                            Text("Edit Member")
+                                            Text("Add Shared Calendar")
                                                 .font(.system(size: 14, weight: .semibold))
                                         }
                                         .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    Divider()
-                                        .padding(.horizontal, 16)
-                                        .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                    Button(action: { deleteMember(member) }) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "trash.fill")
-                                                .font(.system(size: 16))
-
-                                            Text("Delete Member")
-                                                .font(.system(size: 14, weight: .semibold))
-                                        }
-                                        .foregroundColor(.red)
                                         .frame(maxWidth: .infinity)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
@@ -290,8 +322,45 @@ struct FamilySettingsView: View {
     }
 }
 
+// MARK: - Settings Menu Row
+private struct SettingsMenuRow: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let iconName: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(iconColor)
+                .cornerRadius(12)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+        }
+        .glassyCard(padding: 0)
+    }
+}
+
 #Preview {
-    FamilySettingsView()
+    FamilyAndEventsView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .environmentObject(ThemeManager())
 }

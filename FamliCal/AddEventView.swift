@@ -15,6 +15,7 @@ struct AddEventView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
+    @AppStorage("defaultAlertOption") private var defaultAlertOptionRawValue: String = AlertOption.none.rawValue
 
     @FetchRequest(
         entity: FamilyMember.entity(),
@@ -202,6 +203,11 @@ struct AddEventView: View {
             .onAppear {
                 // Request calendar permissions
                 requestCalendarAccess()
+
+                // Set default alert option
+                if let defaultAlert = AlertOption(rawValue: defaultAlertOptionRawValue) {
+                    alertOption = defaultAlert
+                }
 
                 // Set default start and end times
                 let calendar = Calendar.current

@@ -121,16 +121,50 @@ extension AppTheme {
 
 final class ThemeManager: ObservableObject {
     @Published private(set) var selectedTheme: AppTheme
+    @Published var isDarkModeEnabled: Bool
     private let storageKey = "selectedThemeID"
+    private let darkModeKey = "darkModeEnabled"
 
     init(defaultTheme: AppTheme = .classic) {
         let stored = UserDefaults.standard.string(forKey: storageKey)
         selectedTheme = AppTheme.theme(with: stored) ?? defaultTheme
+        isDarkModeEnabled = UserDefaults.standard.bool(forKey: darkModeKey)
     }
 
     func select(theme: AppTheme) {
         guard theme != selectedTheme else { return }
         selectedTheme = theme
         UserDefaults.standard.set(theme.id, forKey: storageKey)
+    }
+
+    func setDarkMode(_ enabled: Bool) {
+        isDarkModeEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: darkModeKey)
+    }
+
+    func getEffectiveTheme() -> AppTheme {
+        guard isDarkModeEnabled else { return selectedTheme }
+
+        // Create a dark mode variant of the current theme
+        let baseTheme = selectedTheme
+        return AppTheme(
+            id: baseTheme.id + "_dark",
+            displayName: baseTheme.displayName,
+            description: baseTheme.description,
+            prefersDarkInterface: true,
+            backgroundColor: Color(red: 0.1, green: 0.1, blue: 0.1),
+            backgroundGradient: nil,
+            cardBackground: Color(red: 0.15, green: 0.15, blue: 0.15),
+            cardStroke: Color.white.opacity(0.1),
+            floatingControlsBackground: Color(red: 0.2, green: 0.2, blue: 0.2),
+            floatingControlsBorder: Color.white.opacity(0.15),
+            floatingControlForeground: Color.white,
+            accentColor: baseTheme.accentColor,
+            accentGradient: baseTheme.accentGradient,
+            textPrimary: Color.white,
+            textSecondary: Color.white.opacity(0.7),
+            chromeOverlay: Color.white.opacity(0.1),
+            mutedTagColor: Color.white.opacity(0.5)
+        )
     }
 }

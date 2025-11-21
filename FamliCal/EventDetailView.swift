@@ -12,6 +12,11 @@ import CoreLocation
 import CoreData
 
 struct EventDetailView: View {
+    private enum DeleteScope {
+        case single
+        case allLinked
+    }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var viewContext
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
@@ -27,9 +32,13 @@ struct EventDetailView: View {
     @State private var isLoadingLocation = false
     @State private var showingCalendarPicker = false
     @State private var showingRecurringDeleteOptions = false
+    @State private var showingLinkedDeleteDialog = false
+    @State private var pendingDeleteSpan: EKSpan = .thisEvent
+    @State private var pendingDeleteScope: DeleteScope = .single
     @State private var driver: Driver?
     @State private var eventStore = EKEventStore()
     @State private var availableCalendars: [EKCalendar] = []
+    @State private var geocodeTask: Task<Void, Never>?
 
     private static let fullDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -417,19 +426,32 @@ struct EventDetailView: View {
             .alert("Delete Event", isPresented: $showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
-                    deleteEvent()
+                    startDeleteFlow(span: .thisEvent)
                 }
             } message: {
                 Text("Are you sure you want to delete this event?")
             }
             .confirmationDialog("Delete Recurring Event?", isPresented: $showingRecurringDeleteOptions, titleVisibility: .visible) {
                 Button("Delete Only This Event", role: .destructive) {
-                    deleteEvent(span: .thisEvent)
+                    startDeleteFlow(span: .thisEvent)
                 }
                 Button("Delete This and Future Events", role: .destructive) {
-                    deleteEvent(span: .futureEvents)
+                    startDeleteFlow(span: .futureEvents)
                 }
                 Button("Cancel", role: .cancel) { }
+            }
+            .confirmationDialog("Delete Linked Copies?", isPresented: $showingLinkedDeleteDialog, titleVisibility: .visible) {
+                Button("Delete only this calendar", role: .destructive) {
+                    deleteEvent(scope: .single, span: pendingDeleteSpan)
+                }
+                Button("Delete in all linked calendars", role: .destructive) {
+                    deleteEvent(scope: .allLinked, span: pendingDeleteSpan)
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDeleteScope = .single
+                }
+            } message: {
+                Text("This event is linked to other calendars. Delete only here or everywhere?")
             }
             .onAppear {
                 // Load available calendars for context menu
@@ -445,6 +467,12 @@ struct EventDetailView: View {
 
                 // Fetch driver information
                 fetchDriver()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+                fetchEventDetails()
+            }
+            .onDisappear {
+                geocodeTask?.cancel()
             }
         }
     }
@@ -503,30 +531,51 @@ struct EventDetailView: View {
     }
 
     private func geocodeLocation(_ locationString: String, zoom: Double = 0.01) {
+        let trimmedLocation = locationString.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedLocation.isEmpty else {
+            return
+        }
+
+        geocodeTask?.cancel()
         isLoadingLocation = true
 
-        Task {
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = locationString
-
-            let geocoder = MKLocalSearch(request: request)
+        geocodeTask = Task {
             do {
-                let response = try await geocoder.start()
+                let coordinate: CLLocationCoordinate2D? = try await {
+                    if #available(iOS 17.0, *) {
+                        var request = MKLocalSearch.Request()
+                        request.naturalLanguageQuery = trimmedLocation
+                        let search = MKLocalSearch(request: request)
+                        let response = try await search.start()
+                        return response.mapItems.first?.placemark.coordinate
+                    } else {
+                        let geocoder = CLGeocoder()
+                        let placemarks = try await geocoder.geocodeAddressString(trimmedLocation)
+                        return placemarks.first?.location?.coordinate
+                    }
+                }()
+
                 await MainActor.run {
                     isLoadingLocation = false
-                    if let firstResult = response.mapItems.first {
-                        let coordinate = firstResult.location.coordinate
-                        locationCoordinates = coordinate
-                        mapRegion = MKCoordinateRegion(
-                            center: coordinate,
-                            span: MKCoordinateSpan(latitudeDelta: zoom, longitudeDelta: zoom)
-                        )
+                    guard let coordinate else {
+                        locationCoordinates = nil
+                        return
                     }
+
+                    locationCoordinates = coordinate
+                    mapRegion = MKCoordinateRegion(
+                        center: coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: zoom, longitudeDelta: zoom)
+                    )
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     isLoadingLocation = false
+                    locationCoordinates = nil
                 }
+                print("⚠️ Failed to geocode location '\(trimmedLocation)': \(error.localizedDescription)")
             }
         }
     }
@@ -539,30 +588,119 @@ struct EventDetailView: View {
         }
     }
 
-    private func deleteEvent(span: EKSpan = .thisEvent) {
+    private func startDeleteFlow(span: EKSpan) {
+        pendingDeleteSpan = span
+
+        let linked = linkedFamilyEvents(for: event.id)
+        if linked.count > 1 {
+            showingLinkedDeleteDialog = true
+        } else {
+            deleteEvent(scope: .single, span: span)
+        }
+    }
+
+    private func deleteEvent(scope: DeleteScope = .single, span: EKSpan = .thisEvent) {
         isDeleting = true
 
-        // Use CalendarManager to ensure we're using the same EventStore instance
-        let success = CalendarManager.shared.deleteEvent(
-            withIdentifier: event.id,
-            occurrenceStartDate: event.startDate,
-            from: event.calendarID,
-            span: span
-        )
+        Task {
+            let success = await deleteLinkedEvents(scope: scope, span: span)
 
-        if success {
-            // Cancel any scheduled notifications for this event
-            Task {
-                await NotificationManager.shared.cancelEventNotifications(for: event.id)
+            if success {
+                DispatchQueue.main.async {
+                    dismiss()
+                }
+            } else {
+                DispatchQueue.main.async {
+                    isDeleting = false
+                }
+            }
+        }
+    }
+
+    private func deleteLinkedEvents(scope: DeleteScope, span: EKSpan) async -> Bool {
+        let linked = linkedFamilyEvents(for: event.id)
+        let includeLinked = scope == .allLinked && !linked.isEmpty
+
+        var targets: [UpcomingCalendarEvent] = [event]
+
+        if includeLinked {
+            let extras = linked.compactMap { familyEvent -> UpcomingCalendarEvent? in
+                guard let identifier = familyEvent.eventIdentifier,
+                      let calendarId = familyEvent.calendarId else { return nil }
+                let startDate = CalendarManager.shared.fetchEventDetails(withIdentifier: identifier)?.startDate ?? event.startDate
+                return UpcomingCalendarEvent(
+                    id: identifier,
+                    title: event.title,
+                    location: event.location,
+                    startDate: startDate,
+                    endDate: event.endDate,
+                    calendarID: calendarId,
+                    calendarColor: event.calendarColor,
+                    calendarTitle: event.calendarTitle,
+                    hasRecurrence: event.hasRecurrence,
+                    recurrenceRule: event.recurrenceRule,
+                    isAllDay: event.isAllDay
+                )
+            }
+            targets.append(contentsOf: extras)
+        }
+
+        var anyDeleted = false
+
+        for target in targets {
+            let success = CalendarManager.shared.deleteEvent(
+                withIdentifier: target.id,
+                occurrenceStartDate: target.startDate,
+                from: target.calendarID,
+                span: span
+            )
+
+            if success {
+                anyDeleted = true
+
+                await NotificationManager.shared.cancelEventNotifications(for: target.id)
+
+                let fetchRequest = FamilyEvent.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", target.id)
+                if let familyEvent = try? viewContext.fetch(fetchRequest).first {
+                    viewContext.delete(familyEvent)
+                }
+            } else {
+                print("⚠️ Failed to delete event \(target.id) in calendar \(target.calendarID)")
+            }
+        }
+
+        if anyDeleted {
+            try? viewContext.save()
+        }
+
+        return anyDeleted
+    }
+
+    private func linkedFamilyEvents(for eventId: String) -> [FamilyEvent] {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", eventId)
+
+        do {
+            guard let current = try viewContext.fetch(fetchRequest).first else { return [] }
+
+            var results: [FamilyEvent] = [current]
+            if let groupId = current.eventGroupId {
+                let groupFetch = FamilyEvent.fetchRequest()
+                groupFetch.predicate = NSPredicate(format: "eventGroupId == %@", groupId as CVarArg)
+                let groupResults = try viewContext.fetch(groupFetch)
+                results.append(contentsOf: groupResults)
             }
 
-            DispatchQueue.main.async {
-                dismiss()
+            let keyed = results.compactMap { familyEvent -> (String, FamilyEvent)? in
+                guard let identifier = familyEvent.eventIdentifier else { return nil }
+                return (identifier, familyEvent)
             }
-        } else {
-            DispatchQueue.main.async {
-                isDeleting = false
-            }
+            let grouped = Dictionary(grouping: keyed, by: { $0.0 })
+            return grouped.compactMap { _, value in value.first?.1 }
+        } catch {
+            print("⚠️ Failed to load linked events: \(error.localizedDescription)")
+            return []
         }
     }
 

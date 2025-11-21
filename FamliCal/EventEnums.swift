@@ -16,13 +16,15 @@ enum RepeatOption: String, CaseIterable {
     case custom = "Custom"
 }
 
-enum AlertOption: String, CaseIterable {
+enum AlertOption: String, CaseIterable, Identifiable {
     case none = "None"
     case atTime = "At time of event"
     case fifteenMinsBefore = "15 minutes before"
     case oneHourBefore = "1 hour before"
     case oneDayBefore = "1 day before"
     case custom = "Custom"
+
+    var id: String { rawValue }
 }
 
 enum ShowAsOption: String, CaseIterable {

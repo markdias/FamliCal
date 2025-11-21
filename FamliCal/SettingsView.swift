@@ -12,99 +12,54 @@ struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
-    @State private var showingFamilyMembers = false
-    @State private var showingVisibleCalendars = false
-    @State private var showingDrivers = false
+    @State private var showingFamilySettings = false
     @State private var showingAppSettings = false
-    @State private var showingPermissions = false
-    @State private var showingThemeSettings = false
     @State private var showingNotifications = false
-    @State private var showingSavedPlaces = false
+    @State private var showingPermissions = false
 
     var body: some View {
         NavigationView {
             GlassyBackground {
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 18) {
                         VStack(spacing: 18) {
                             SettingsRowView(
                                 iconName: "person.2.fill",
                                 iconColor: Color(red: 0.33, green: 0.33, blue: 0.33),
-                                title: "Family Members",
-                                subtitle: "Manage members and linked calendars",
-                                action: { showingFamilyMembers = true }
+                                title: "My Family",
+                                subtitle: "Family members and calendars",
+                                action: { showingFamilySettings = true }
                             )
 
                             SettingsRowView(
-                                iconName: "calendar",
-                                iconColor: Color.green,
-                                title: "Visible Calendars",
-                                subtitle: "Choose which calendars appear",
-                                action: { showingVisibleCalendars = true }
+                                iconName: "square.grid.2x2",
+                                iconColor: Color.blue,
+                                title: "App Settings",
+                                subtitle: "General, display, and calendars",
+                                action: { showingAppSettings = true }
                             )
 
                             SettingsRowView(
-                                iconName: "car.fill",
+                                iconName: "bell.fill",
                                 iconColor: Color.orange,
-                                title: "Drivers",
-                                subtitle: "Manage drivers for events",
-                                action: { showingDrivers = true }
+                                title: "Notifications",
+                                subtitle: "Event alerts and morning brief",
+                                action: { showingNotifications = true }
                             )
 
                             SettingsRowView(
-                                iconName: "map.fill",
-                                iconColor: Color.green,
-                                title: "Saved Places",
-                                subtitle: "Manage favorite locations",
-                                action: { showingSavedPlaces = true }
-                            )
-
-                            SettingsRowView(
-                                iconName: "paintbrush",
-                                iconColor: Color.purple,
-                                title: "Theme",
-                                subtitle: themeManager.selectedTheme.displayName,
-                                action: { showingThemeSettings = true }
+                                iconName: "lock.fill",
+                                iconColor: Color.red,
+                                title: "Permissions",
+                                subtitle: "Calendar and contacts access",
+                                action: { showingPermissions = true }
                             )
                         }
+                        .padding(.horizontal, 16)
 
-                        VStack(alignment: .center, spacing: 8) {
-                            Text("Layout & Localization")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-
-                            HStack(spacing: 12) {
-                                Button(action: { showingAppSettings = true }) {
-                                    SettingsCardView(
-                                        iconName: "square.grid.2x2",
-                                        title: "App Settings",
-                                        subtitle: "Calendar grid, week start, events"
-                                    )
-                                }
-                                .buttonStyle(.plain)
-
-                                SettingsCardView(
-                                    iconName: "rectangle.grid.2x2",
-                                    title: "Widget Settings",
-                                    subtitle: "Header placement, density, grid"
-                                )
-                            }
-                        }
-
-                        VStack(spacing: 12) {
-                            Button(action: { showingPermissions = true }) {
-                                SettingsRowView(
-                                    iconName: "lock.fill",
-                                    iconColor: Color.orange,
-                                    title: "Permissions",
-                                    subtitle: "Manage app access and permissions",
-                                    action: { showingPermissions = true }
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        Spacer()
                     }
-                    .padding(24)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationTitle("Settings")
@@ -118,36 +73,24 @@ struct SettingsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingFamilyMembers) {
+        .sheet(isPresented: $showingFamilySettings) {
             FamilySettingsView()
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showingVisibleCalendars) {
-            VisibleCalendarsView()
+        .sheet(isPresented: $showingAppSettings) {
+            AppSettingsView()
                 .environment(\.managedObjectContext, viewContext)
         }
-        .sheet(isPresented: $showingDrivers) {
-            DriversListView()
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(isPresented: $showingSavedPlaces) {
+        .sheet(isPresented: $showingNotifications) {
             NavigationView {
-                SavedAddressesSettingsView()
+                NotificationSettingsView()
                     .environment(\.managedObjectContext, viewContext)
             }
         }
-        .sheet(isPresented: $showingAppSettings) {
-            AppSettingsView()
-        }
         .sheet(isPresented: $showingPermissions) {
-            PermissionsView()
-        }
-        .sheet(isPresented: $showingThemeSettings) {
-            ThemeSettingsView()
-        }
-        .sheet(isPresented: $showingNotifications) {
-            NotificationSettingsView()
-                .environment(\.managedObjectContext, viewContext)
+            NavigationView {
+                PermissionsView()
+            }
         }
     }
 }
@@ -184,34 +127,6 @@ private struct SettingsRowView: View {
     }
 }
 
-private struct SettingsCardView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
-    let iconName: String
-    let title: String
-    let subtitle: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: iconName)
-                .font(.system(size: 20))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : Color(red: 0.33, green: 0.33, blue: 0.33))
-                .frame(width: 44, height: 44)
-                .background(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor.opacity(0.2) : Color(.systemBlue).opacity(0.1))
-                .cornerRadius(16)
-
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-            Text(subtitle)
-                .font(.system(size: 11))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                .lineLimit(2)
-        }
-        .glassyCard()
-        .frame(maxWidth: .infinity)
-    }
-}
 
 #Preview {
     SettingsView()
