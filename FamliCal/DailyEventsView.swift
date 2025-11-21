@@ -11,6 +11,9 @@ struct DailyEventsView: View {
 
     @State private var tappedEvent: DayEventItem?
     @State private var selectedMemberIDs: [NSManagedObjectID] = []
+    @State private var currentTime = Date()
+    @State private var scrollPositioned = false
+    @State private var timer: Timer?
 
     private let hourHeight: CGFloat = 60
     private let allDayTitleLineHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight
@@ -43,10 +46,44 @@ struct DailyEventsView: View {
                 allDayEventsSection(for: allDayEvents)
             }
 
-            ScrollView {
-                ZStack(alignment: .topLeading) {
-                    timelineView
-                    eventsView(for: timedEvents)
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ZStack(alignment: .topLeading) {
+                            timelineView
+                            eventsView(for: timedEvents)
+
+                            // Current time line
+                            if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                        .frame(height: yOffset(for: currentTime))
+
+                                    HStack(spacing: 0) {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 8, height: 8)
+
+                                        Rectangle()
+                                            .fill(Color.red)
+                                            .frame(height: 0.5)
+                                    }
+                                    .id("currentTime")
+
+                                    Spacer()
+                                }
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
+                            withAnimation {
+                                scrollProxy.scrollTo("currentTime", anchor: .center)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -58,6 +95,10 @@ struct DailyEventsView: View {
         )
         .onAppear {
             selectedMemberIDs = familyMembers.map { $0.objectID }
+            startTimeUpdates()
+        }
+        .onDisappear {
+            stopTimeUpdates()
         }
     }
 
@@ -147,51 +188,60 @@ struct DailyEventsView: View {
     }
 
     private func allDayEventCell(for event: DayEventItem) -> some View {
-        HStack(alignment: .center, spacing: 8) {
+        let isPast = Date() > event.endDate
+
+        return HStack(alignment: .center, spacing: 8) {
             Capsule()
                 .fill(Color(event.color))
                 .frame(width: 4, height: allDayTitleLineHeight)
+                .opacity(isPast ? 0.6 : 1.0)
 
             VStack(alignment: .leading) {
                 Text(event.title)
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
+                    .opacity(isPast ? 0.7 : 1.0)
                 Text(event.memberNames.joined(separator: ", "))
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(theme.mutedTagColor)
+                    .opacity(isPast ? 0.7 : 1.0)
             }
 
             Spacer()
         }
         .frame(height: allDayRowHeight)
         .padding(.horizontal, 12)
-        .background(Color(event.color).opacity(0.15))
+        .background(Color(event.color).opacity(isPast ? 0.10 : 0.15))
         .cornerRadius(6)
         .padding(.horizontal, 8)
     }
 
     private func eventCell(for event: DayEventItem, isTapped: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        let isPast = Date() > event.endDate
+
+        return VStack(alignment: .leading, spacing: 2) {
             Text(event.title)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(2)
+                .opacity(isPast ? 0.7 : 1.0)
 
             Text(event.timeRange ?? "")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
-            
+                .foregroundColor(.white.opacity(isPast ? 0.6 : 0.8))
+
             Text(event.memberNames.joined(separator: ", "))
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(.white.opacity(isPast ? 0.6 : 0.8))
         }
         .padding(6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(event.color).opacity(isTapped ? 1.0 : 0.6))
+        .background(Color(event.color).opacity(isPast ? (isTapped ? 0.5 : 0.35) : (isTapped ? 1.0 : 0.6)))
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
                 .stroke(Color(event.color), lineWidth: 1)
+                .opacity(isPast ? 0.6 : 1.0)
         )
     }
 
@@ -242,6 +292,18 @@ struct DailyEventsView: View {
         let hour = calendar.component(.hour, from: date)
         let minute = calendar.component(.minute, from: date)
         return CGFloat(hour) * hourHeight + CGFloat(minute) / 60.0 * hourHeight
+    }
+
+    private func startTimeUpdates() {
+        currentTime = Date()
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            currentTime = Date()
+        }
+    }
+
+    private func stopTimeUpdates() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 

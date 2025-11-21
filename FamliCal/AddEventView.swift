@@ -72,6 +72,7 @@ struct AddEventView: View {
     @State private var locationAddress: String = ""
     @State private var isAllDay: Bool = false
     @State private var showAsOption: ShowAsOption = .busy
+    private let notificationManager = NotificationManager.shared
 
     // People selection
     @State private var selectedMembers: Set<NSManagedObjectID> = []
@@ -92,7 +93,8 @@ struct AddEventView: View {
     @State private var permissionErrorMessage = ""
 
     // UI state
-    @State private var showingDatePicker = false
+    @State private var showingStartDatePicker = false
+    @State private var showingEndDatePicker = false
     @State private var showingStartTimePicker = false
     @State private var showingEndTimePicker = false
     @State private var showingRepeatPicker = false
@@ -202,19 +204,39 @@ struct AddEventView: View {
                 let calendar = Calendar.current
                 let now = Date()
                 var components = calendar.dateComponents([.year, .month, .day, .hour], from: now)
-                components.hour = (components.hour ?? 0) + 1
-                components.minute = 0
-
-                startTime = calendar.date(from: components) ?? now.addingTimeInterval(3600)
-
-                components.hour = (components.hour ?? 0) + 1
-                endTime = calendar.date(from: components) ?? startTime.addingTimeInterval(3600)
+                
+                if let hour = components.hour, hour >= 23 {
+                    // 11th hour logic: Start at 23:00, End at 00:00 next day
+                    components.hour = 23
+                    components.minute = 0
+                    startTime = calendar.date(from: components) ?? now
+                    
+                    // End time is next day at 00:00
+                    if let nextDay = calendar.date(byAdding: .day, value: 1, to: startTime),
+                       let nextDayStart = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: nextDay) {
+                        endTime = nextDayStart
+                    } else {
+                        endTime = startTime.addingTimeInterval(3600)
+                    }
+                } else {
+                    // Standard logic
+                    components.hour = (components.hour ?? 0) + 1
+                    components.minute = 0
+                    startTime = calendar.date(from: components) ?? now.addingTimeInterval(3600)
+                    
+                    components.hour = (components.hour ?? 0) + 1
+                    endTime = calendar.date(from: components) ?? startTime.addingTimeInterval(3600)
+                }
 
                 eventDate = now
                 recurrenceConfig = RecurrenceConfiguration.none(anchor: now)
 
                 // Build available calendars list
                 updateAvailableCalendars()
+
+                // Clean up stale selected members (in case they were deleted)
+                let validMemberIDs = Set(familyMembers.map { $0.objectID })
+                selectedMembers = selectedMembers.intersection(validMemberIDs)
             }
             .onChange(of: selectEveryone) { _, _ in
                 updateAvailableCalendars()
@@ -374,9 +396,9 @@ struct AddEventView: View {
         let eventGroupId = UUID()
         let title = eventTitle.trimmingCharacters(in: .whitespaces)
 
-        // Combine eventDate with startTime and endTime
-        let eventStartDate = combineDateAndTime(date: eventDate, time: startTime)
-        let eventEndDate = combineDateAndTime(date: eventDate, time: endTime)
+        // Use startTime and endTime directly as they now contain the correct date and time
+        let eventStartDate = startTime
+        let eventEndDate = endTime
 
         // Create recurrence rule if needed
         let recurrenceRule: EKRecurrenceRule? = selectedRecurrenceRule(startDate: eventStartDate)
@@ -385,26 +407,26 @@ struct AddEventView: View {
 
         print("🚗 DEBUG: About to save event. selectedDriver = \(selectedDriver?.name ?? "nil")")
 
-        // Determine which calendars to add the event to
-        var targetCalendars: [String] = []
+        // Determine which calendars to add the event to, and which members are tied to each calendar
+        var targets: [(calendarID: String, member: FamilyMember?)] = []
 
         if selectEveryone {
             // Everyone selected: use the selected shared calendar
-            targetCalendars = [selectedCalendarID]
+            targets = [(selectedCalendarID, nil)]
         } else {
             // Specific people selected: add to each person's selected calendar
             for memberID in selectedMembers {
                 if let member = familyMembers.first(where: { $0.objectID == memberID }) {
                     if let selectedCalendar = getSelectedCalendarForMember(member: member),
                        let calendarID = selectedCalendar.calendarID {
-                        targetCalendars.append(calendarID)
+                        targets.append((calendarID, member))
                     }
                 }
             }
         }
 
         // Create event in all target calendars
-        for calendarID in targetCalendars {
+        for target in targets {
             var eventId: String?
 
             if let recurrenceRule = recurrenceRule {
@@ -416,7 +438,7 @@ struct AddEventView: View {
                     notes: notes.isEmpty ? nil : notes,
                     recurrenceRule: recurrenceRule,
                     isAllDay: isAllDay,
-                    in: calendarID,
+                    in: target.calendarID,
                     alertOption: alertOption
                 )
             } else {
@@ -427,12 +449,12 @@ struct AddEventView: View {
                     location: locationAddress.isEmpty ? nil : locationAddress,
                     notes: notes.isEmpty ? nil : notes,
                     isAllDay: isAllDay,
-                    in: calendarID,
+                    in: target.calendarID,
                     alertOption: alertOption
                 )
             }
 
-            print("📅 Created event with ID: \(eventId ?? "nil") in calendar: \(calendarID)")
+            print("📅 Created event with ID: \(eventId ?? "nil") in calendar: \(target.calendarID)")
 
             if let eventId = eventId {
                 createdEventIds.append(eventId)
@@ -442,7 +464,7 @@ struct AddEventView: View {
                 familyEvent.id = eventGroupId
                 familyEvent.eventGroupId = eventGroupId
                 familyEvent.eventIdentifier = eventId
-                familyEvent.calendarId = calendarID
+                familyEvent.calendarId = target.calendarID
                 familyEvent.createdAt = Date()
                 familyEvent.isSharedCalendarEvent = selectEveryone
 
@@ -488,7 +510,21 @@ struct AddEventView: View {
                             familyEvent.addToAttendees(member)
                         }
                     }
+                } else {
+                    // If "Everyone" selected, add all family members
+                    for member in familyMembers {
+                        familyEvent.addToAttendees(member)
+                    }
                 }
+
+                print("✅ FamilyEvent saved for eventId: \(eventId)")
+
+                // Schedule local notification if enabled and allowed
+                scheduleNotificationForCreatedEvent(
+                    eventIdentifier: eventId,
+                    calendarId: target.calendarID,
+                    attendingMembers: target.member.map { [$0] } ?? Array(familyMembers)
+                )
             }
         }
 
@@ -552,6 +588,48 @@ struct AddEventView: View {
         currentRecurrenceConfiguration(anchorDate: startDate)?.toRecurrenceRule(anchor: startDate)
     }
 
+    private func scheduleNotificationForCreatedEvent(
+        eventIdentifier: String,
+        calendarId: String,
+        attendingMembers: [FamilyMember]
+    ) {
+
+
+        // Clear any stale pending notifications for this identifier
+        Task {
+            await notificationManager.cancelEventNotifications(for: eventIdentifier)
+
+            guard alertOption != .none else { return }
+
+            let memberIds = attendingMembers.compactMap { $0.id }
+            guard notificationManager.shouldNotifyForEvent(
+                calendarId: calendarId,
+                memberIds: memberIds
+            ) else { return }
+
+            guard let ekEvent = CalendarManager.shared.getEvent(withIdentifier: eventIdentifier) else { return }
+
+            let memberNames = attendingMembers.compactMap { $0.name }
+            let driverName: String? = {
+                switch selectedDriver {
+                case .regular(let driver):
+                    return driver.name
+                case .familyMember(let member):
+                    return member.name
+                case .none:
+                    return nil
+                }
+            }()
+
+            notificationManager.scheduleEventNotification(
+                event: ekEvent,
+                alertOption: alertOption,
+                familyMembers: memberNames,
+                drivers: driverName
+            )
+        }
+    }
+
     private var repeatDetailLabel: String {
         switch repeatOption {
         case .custom: return "Custom pattern"
@@ -583,7 +661,7 @@ struct AddEventView: View {
 
     private func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
+        formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
     }
 
@@ -761,18 +839,86 @@ struct AddEventView: View {
                 Divider().padding(.leading, 4)
 
                 timeRow(title: "Starts",
-                        dateText: formattedDate(eventDate),
+                        dateText: formattedDate(startTime),
                         timeText: formattedTime(startTime),
-                        dateAction: { showingDatePicker.toggle() },
-                        timeAction: { showingStartTimePicker.toggle() })
+                        dateAction: {
+                            withAnimation {
+                                if showingStartDatePicker {
+                                    showingStartDatePicker = false
+                                } else {
+                                    showingStartDatePicker = true
+                                    showingEndDatePicker = false
+                                    showingStartTimePicker = false
+                                    showingEndTimePicker = false
+                                }
+                            }
+                        },
+                        timeAction: {
+                            withAnimation {
+                                if showingStartTimePicker {
+                                    showingStartTimePicker = false
+                                } else {
+                                    showingStartTimePicker = true
+                                    showingStartDatePicker = false
+                                    showingEndDatePicker = false
+                                    showingEndTimePicker = false
+                                }
+                            }
+                        })
 
                 Divider().padding(.leading, 4)
 
                 timeRow(title: "Ends",
-                        dateText: formattedDate(eventDate),
+                        dateText: formattedDate(endTime),
                         timeText: formattedTime(endTime),
-                        dateAction: { showingDatePicker.toggle() },
-                        timeAction: { showingEndTimePicker.toggle() })
+                        dateAction: {
+                            withAnimation {
+                                if showingEndDatePicker {
+                                    showingEndDatePicker = false
+                                } else {
+                                    showingEndDatePicker = true
+                                    showingStartDatePicker = false
+                                    showingStartTimePicker = false
+                                    showingEndTimePicker = false
+                                }
+                            }
+                        },
+                        timeAction: {
+                            withAnimation {
+                                if showingEndTimePicker {
+                                    showingEndTimePicker = false
+                                } else {
+                                    showingEndTimePicker = true
+                                    showingStartDatePicker = false
+                                    showingEndDatePicker = false
+                                    showingStartTimePicker = false
+                                }
+                            }
+                        })
+                
+                if showingStartDatePicker {
+                    DatePicker(
+                        "Select Start Date",
+                        selection: $startTime,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .environment(\.calendar, calendarWithMondayAsFirstDay)
+                    .onChange(of: startTime) { _, newValue in
+                        // Update eventDate for recurrence anchor if needed, or just keep it in sync
+                        eventDate = newValue
+                    }
+                }
+                
+                if showingEndDatePicker {
+                    DatePicker(
+                        "Select End Date",
+                        selection: $endTime,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .environment(\.calendar, calendarWithMondayAsFirstDay)
+                }
 
                 Divider().padding(.leading, 4)
 
@@ -787,15 +933,7 @@ struct AddEventView: View {
                     .stroke(sectionBorder, lineWidth: 1)
             )
 
-            if showingDatePicker {
-                DatePicker(
-                    "Select Date",
-                    selection: $eventDate,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .environment(\.calendar, calendarWithMondayAsFirstDay)
-            }
+
 
             if showingStartTimePicker {
                 DatePicker(

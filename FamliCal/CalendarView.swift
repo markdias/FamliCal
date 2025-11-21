@@ -282,6 +282,8 @@ struct CalendarView: View {
     @ViewBuilder
     private func dayEventButton(for groupedEvent: GroupedDayEvent, isCompact: Bool) -> some View {
         let upcomingEvent = makeUpcomingEvent(from: groupedEvent)
+        let isPast = Date() > groupedEvent.endDate
+
         Button(action: {
             selectedEvent = upcomingEvent
             showingEventDetail = true
@@ -299,6 +301,7 @@ struct CalendarView: View {
                 memberColorBackground(for: groupedEvent)
                     .clipShape(RoundedCorner(radius: cardCornerRadius, corners: [.topLeft, .bottomLeft]))
                     .frame(width: timeBoxWidth)
+                    .opacity(isPast ? 0.6 : 1.0)
 
                 HStack(spacing: 0) {
                     // Time block
@@ -343,6 +346,7 @@ struct CalendarView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.primary)
                             .lineLimit(2)
+                            .opacity(isPast ? 0.5 : 1.0)
 
                         // Family members (if more than 1)
                         if groupedEvent.memberNames.count > 1 {
@@ -350,6 +354,7 @@ struct CalendarView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(secondaryTextColor)
                                 .lineLimit(2)
+                                .opacity(isPast ? 0.5 : 1.0)
                         }
 
                         // Time
@@ -362,6 +367,7 @@ struct CalendarView: View {
                                 .font(.system(size: 13))
                                 .foregroundColor(secondaryTextColor)
                         }
+                        .opacity(isPast ? 0.5 : 1.0)
 
                         // Location (first line only) - tappable to open maps
                         if let location = groupedEvent.location {
@@ -377,6 +383,7 @@ struct CalendarView: View {
                                         .lineLimit(1)
                                 }
                             }
+                            .opacity(isPast ? 0.5 : 1.0)
                         }
 
                         // Driver (if available)
@@ -390,6 +397,7 @@ struct CalendarView: View {
                                     .foregroundColor(secondaryTextColor)
                                     .lineLimit(1)
                             }
+                            .opacity(isPast ? 0.5 : 1.0)
                         }
 
                         Spacer(minLength: 0)
@@ -588,9 +596,12 @@ struct CalendarView: View {
             if hasEvents {
                 HStack(spacing: 2) {
                     ForEach(0..<min(3, eventCount), id: \.self) { index in
+                        let event = dayEvents[formatDateKey(date)]![index]
+                        let isPastEvent = Date() > event.endDate
                         Circle()
-                            .fill(Color(uiColor: dayEvents[formatDateKey(date)]![index].color))
+                            .fill(Color(uiColor: event.color))
                             .frame(width: 5, height: 5)
+                            .opacity(isPastEvent ? 0.6 : 1.0)
                     }
                 }
             } else {

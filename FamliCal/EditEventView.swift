@@ -81,7 +81,8 @@ struct EditEventView: View {
     @State private var driverTravelTimeMinutes: Int = 15
 
     // UI state
-    @State private var showingDatePicker = false
+    @State private var showingStartDatePicker = false
+    @State private var showingEndDatePicker = false
     @State private var showingStartTimePicker = false
     @State private var showingEndTimePicker = false
     @State private var isSaving = false
@@ -91,6 +92,7 @@ struct EditEventView: View {
     @State private var showingRecurringDeleteOptions = false
     @State private var showingSuccessMessage = false
     @State private var showingDeleteSuccess = false
+    private let notificationManager = NotificationManager.shared
 
     private var theme: AppTheme { themeManager.selectedTheme }
     private var primaryTextColor: Color { Color.black.opacity(0.9) }
@@ -207,6 +209,13 @@ struct EditEventView: View {
 
                 // Fetch driver from CoreData
                 fetchDriver()
+
+                // Load existing alert from the saved event so edits keep prior value
+                loadExistingAlertOption()
+
+                // Clean up stale selected members (in case they were deleted)
+                let validMemberIDs = Set(familyMembers.map { $0.objectID })
+                selectedMemberCalendars = selectedMemberCalendars.filter { validMemberIDs.contains($0.key) }
             }
             .alert("Error", isPresented: $showingError) {
                 Button("OK") { }
@@ -234,6 +243,69 @@ struct EditEventView: View {
     private func fetchCalendarId() {
         // Use the calendar ID directly from the event (it comes from EventKit)
         calendarId = upcomingEvent.calendarID
+    }
+
+    private func attendeeInfoForNotification() -> (memberIds: [UUID], memberNames: [String]) {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", upcomingEvent.id)
+
+        if let familyEvent = try? viewContext.fetch(fetchRequest).first,
+           let attendees = familyEvent.attendees as? Set<FamilyMember>,
+           !attendees.isEmpty {
+            let ids = attendees.compactMap { $0.id }
+            let names = attendees.compactMap { $0.name }
+            return (ids, names)
+        }
+
+        // Fallback to all family members so calendar-only filters can still pass
+        let ids = familyMembers.compactMap { $0.id }
+        let names = familyMembers.compactMap { $0.name }
+        return (ids, names)
+    }
+
+    private func selectedDriverName() -> String? {
+        switch selectedDriver {
+        case .regular(let driver):
+            return driver.name
+        case .familyMember(let member):
+            return member.name
+        case .none:
+            return nil
+        }
+    }
+
+    private func loadExistingAlertOption() {
+        let ekEvent = CalendarManager.shared.fetchEventDetails(
+            withIdentifier: upcomingEvent.id,
+            occurrenceStartDate: upcomingEvent.startDate
+        ) ?? CalendarManager.shared.fetchEventDetails(withIdentifier: upcomingEvent.id)
+
+        guard let ekEvent else {
+            alertOption = .none
+            return
+        }
+
+        if let alarm = ekEvent.alarms?.first {
+            alertOption = alertOption(from: alarm)
+        } else {
+            alertOption = .none
+        }
+    }
+
+    private func alertOption(from alarm: EKAlarm) -> AlertOption {
+        let minutesOffset = Int(alarm.relativeOffset / 60)
+        switch minutesOffset {
+        case 0:
+            return .atTime
+        case -15:
+            return .fifteenMinsBefore
+        case -60:
+            return .oneHourBefore
+        case -1440:
+            return .oneDayBefore
+        default:
+            return .custom
+        }
     }
 
     private func fetchDriver() {
@@ -284,9 +356,9 @@ struct EditEventView: View {
 
         let title = eventTitle.trimmingCharacters(in: .whitespaces)
 
-        // Combine date and time components properly
-        let eventStartDate = combineDateAndTime(date: eventDate, time: startTime)
-        let eventEndDate = combineDateAndTime(date: eventDate, time: endTime)
+        // Use startTime and endTime directly as they now contain the correct date and time
+        let eventStartDate = startTime
+        let eventEndDate = endTime
 
         print("📝 Event details:")
         print("   Title: \(title)")
@@ -316,6 +388,27 @@ struct EditEventView: View {
         if success {
             // Update CoreData record if needed
             updateFamilyEvent()
+
+            // Refresh local notifications to mirror the new alert setting
+            Task {
+                await notificationManager.cancelEventNotifications(for: upcomingEvent.id)
+
+                if alertOption != .none {
+                    let attendeeInfo = attendeeInfoForNotification()
+                    if notificationManager.shouldNotifyForEvent(
+                        calendarId: calId,
+                        memberIds: attendeeInfo.memberIds
+                    ),
+                       let ekEvent = CalendarManager.shared.getEvent(withIdentifier: upcomingEvent.id) {
+                        notificationManager.scheduleEventNotification(
+                            event: ekEvent,
+                            alertOption: alertOption,
+                            familyMembers: attendeeInfo.memberNames,
+                            drivers: selectedDriverName()
+                        )
+                    }
+                }
+            }
 
             await MainActor.run {
                 // Trigger haptic feedback
@@ -582,7 +675,7 @@ struct EditEventView: View {
 
     private func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
+        formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
     }
 
@@ -646,21 +739,89 @@ struct EditEventView: View {
 
                 timeRow(
                     title: "Starts",
-                    dateText: formattedDate(eventDate),
+                    dateText: formattedDate(startTime),
                     timeText: formattedTime(startTime),
-                    dateAction: { showingDatePicker.toggle() },
-                    timeAction: { showingStartTimePicker.toggle() }
+                    dateAction: {
+                        withAnimation {
+                            if showingStartDatePicker {
+                                showingStartDatePicker = false
+                            } else {
+                                showingStartDatePicker = true
+                                showingEndDatePicker = false
+                                showingStartTimePicker = false
+                                showingEndTimePicker = false
+                            }
+                        }
+                    },
+                    timeAction: {
+                        withAnimation {
+                            if showingStartTimePicker {
+                                showingStartTimePicker = false
+                            } else {
+                                showingStartTimePicker = true
+                                showingStartDatePicker = false
+                                showingEndDatePicker = false
+                                showingEndTimePicker = false
+                            }
+                        }
+                    }
                 )
 
                 Divider().padding(.leading, 4)
 
                 timeRow(
                     title: "Ends",
-                    dateText: formattedDate(eventDate),
+                    dateText: formattedDate(endTime),
                     timeText: formattedTime(endTime),
-                    dateAction: { showingDatePicker.toggle() },
-                    timeAction: { showingEndTimePicker.toggle() }
+                    dateAction: {
+                        withAnimation {
+                            if showingEndDatePicker {
+                                showingEndDatePicker = false
+                            } else {
+                                showingEndDatePicker = true
+                                showingStartDatePicker = false
+                                showingStartTimePicker = false
+                                showingEndTimePicker = false
+                            }
+                        }
+                    },
+                    timeAction: {
+                        withAnimation {
+                            if showingEndTimePicker {
+                                showingEndTimePicker = false
+                            } else {
+                                showingEndTimePicker = true
+                                showingStartDatePicker = false
+                                showingEndDatePicker = false
+                                showingStartTimePicker = false
+                            }
+                        }
+                    }
                 )
+                
+                if showingStartDatePicker {
+                    DatePicker(
+                        "Select Start Date",
+                        selection: $startTime,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .environment(\.calendar, calendarWithMondayAsFirstDay)
+                    .onChange(of: startTime) { _, newValue in
+                        // Update eventDate for recurrence anchor if needed
+                        eventDate = newValue
+                    }
+                }
+                
+                if showingEndDatePicker {
+                    DatePicker(
+                        "Select End Date",
+                        selection: $endTime,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .environment(\.calendar, calendarWithMondayAsFirstDay)
+                }
 
                 Divider().padding(.leading, 4)
 
@@ -675,15 +836,7 @@ struct EditEventView: View {
                     .stroke(sectionBorder, lineWidth: 1)
             )
 
-            if showingDatePicker {
-                DatePicker(
-                    "Select Date",
-                    selection: $eventDate,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .environment(\.calendar, calendarWithMondayAsFirstDay)
-            }
+
 
             if showingStartTimePicker {
                 DatePicker(

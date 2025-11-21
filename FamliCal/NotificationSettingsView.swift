@@ -10,12 +10,7 @@ import CoreData
 
 struct NotificationSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var notificationManager = NotificationManager.shared
-    @FetchRequest(entity: FamilyMember.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)])
-    private var familyMembers: FetchedResults<FamilyMember>
-    @State private var showingMemberSelection = false
-    @State private var showingCalendarSelection = false
 
     var body: some View {
         NavigationView {
@@ -26,8 +21,6 @@ struct NotificationSettingsView: View {
 
                         if notificationManager.notificationsEnabled {
                             morningBriefSection
-                            memberSelectionButton
-                            calendarSelectionButton
                         }
                     }
                     .padding(24)
@@ -43,12 +36,6 @@ struct NotificationSettingsView: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showingMemberSelection) {
-            NotificationMemberSelectionView(selectedMembers: $notificationManager.selectedMembersForNotifications)
-        }
-        .sheet(isPresented: $showingCalendarSelection) {
-            NotificationCalendarSelectionView(selectedCalendars: $notificationManager.selectedCalendarsForNotifications)
         }
     }
 
@@ -181,75 +168,6 @@ struct NotificationSettingsView: View {
         }
     }
 
-    private var memberSelectionButton: some View {
-        VStack(spacing: 12) {
-            Button(action: { showingMemberSelection = true }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "person.2.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color(red: 0.33, green: 0.33, blue: 0.33))
-                        .cornerRadius(12)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Family Members")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-
-                        Text("\(notificationManager.selectedMembersForNotifications.count) selected")
-                            .font(.system(size: 11))
-                            .foregroundColor(.gray)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.gray)
-                }
-                .padding(12)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var calendarSelectionButton: some View {
-        VStack(spacing: 12) {
-            Button(action: { showingCalendarSelection = true }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar.circle.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.green)
-                        .cornerRadius(12)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Calendars")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-
-                        Text("\(notificationManager.selectedCalendarsForNotifications.count) selected")
-                            .font(.system(size: 11))
-                            .foregroundColor(.gray)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.gray)
-                }
-                .padding(12)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-        }
-    }
 }
 
 #Preview {

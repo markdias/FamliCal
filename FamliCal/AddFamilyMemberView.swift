@@ -17,10 +17,40 @@ struct AddFamilyMemberView: View {
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var matchedCalendar: AvailableCalendar? = nil
     @State private var isLoading = false
+    @State private var noCalendarTimer: Timer?
+    @State private var showCreateCalendarAlert = false
+    @State private var pendingCalendarName: String?
+
+    private var calendarLinkingBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Calendar Linking")
+                        .font(.system(size: 14, weight: .semibold, design: .default))
+                        .foregroundColor(.primary)
+
+                    Text("Enter a name that matches an existing calendar. If no match is found after 5 seconds, you'll be offered the option to create a new calendar.")
+                        .font(.system(size: 13, weight: .regular, design: .default))
+                        .foregroundColor(.gray)
+                        .lineLimit(4)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBlue).opacity(0.1))
+    }
 
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                calendarLinkingBanner
+
                 // Form content
                 VStack(spacing: 24) {
                     // Name input
@@ -189,6 +219,14 @@ struct AddFamilyMemberView: View {
         .onAppear {
             loadAvailableCalendars()
         }
+        .alert("Create Calendar?", isPresented: $showCreateCalendarAlert) {
+            Button("Create", action: createCalendar)
+            Button("Cancel", role: .cancel) {
+                pendingCalendarName = nil
+            }
+        } message: {
+            Text("Would you like to create a calendar named '\(pendingCalendarName ?? "")'?")
+        }
     }
 
     private func loadAvailableCalendars() {
@@ -204,10 +242,26 @@ struct AddFamilyMemberView: View {
     private func updateCalendarMatch() {
         guard !name.isEmpty else {
             matchedCalendar = nil
+            noCalendarTimer?.invalidate()
+            noCalendarTimer = nil
             return
         }
 
         matchedCalendar = CalendarManager.shared.findMatchingCalendar(for: name, in: availableCalendars)
+
+        // Start timer only when no calendar is found
+        if matchedCalendar == nil {
+            noCalendarTimer?.invalidate()
+            pendingCalendarName = name
+            noCalendarTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+                showCreateCalendarAlert = true
+            }
+        } else {
+            // Calendar found, cancel any pending timer
+            noCalendarTimer?.invalidate()
+            noCalendarTimer = nil
+            pendingCalendarName = nil
+        }
     }
 
     private func saveMember() {
@@ -249,6 +303,27 @@ struct AddFamilyMemberView: View {
             return String(components[0].first ?? "?") + String(components[1].first ?? "?")
         } else {
             return String(name.prefix(2)).uppercased()
+        }
+    }
+
+    private func createCalendar() {
+        guard let calendarName = pendingCalendarName else { return }
+
+        // Show loading state while creating calendar
+        isLoading = true
+
+        Task { @MainActor in
+            if let newCalendar = CalendarManager.shared.createLocalCalendar(with: calendarName) {
+                // Add the newly created calendar to available calendars
+                availableCalendars.append(newCalendar)
+                // Update match to the newly created calendar
+                matchedCalendar = newCalendar
+                pendingCalendarName = nil
+                print("✅ Calendar successfully created and matched: \(calendarName)")
+            } else {
+                print("❌ Failed to create calendar: \(calendarName)")
+            }
+            isLoading = false
         }
     }
 }

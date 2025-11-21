@@ -34,6 +34,9 @@ class NotificationManager: NSObject, ObservableObject {
         super.init()
         loadSettings()
         notificationCenter.delegate = self
+        Task {
+            await syncNotificationPermission()
+        }
     }
 
     // MARK: - Permission Handling
@@ -57,6 +60,15 @@ class NotificationManager: NSObject, ObservableObject {
     func checkNotificationPermission() async -> Bool {
         let settings = await notificationCenter.notificationSettings()
         return settings.authorizationStatus == .authorized
+    }
+
+    @MainActor
+    private func syncNotificationPermission() async {
+        let settings = await notificationCenter.notificationSettings()
+        if settings.authorizationStatus == .authorized && notificationsEnabled == false {
+            notificationsEnabled = true
+            saveSettings()
+        }
     }
 
     // MARK: - Settings Management
@@ -108,7 +120,46 @@ class NotificationManager: NSObject, ObservableObject {
         familyMembers: [String] = [],
         drivers: String? = nil
     ) {
-        guard notificationsEnabled else { return }
+        guard notificationsEnabled else {
+            Task {
+                print("🔔 Notifications disabled in app settings, checking system permission...")
+                let granted = await self.checkNotificationPermission()
+                if granted {
+                    print("✅ System permission already granted, enabling in app...")
+                    await MainActor.run {
+                        self.notificationsEnabled = true
+                        self.saveSettings()
+                    }
+                    // After enabling, schedule again
+                    self.scheduleEventNotification(
+                        event: event,
+                        alertOption: alertOption,
+                        familyMembers: familyMembers,
+                        drivers: drivers
+                    )
+                } else {
+                    print("⚠️ System permission not granted, requesting...")
+                    let granted = await self.requestNotificationPermission()
+                    if granted {
+                        print("✅ Permission granted by user")
+                        await MainActor.run {
+                            self.notificationsEnabled = true
+                            self.saveSettings()
+                        }
+                        // After enabling, schedule again
+                        self.scheduleEventNotification(
+                            event: event,
+                            alertOption: alertOption,
+                            familyMembers: familyMembers,
+                            drivers: drivers
+                        )
+                    } else {
+                        print("❌ Permission denied by user")
+                    }
+                }
+            }
+            return
+        }
 
         // Schedule a local notification for immediate feedback
         let triggerDate = calculateTriggerDate(from: event.startDate, alertOption: alertOption)

@@ -408,6 +408,12 @@ struct EventDetailView: View {
             .sheet(isPresented: $isEditing) {
                 EditEventView(upcomingEvent: event)
             }
+            .onChange(of: isEditing) { _, newValue in
+                // When the edit sheet closes, refresh alerts from the updated event
+                if newValue == false {
+                    fetchEventDetails()
+                }
+            }
             .alert("Delete Event", isPresented: $showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
@@ -481,10 +487,12 @@ struct EventDetailView: View {
     private func fetchEventDetails() {
         // Try to fetch full event details for alarms, but continue without them if not available
         // This prevents crashes if the event has been deleted or is inaccessible
-        guard let ekEvent = CalendarManager.shared.fetchEventDetails(
+        let ekEvent = CalendarManager.shared.fetchEventDetails(
             withIdentifier: event.id,
             occurrenceStartDate: event.startDate
-        ) else {
+        ) ?? CalendarManager.shared.fetchEventDetails(withIdentifier: event.id)
+
+        guard let ekEvent else {
             print("⚠️ Could not find full event details for: \(event.id)")
             print("   Event may have been deleted or is inaccessible")
             return

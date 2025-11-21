@@ -63,6 +63,123 @@ final class CalendarManager {
         }
     }
 
+    func createLocalCalendar(with name: String) -> AvailableCalendar? {
+        print("🔵 Starting calendar creation for: \(name)")
+
+        // List available sources for debugging
+        let allSources = eventStore.sources
+        print("📋 Available sources: \(allSources.map { "\($0.title) (\($0.sourceType.rawValue))" }.joined(separator: ", "))")
+
+        // Prefer iCloud source, fall back to other sources
+        var targetSource: EKSource?
+
+        // Try iCloud first
+        if let iCloudSource = allSources.first(where: { $0.sourceType == .calDAV && $0.title.contains("iCloud") }) {
+            targetSource = iCloudSource
+            print("✅ Found iCloud source: \(iCloudSource.title)")
+        } else if let iCloudSource = allSources.first(where: { $0.sourceType == .calDAV }) {
+            targetSource = iCloudSource
+            print("✅ Found CalDAV source: \(iCloudSource.title)")
+        } else if let localSource = allSources.first(where: { $0.sourceType == .local }) {
+            targetSource = localSource
+            print("✅ Found local source: \(localSource.title)")
+        } else if !allSources.isEmpty {
+            // Use the first available source
+            targetSource = allSources.first
+            print("⚠️ Using first available source: \(targetSource?.title ?? "Unknown")")
+        }
+
+        guard let source = targetSource else {
+            print("❌ Could not find any calendar source")
+            print("   Available source types: \(allSources.map { "\($0.sourceType.rawValue)" })")
+            return nil
+        }
+
+        let calendar = EKCalendar(for: .event, eventStore: eventStore)
+        calendar.title = name
+        calendar.source = source
+
+        // Set a default color for the calendar
+        if #available(iOS 15.0, *) {
+            calendar.cgColor = UIColor.systemBlue.cgColor
+        }
+
+        print("📍 Calendar object created, attempting to save...")
+
+        do {
+            try eventStore.saveCalendar(calendar, commit: true)
+            print("✅ Calendar saved to EventKit")
+            print("   Calendar ID: \(calendar.calendarIdentifier)")
+            print("   Calendar title: \(calendar.title)")
+
+            // Give the system a moment to register the new calendar
+            Thread.sleep(forTimeInterval: 0.1)
+
+            // Refresh calendars from store to get the updated list
+            let updatedCalendars = eventStore.calendars(for: .event)
+            print("📊 Refreshed calendar list, total calendars: \(updatedCalendars.count)")
+
+            if let savedCalendar = updatedCalendars.first(where: { $0.calendarIdentifier == calendar.calendarIdentifier }) {
+                print("✅ Found newly created calendar in refreshed list by ID")
+
+                let calendarColor: UIColor
+                if let cgColor = savedCalendar.cgColor {
+                    calendarColor = UIColor(cgColor: cgColor)
+                } else {
+                    calendarColor = .systemBlue
+                }
+
+                let result = AvailableCalendar(
+                    id: savedCalendar.calendarIdentifier,
+                    title: savedCalendar.title,
+                    color: calendarColor,
+                    sourceTitle: savedCalendar.source.title,
+                    sourceType: savedCalendar.source.sourceType
+                )
+
+                print("✅ Successfully created and returned AvailableCalendar: \(result.title)")
+                return result
+            }
+
+            // Fallback: try to find by title in case the ID changed
+            print("⚠️ Not found by ID, trying fallback search by title...")
+            if let savedCalendar = updatedCalendars.first(where: { $0.title.lowercased() == name.lowercased() }) {
+                print("✅ Found calendar by title match in fallback")
+
+                let calendarColor: UIColor
+                if let cgColor = savedCalendar.cgColor {
+                    calendarColor = UIColor(cgColor: cgColor)
+                } else {
+                    calendarColor = .systemBlue
+                }
+
+                let result = AvailableCalendar(
+                    id: savedCalendar.calendarIdentifier,
+                    title: savedCalendar.title,
+                    color: calendarColor,
+                    sourceTitle: savedCalendar.source.title,
+                    sourceType: savedCalendar.source.sourceType
+                )
+
+                print("✅ Successfully created and returned AvailableCalendar via fallback: \(result.title)")
+                return result
+            }
+
+            print("⚠️ Calendar created but not found in updated list")
+            print("   Looking for ID: \(calendar.calendarIdentifier)")
+            print("   Looking for title: \(name)")
+            print("   Available calendars: \(updatedCalendars.map { "\($0.title) (\($0.calendarIdentifier))" })")
+            return nil
+        } catch {
+            print("❌ Error creating calendar: \(error.localizedDescription)")
+            if let ekError = error as? EKError {
+                print("   EKError code: \(ekError.errorCode)")
+                print("   EKError: \(ekError)")
+            }
+            return nil
+        }
+    }
+
     // MARK: - Private Helper Method for Robust Event Lookup
 
     private func findEvent(withIdentifier identifier: String, occurrenceStartDate: Date? = nil) -> EKEvent? {
@@ -237,6 +354,7 @@ final class CalendarManager {
 
         // Add alarm if alertOption is provided
         if let alertOption = alertOption {
+            event.alarms = [] // Clear any default alarms
             let alarm = createAlarm(from: alertOption)
             event.addAlarm(alarm)
         }
@@ -265,6 +383,7 @@ final class CalendarManager {
 
         // Add alarm if alertOption is provided
         if let alertOption = alertOption {
+            event.alarms = [] // Clear any default alarms
             let alarm = createAlarm(from: alertOption)
             event.addAlarm(alarm)
         }
@@ -377,6 +496,25 @@ final class CalendarManager {
         }
 
         return alarm
+    }
+
+    func deleteCalendar(withIdentifier calendarID: String) -> Bool {
+        guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
+            print("❌ Could not find calendar with ID: \(calendarID)")
+            return false
+        }
+
+        do {
+            try eventStore.removeCalendar(calendar, commit: true)
+            print("✅ Calendar deleted successfully: \(calendar.title)")
+            return true
+        } catch {
+            print("❌ Error deleting calendar: \(error.localizedDescription)")
+            if let ekError = error as? EKError {
+                print("   EKError code: \(ekError.errorCode)")
+            }
+            return false
+        }
     }
 
     func deleteEvent(withIdentifier identifier: String,
