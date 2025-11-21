@@ -103,6 +103,9 @@ struct EditEventView: View {
     @State private var externalEditCalendars: [String] = []
     @State private var showingCreateEventForDriverAlert = false
     @State private var driverToCreateEventFor: DriverWrapper?
+    @State private var showingRecurringDriverChangeOptions = false
+    @State private var pendingDriverChange: DriverWrapper?
+    @State private var pendingDriverChangeSpan: EKSpan = .thisEvent
     private let notificationManager = NotificationManager.shared
 
     private var theme: AppTheme { themeManager.selectedTheme }
@@ -241,6 +244,15 @@ struct EditEventView: View {
                     }
                     Button("Delete This and Future Events", role: .destructive) {
                         Task { await deleteEvent(scope: pendingDeleteScope, span: .futureEvents) }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                }
+                .confirmationDialog("Change Driver for Recurring Event?", isPresented: $showingRecurringDriverChangeOptions, titleVisibility: .visible) {
+                    Button("Change Only This Event") {
+                        applyDriverChange(span: .thisEvent)
+                    }
+                    Button("Change This and Future Events") {
+                        applyDriverChange(span: .futureEvents)
                     }
                     Button("Cancel", role: .cancel) { }
                 }
@@ -445,6 +457,18 @@ struct EditEventView: View {
         } catch {
             print("❌ Failed to load linked events: \(error.localizedDescription)")
             linkedFamilyEvents = []
+        }
+    }
+
+    private func applyDriverChange(span: EKSpan) {
+        selectedDriver = pendingDriverChange
+        pendingDriverChange = nil
+        pendingDriverChangeSpan = span
+
+        // Only show alert if selecting a family member driver
+        if let driver = selectedDriver, case .familyMember(_) = driver {
+            driverToCreateEventFor = driver
+            showingCreateEventForDriverAlert = true
         }
     }
 
@@ -1513,7 +1537,15 @@ struct EditEventView: View {
                                 .foregroundColor(primaryTextColor)
                             Spacer()
                             Menu {
-                                Button(action: { selectedDriver = nil }) {
+                                Button(action: {
+                                    // Check if changing driver on a recurring event
+                                    if selectedDriver != nil && upcomingEvent.hasRecurrence {
+                                        pendingDriverChange = nil
+                                        showingRecurringDriverChangeOptions = true
+                                    } else {
+                                        selectedDriver = nil
+                                    }
+                                }) {
                                     HStack {
                                         Text("None")
                                         if selectedDriver == nil {
@@ -1524,11 +1556,17 @@ struct EditEventView: View {
                                 Divider()
                                 ForEach(allAvailableDrivers, id: \.id) { driverWrapper in
                                     Button(action: {
-                                        selectedDriver = driverWrapper
-                                        // Only show alert if selecting a family member driver
-                                        if case .familyMember(_) = driverWrapper {
-                                            driverToCreateEventFor = driverWrapper
-                                            showingCreateEventForDriverAlert = true
+                                        // Check if changing driver on a recurring event
+                                        if selectedDriver?.id != driverWrapper.id && upcomingEvent.hasRecurrence {
+                                            pendingDriverChange = driverWrapper
+                                            showingRecurringDriverChangeOptions = true
+                                        } else {
+                                            selectedDriver = driverWrapper
+                                            // Only show alert if selecting a family member driver
+                                            if case .familyMember(_) = driverWrapper {
+                                                driverToCreateEventFor = driverWrapper
+                                                showingCreateEventForDriverAlert = true
+                                            }
                                         }
                                     }) {
                                         HStack {
