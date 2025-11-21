@@ -16,67 +16,113 @@ struct SettingsView: View {
     @State private var showingAppSettings = false
     @State private var showingNotifications = false
     @State private var showingPermissions = false
-
-    // Grid layout definition
-    private let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    @State private var showingHelp = false
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                // Background
+                Color(hex: "F2F2F7") // System Grouped Background
+                    .ignoresSafeArea()
+                
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Grid Settings
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            SettingsGridItem(
-                                iconName: "person.2.fill",
-                                iconColor: Color(red: 0.33, green: 0.33, blue: 0.33),
-                                title: "My Family",
-                                subtitle: "Manage members",
-                                action: { showingFamilySettings = true }
-                            )
-
-                            SettingsGridItem(
-                                iconName: "square.grid.2x2.fill",
-                                iconColor: Color.blue,
-                                title: "App Settings",
-                                subtitle: "General & Display",
-                                action: { showingAppSettings = true }
-                            )
-
-                            SettingsGridItem(
-                                iconName: "bell.fill",
-                                iconColor: Color.orange,
-                                title: "Notifications",
-                                subtitle: "Alerts & Briefs",
-                                action: { showingNotifications = true }
-                            )
-
-                            SettingsGridItem(
-                                iconName: "lock.fill",
-                                iconColor: Color.red,
-                                title: "Permissions",
-                                subtitle: "Privacy & Access",
-                                action: { showingPermissions = true }
-                            )
+                        // Premium Banner
+                        PremiumBannerView()
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                        
+                        // Settings Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Settings")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 16)
+                            
+                            VStack(spacing: 0) {
+                                Button(action: { showingFamilySettings = true }) {
+                                    SettingsRowView(iconName: "person.circle", title: "My Family")
+                                }
+                                Divider().padding(.leading, 56)
+                                
+                                Button(action: { showingPermissions = true }) {
+                                    SettingsRowView(iconName: "lock", title: "Permissions")
+                                }
+                                Divider().padding(.leading, 56)
+                                
+                                Button(action: { showingNotifications = true }) {
+                                    SettingsRowView(iconName: "bell", title: "Notifications", showChevron: true)
+                                }
+                                Divider().padding(.leading, 56)
+                                
+                                Button(action: { showingAppSettings = true }) {
+                                    SettingsRowView(iconName: "gearshape", title: "App Settings")
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(.horizontal, 16)
-
-                        Spacer()
+                        
+                        // More Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("More")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 16)
+                            
+                            VStack(spacing: 0) {
+                                Button(action: { /* Rate & Review Action */ }) {
+                                    SettingsRowView(iconName: "star.bubble", title: "Rate & Review")
+                                }
+                                Divider().padding(.leading, 56)
+                                
+                                Button(action: { showingHelp = true }) {
+                                    SettingsRowView(iconName: "questionmark.circle", title: "Help")
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            .padding(.horizontal, 16)
+                        }
+                        
+                        Spacer(minLength: 40)
+                        
+                        // Log out
+                        Button(action: {
+                            // Log out action
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.left.square")
+                                Text("Log out")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.gray)
+                        }
+                        .padding(.bottom, 20)
                     }
-                    .padding(.vertical, 24)
+                    .padding(.vertical, 20)
                 }
             }
-            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .principal) {
+                    Text("Settings")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .primary)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.black)
                     }
                 }
             }
@@ -100,42 +146,8 @@ struct SettingsView: View {
                 PermissionsView()
             }
         }
-    }
-}
-
-
-
-private struct SettingsGridItem: View {
-    @EnvironmentObject private var themeManager: ThemeManager
-    let iconName: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
-    let action: () -> Void
-
-    var body: some View {
-        GlassyGridItem(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: iconName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(iconColor)
-                    .cornerRadius(14)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-                        .lineLimit(1)
-
-                    Text(subtitle)
-                        .font(.system(size: 13))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showingHelp) {
+            HelpView()
         }
     }
 }
