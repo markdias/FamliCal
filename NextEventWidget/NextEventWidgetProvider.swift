@@ -87,33 +87,47 @@ struct NextEventProvider: TimelineProvider {
     /// Load the next event for the family member with soonest upcoming event
     private func loadNextEvent() -> NextEventEntry {
         do {
-            // Load all family members and their calendars from CoreData
-            let container = NSPersistentCloudKitContainer(name: "FamliCal")
-
-            // Configure app group for widget access
+            // First try to get app group container
             let appGroupID = "group.com.markdias.famli"
-            if let storeURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
-                .appendingPathComponent("FamliCal.sqlite") {
-                if let description = container.persistentStoreDescriptions.first {
-                    description.url = storeURL
-                }
+            guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
+                return NextEventEntry(errorMessage: "App groups not accessible")
             }
 
-            container.loadPersistentStores { _, error in
-                if let error = error {
-                    print("❌ Widget CoreData Error: \(error)")
-                }
+            // Construct the database URL
+            let storeURL = appGroupURL.appendingPathComponent("FamliCal.sqlite")
+
+            // Check if database file exists
+            let fileManager = FileManager.default
+            if !fileManager.fileExists(atPath: storeURL.path) {
+                print("⚠️ Widget: Database file not found at \(storeURL.path)")
+                return NextEventEntry(errorMessage: "Database not initialized yet")
             }
 
-            let context = container.viewContext
-            context.automaticallyMergesChangesFromParent = true
+            // Create a NSPersistentStoreCoordinator directly
+            let modelURL = Bundle.main.url(forResource: "FamliCal", withExtension: "momd")
+            guard let modelURL = modelURL else {
+                return NextEventEntry(errorMessage: "Data model not found")
+            }
 
-            // Fetch all family members with their calendars
+            let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)
+            guard let model = managedObjectModel else {
+                return NextEventEntry(errorMessage: "Failed to load data model")
+            }
+
+            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+            try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: nil)
+
+            let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+            context.persistentStoreCoordinator = coordinator
+
+            // Try to fetch family members
             let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "FamilyMember")
             fetchRequest.returnsObjectsAsFaults = false
             fetchRequest.resultType = .dictionaryResultType
 
-            guard let results = try context.fetch(fetchRequest) as? [[String: Any]], !results.isEmpty else {
+            let results = try context.fetch(fetchRequest) as? [[String: Any]] ?? []
+
+            guard !results.isEmpty else {
                 return NextEventEntry(errorMessage: "No family members configured")
             }
 
@@ -184,7 +198,15 @@ struct NextEventProvider: TimelineProvider {
             return NextEventEntry(date: Date(), event: event, familyMember: member)
 
         } catch {
-            return NextEventEntry(errorMessage: "Error loading events: \(error.localizedDescription)")
+            let errorMsg = "Error: \(error.localizedDescription)"
+            print("❌ Widget Error: \(errorMsg)")
+            // Print more detailed error info
+            if let nserror = error as? NSError {
+                print("   Domain: \(nserror.domain)")
+                print("   Code: \(nserror.code)")
+                print("   UserInfo: \(nserror.userInfo)")
+            }
+            return NextEventEntry(errorMessage: errorMsg)
         }
     }
 }
