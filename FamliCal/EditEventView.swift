@@ -69,8 +69,7 @@ struct EditEventView: View {
     @State private var alertOption: AlertOption = .none
 
     // Location search
-    @StateObject private var searchCompleter = LocationSearchCompleter()
-    @State private var isApplyingLocationSelection = false
+    @State private var showingLocationSearch = false
 
     // Calendar info for updating
     @State private var calendarId: String? = nil
@@ -192,7 +191,7 @@ struct EditEventView: View {
                 endTime = upcomingEvent.endDate
                 eventDate = upcomingEvent.startDate
                 locationAddress = upcomingEvent.location ?? ""
-                isApplyingLocationSelection = true
+                locationAddress = upcomingEvent.location ?? ""
                 locationName = upcomingEvent.location ?? ""
                 recurrenceConfig = RecurrenceConfiguration.none(anchor: upcomingEvent.startDate)
                 if let rule = upcomingEvent.recurrenceRule,
@@ -1390,63 +1389,38 @@ struct EditEventView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(primaryTextColor)
 
-                    TextField("Location", text: $locationName)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(primaryTextColor)
+                    Button(action: { showingLocationSearch = true }) {
+                        HStack {
+                            if locationName.isEmpty {
+                                Text("Add Location")
+                                    .foregroundColor(secondaryTextColor)
+                            } else {
+                                Text(locationName)
+                                    .foregroundColor(primaryTextColor)
+                            }
+                            Spacer()
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(secondaryTextColor)
+                        }
                         .padding(10)
                         .background(fieldBackground)
                         .cornerRadius(10)
-                        .onChange(of: locationName) { _, newValue in
-                            if isApplyingLocationSelection {
-                                isApplyingLocationSelection = false
-                                return
-                            }
-
-                            searchCompleter.query = newValue
-                            if newValue.isEmpty {
-                                locationAddress = ""
-                            }
-                        }
-                }
-
-                if !searchCompleter.results.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(searchCompleter.results.enumerated()), id: \.offset) { index, result in
-                            Button(action: {
-                                isApplyingLocationSelection = true
-                                locationName = result.title
-                                locationAddress = result.subtitle
-                                searchCompleter.query = ""
-                                searchCompleter.results = []
-                            }) {
-                                locationSuggestion(result)
-                            }
-                            if index < searchCompleter.results.count - 1 {
-                                Divider()
-                                    .background(sectionBorder.opacity(0.4))
-                            }
-                        }
                     }
-                    .background(fieldBackground)
-                    .cornerRadius(12)
+                    .buttonStyle(.plain)
+                }
+                
+                if !locationAddress.isEmpty && locationAddress != locationName {
+                    Text(locationAddress)
+                        .font(.system(size: 12))
+                        .foregroundColor(secondaryTextColor)
+                        .padding(.leading, 80) // Align with text field start roughly
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    private func locationSuggestion(_ result: MKLocalSearchCompletion) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(result.title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(primaryTextColor)
-            Text(result.subtitle)
-                .font(.system(size: 12))
-                .foregroundColor(secondaryTextColor)
+        .sheet(isPresented: $showingLocationSearch) {
+            LocationSearchView(locationName: $locationName, locationAddress: $locationAddress)
+                .environment(\.managedObjectContext, viewContext)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
     }
 }
 

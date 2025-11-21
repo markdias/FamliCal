@@ -50,6 +50,21 @@
         <attribute name="travelEventIdentifier" optional="YES" attributeType="String"/>
         <relationship name="events" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="FamilyEvent" inverseName="driver" inverseEntity="FamilyEvent"/>
     </entity>
+    <entity name="SavedAddress" representedClassName="SavedAddress" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="address" optional="YES" attributeType="String"/>
+        <attribute name="latitude" optional="YES" attributeType="Double" usesScalarValueType="YES" defaultValue="0.0"/>
+        <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES" defaultValue="0.0"/>
+    </entity>
+    <entity name="RecentSearch" representedClassName="RecentSearch" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="query" optional="YES" attributeType="String"/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="address" optional="YES" attributeType="String"/>
+        <attribute name="latitude" optional="YES" attributeType="Double" usesScalarValueType="YES" defaultValue="0.0"/>
+        <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES" defaultValue="0.0"/>
+    </entity>
     <elements>
         <element name="Item" positionX="-63" positionY="-18" width="128" height="44"/>
         <element name="FamilyMember" positionX="126" positionY="-18" width="128" height="134"/>
@@ -57,5 +72,7 @@
         <element name="SharedCalendar" positionX="216" positionY="-18" width="128" height="103"/>
         <element name="FamilyEvent" positionX="306" positionY="-18" width="128" height="135"/>
         <element name="Driver" positionX="396" positionY="-18" width="128" height="119"/>
+        <element name="SavedAddress" positionX="486" positionY="-18" width="128" height="103"/>
+        <element name="RecentSearch" positionX="576" positionY="-18" width="128" height="103"/>
     </elements>
 </model>

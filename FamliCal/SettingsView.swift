@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var showingPermissions = false
     @State private var showingThemeSettings = false
     @State private var showingNotifications = false
+    @State private var showingSavedPlaces = false
 
     var body: some View {
         NavigationView {
@@ -51,19 +52,19 @@ struct SettingsView: View {
                             )
 
                             SettingsRowView(
+                                iconName: "map.fill",
+                                iconColor: Color.green,
+                                title: "Saved Places",
+                                subtitle: "Manage favorite locations",
+                                action: { showingSavedPlaces = true }
+                            )
+
+                            SettingsRowView(
                                 iconName: "paintbrush",
                                 iconColor: Color.purple,
                                 title: "Theme",
                                 subtitle: themeManager.selectedTheme.displayName,
                                 action: { showingThemeSettings = true }
-                            )
-
-                            SettingsRowView(
-                                iconName: "bell.fill",
-                                iconColor: Color.blue,
-                                title: "Notifications",
-                                subtitle: "Alerts, morning brief, calendars",
-                                action: { showingNotifications = true }
                             )
                         }
 
@@ -128,6 +129,12 @@ struct SettingsView: View {
         .sheet(isPresented: $showingDrivers) {
             DriversListView()
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingSavedPlaces) {
+            NavigationView {
+                SavedAddressesSettingsView()
+                    .environment(\.managedObjectContext, viewContext)
+            }
         }
         .sheet(isPresented: $showingAppSettings) {
             AppSettingsView()
