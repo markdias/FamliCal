@@ -266,14 +266,7 @@ struct EditEventView: View {
                     locationAddress = upcomingEvent.location ?? ""
                     locationName = upcomingEvent.location ?? ""
                     recurrenceConfig = RecurrenceConfiguration.none(anchor: upcomingEvent.startDate)
-                    if let rule = upcomingEvent.recurrenceRule,
-                       let parsed = RecurrenceConfiguration.from(rule: rule, anchor: upcomingEvent.startDate) {
-                        recurrenceConfig = parsed
-                        repeatOption = parsed.suggestedRepeatOption(anchor: upcomingEvent.startDate)
-                    } else if upcomingEvent.hasRecurrence {
-                        recurrenceConfig.isEnabled = true
-                        repeatOption = .custom
-                    }
+                    loadRecurrenceFromEventStore()
 
                     // Fetch calendar ID from CoreData
                     fetchCalendarId()
@@ -504,6 +497,36 @@ struct EditEventView: View {
         }
 
         return Array(externallyEditedCalendars)
+    }
+
+    private func loadRecurrenceFromEventStore() {
+        let anchorDate = upcomingEvent.startDate
+
+        // Prefer loading the full recurrence rule from EventKit to keep all days/end dates intact
+        if let ekEvent = CalendarManager.shared.fetchEventDetails(
+            withIdentifier: upcomingEvent.id,
+            occurrenceStartDate: upcomingEvent.startDate
+        ) ?? CalendarManager.shared.getEvent(withIdentifier: upcomingEvent.id),
+           let rule = ekEvent.recurrenceRules?.first {
+
+            if let parsed = RecurrenceConfiguration.from(rule: rule, anchor: ekEvent.startDate) {
+                recurrenceConfig = parsed
+                repeatOption = parsed.suggestedRepeatOption(anchor: ekEvent.startDate)
+            } else {
+                recurrenceConfig.isEnabled = true
+                repeatOption = .custom
+            }
+            return
+        }
+
+        // Fallbacks when no rule found
+        if upcomingEvent.hasRecurrence {
+            recurrenceConfig.isEnabled = true
+            repeatOption = .custom
+        } else {
+            recurrenceConfig = RecurrenceConfiguration.none(anchor: anchorDate)
+            repeatOption = .none
+        }
     }
 
     private func propagateUpdateToLinkedEvents(
