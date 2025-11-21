@@ -218,11 +218,9 @@ struct NextEventProvider: TimelineProvider {
             let errorMsg = "Error: \(error.localizedDescription)"
             print("❌ Widget Error: \(errorMsg)")
             // Print more detailed error info
-            if let nserror = error as? NSError {
-                print("   Domain: \(nserror.domain)")
-                print("   Code: \(nserror.code)")
-                print("   UserInfo: \(nserror.userInfo)")
-            }
+            let nserror = error as NSError
+            print("   Domain: \(nserror.domain)")
+            print("   Code: \(nserror.code)")
             return NextEventEntry(errorMessage: errorMsg)
         }
     }
