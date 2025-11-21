@@ -13,6 +13,8 @@ struct FamliCalApp: App {
     let persistenceController = PersistenceController.shared
     @State private var hasCompletedOnboarding: Bool?
     @StateObject private var themeManager = ThemeManager()
+    @State private var deepLinkEventTitle: String?
+    @State private var deepLinkMemberId: UUID?
 
     init() {
         let defaults = UserDefaults.standard
@@ -62,6 +64,24 @@ struct FamliCalApp: App {
                 }
             }
             .preferredColorScheme(themeManager.selectedTheme.prefersDarkInterface ? .dark : .light)
+            .onOpenURL(perform: handleDeepLink(_:))
+        }
+    }
+
+    /// Handle deep links from widget
+    private func handleDeepLink(_ url: URL) {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            return
+        }
+
+        if components.scheme == "famli" && components.host == "event" {
+            if let title = components.queryItems?.first(where: { $0.name == "title" })?.value {
+                deepLinkEventTitle = title
+            }
+            if let memberIdString = components.queryItems?.first(where: { $0.name == "memberId" })?.value,
+               let memberId = UUID(uuidString: memberIdString) {
+                deepLinkMemberId = memberId
+            }
         }
     }
 }

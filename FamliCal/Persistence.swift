@@ -58,9 +58,16 @@ struct PersistenceController {
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         } else {
-            // Disable CloudKit syncing to ensure reliable local persistence
-            if let description = container.persistentStoreDescriptions.first {
-                description.cloudKitContainerOptions = nil  // Disable CloudKit sync
+            // Configure app groups for widget access
+            let appGroupID = "group.com.markdias.famli"
+            let storeURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
+                .appendingPathComponent("FamliCal.sqlite")
+
+            if let storeURL = storeURL {
+                if let description = container.persistentStoreDescriptions.first {
+                    description.url = storeURL
+                    description.cloudKitContainerOptions = nil  // Disable CloudKit sync
+                }
             }
 
             // Delete old store once to force recreation with new schema (includes Driver entity)
