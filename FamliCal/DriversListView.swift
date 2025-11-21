@@ -75,7 +75,6 @@ struct DriversListView: View {
                                         }
                                     }
                                 }
-                                .onDelete(perform: deleteDrivers)
                             }
                             .glassyCard(padding: 0)
                             .padding(.horizontal, 16)
@@ -109,20 +108,6 @@ struct DriversListView: View {
         }
     }
 
-    private func deleteDrivers(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { drivers[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-                print("✅ Driver deleted successfully")
-            } catch {
-                print("❌ Failed to delete driver: \(error.localizedDescription)")
-                let nsError = error as NSError
-                print("   Error: \(nsError.domain) - \(nsError.code)")
-            }
-        }
-    }
 }
 
 #Preview {

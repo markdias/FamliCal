@@ -18,6 +18,7 @@ struct EditDriverView: View {
     @State private var isLoadingContacts = false
     @State private var showingContactError = false
     @State private var contactErrorMessage = ""
+    @State private var showingDeleteConfirmation = false
 
     var isFormValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -46,6 +47,17 @@ struct EditDriverView: View {
                 TextEditor(text: $notes)
                     .frame(height: 100)
             }
+
+            Section {
+                Button(role: .destructive) {
+                    showingDeleteConfirmation = true
+                } label: {
+                    HStack {
+                        Image(systemName: "trash.fill")
+                        Text("Delete Driver")
+                    }
+                }
+            }
         }
         .navigationTitle("Edit Driver")
         .navigationBarTitleDisplayMode(.inline)
@@ -56,6 +68,14 @@ struct EditDriverView: View {
                 }
                 .disabled(!isFormValid)
             }
+        }
+        .alert("Delete Driver", isPresented: $showingDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                deleteDriver()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to delete this driver? This action cannot be undone.")
         }
         .sheet(isPresented: $showingContactPicker) {
             ContactPickerView(
@@ -104,6 +124,21 @@ struct EditDriverView: View {
             dismiss()
         } catch {
             print("❌ Failed to update driver: \(error.localizedDescription)")
+            let nsError = error as NSError
+            print("   Error domain: \(nsError.domain)")
+            print("   Error code: \(nsError.code)")
+        }
+    }
+
+    private func deleteDriver() {
+        viewContext.delete(driver)
+
+        do {
+            try viewContext.save()
+            print("✅ Driver deleted successfully: \(driver.name ?? "Unknown")")
+            dismiss()
+        } catch {
+            print("❌ Failed to delete driver: \(error.localizedDescription)")
             let nsError = error as NSError
             print("   Error domain: \(nsError.domain)")
             print("   Error code: \(nsError.code)")
