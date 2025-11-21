@@ -104,18 +104,35 @@ struct NextEventProvider: TimelineProvider {
             }
 
             // Create a NSPersistentStoreCoordinator directly
-            let modelURL = Bundle.main.url(forResource: "FamliCal", withExtension: "momd")
-            guard let modelURL = modelURL else {
+            // Try to load from main bundle or widget bundle
+            var modelURL = Bundle.main.url(forResource: "FamliCal", withExtension: "momd")
+
+            if modelURL == nil {
+                // If not found in widget bundle, try common bundle paths
+                if let path = Bundle.main.bundlePath as NSString? {
+                    let parentPath = (path.deletingLastPathComponent as NSString).deletingLastPathComponent
+                    modelURL = URL(fileURLWithPath: parentPath).appendingPathComponent("FamliCal.app/FamliCal.momd")
+                }
+            }
+
+            guard let modelURL = modelURL, FileManager.default.fileExists(atPath: modelURL.path) else {
+                print("⚠️ Widget: Data model not found. Tried: \(Bundle.main.url(forResource: "FamliCal", withExtension: "momd")?.path ?? "unknown")")
                 return NextEventEntry(errorMessage: "Data model not found")
             }
 
-            let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)
-            guard let model = managedObjectModel else {
+            guard let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL) else {
                 return NextEventEntry(errorMessage: "Failed to load data model")
             }
 
-            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
-            try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: nil)
+            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: managedObjectModel)
+
+            // Add persistent store with options to handle file access issues
+            try coordinator.addPersistentStore(
+                ofType: NSSQLiteStoreType,
+                configurationName: nil,
+                at: storeURL,
+                options: [NSReadOnlyPersistentStoreOption: true]  // Widget should only read
+            )
 
             let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
             context.persistentStoreCoordinator = coordinator
