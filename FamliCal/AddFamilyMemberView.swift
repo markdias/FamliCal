@@ -11,6 +11,7 @@ import CoreData
 struct AddFamilyMemberView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var premiumManager: PremiumManager
 
     @State private var name = ""
     @State private var isDriver = false
@@ -20,6 +21,8 @@ struct AddFamilyMemberView: View {
     @State private var noCalendarTimer: Timer?
     @State private var showCreateCalendarAlert = false
     @State private var pendingCalendarName: String?
+    @State private var showPremiumAlert = false
+    @State private var familyMembersCount = 0
 
     private var calendarLinkingBanner: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -183,16 +186,16 @@ struct AddFamilyMemberView: View {
 
                 // Action buttons
                 VStack(spacing: 12) {
-                    Button(action: saveMember) {
+                    Button(action: handleSave) {
                         Text("Add Member")
                             .font(.system(size: 16, weight: .semibold, design: .default))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(name.isEmpty ? Color.gray : Color(red: 0.33, green: 0.33, blue: 0.33))
+                            .background(name.isEmpty || !canAddMember ? Color.gray : Color(red: 0.33, green: 0.33, blue: 0.33))
                             .cornerRadius(12)
                     }
-                    .disabled(name.isEmpty)
+                    .disabled(name.isEmpty || !canAddMember)
 
                     Button(action: { dismiss() }) {
                         Text("Cancel")
@@ -218,6 +221,7 @@ struct AddFamilyMemberView: View {
         }
         .onAppear {
             loadAvailableCalendars()
+            loadFamilyMembersCount()
         }
         .alert("Create Calendar?", isPresented: $showCreateCalendarAlert) {
             Button("Create", action: createCalendar)
@@ -226,6 +230,36 @@ struct AddFamilyMemberView: View {
             }
         } message: {
             Text("Would you like to create a calendar named '\(pendingCalendarName ?? "")'?")
+        }
+        .alert("Upgrade to Premium", isPresented: $showPremiumAlert) {
+            Button("Upgrade", action: { })
+            Button("Cancel", role: .cancel, action: { })
+        } message: {
+            Text("You can only add \(premiumManager.freeMaxFamilyMembers) family members on the free plan. Upgrade to Premium to add unlimited members.")
+        }
+    }
+
+    private var canAddMember: Bool {
+        premiumManager.canAddMoreFamilyMembers(currentCount: familyMembersCount)
+    }
+
+    private func handleSave() {
+        if !canAddMember {
+            showPremiumAlert = true
+        } else {
+            saveMember()
+        }
+    }
+
+    private func loadFamilyMembersCount() {
+        let request = FamilyMember.fetchRequest()
+        let context = viewContext
+        Task { @MainActor in
+            do {
+                familyMembersCount = try context.count(for: request)
+            } catch {
+                print("Error fetching family members count: \(error)")
+            }
         }
     }
 

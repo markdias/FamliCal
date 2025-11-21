@@ -8,29 +8,47 @@
 import SwiftUI
 
 struct PremiumBannerView: View {
+    @EnvironmentObject private var premiumManager: PremiumManager
+    @State private var showPremiumView = false
+
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Premium Membership")
-                    .font(.system(size: 18, weight: .bold))
+        Button(action: { showPremiumView = true }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: premiumManager.isPremium ? "crown.fill" : "crown")
+                            .font(.system(size: 16, weight: .semibold))
+
+                        Text(premiumManager.isPremium ? "Premium Active" : "Premium Membership")
+                            .font(.system(size: 18, weight: .bold))
+                    }
                     .foregroundColor(.white)
-                
-                Text("Upgrade for more features")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.9))
+
+                    Text(premiumManager.isPremium ? "You have unlimited access" : "Upgrade for more features")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
             }
-            Spacer()
-        }
-        .padding(20)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "6A5AE0"), Color(hex: "8A7AF0")]),
-                startPoint: .leading,
-                endPoint: .trailing
+            .padding(20)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(hex: "6A5AE0"), Color(hex: "8A7AF0")]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
             )
-        )
-        .cornerRadius(20)
-        .shadow(color: Color(hex: "6A5AE0").opacity(0.3), radius: 10, x: 0, y: 5)
+            .cornerRadius(20)
+            .shadow(color: Color(hex: "6A5AE0").opacity(0.3), radius: 10, x: 0, y: 5)
+        }
+        .sheet(isPresented: $showPremiumView) {
+            PremiumView()
+                .environmentObject(premiumManager)
+        }
     }
 }
 
@@ -63,6 +81,7 @@ extension Color {
 
 #Preview {
     PremiumBannerView()
+        .environmentObject(PremiumManager())
         .padding()
         .background(Color(.systemGroupedBackground))
 }

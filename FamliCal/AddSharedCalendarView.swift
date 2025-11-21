@@ -12,6 +12,7 @@ import EventKit
 struct AddSharedCalendarView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var premiumManager: PremiumManager
 
     @FetchRequest(
         entity: SharedCalendar.entity(),
@@ -27,6 +28,7 @@ struct AddSharedCalendarView: View {
 
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var isLoading = false
+    @State private var showPremiumAlert = false
 
     var calendarsBySource: [String: [AvailableCalendar]] {
         Dictionary(grouping: availableCalendars) { $0.sourceTitle }
@@ -76,7 +78,7 @@ struct AddSharedCalendarView: View {
 
                                             Button(action: {
                                                 if !isAlreadyAdded {
-                                                    addSharedCalendar(calendar)
+                                                    handleAddCalendar(calendar)
                                                 }
                                             }) {
                                                 HStack(spacing: 12) {
@@ -152,6 +154,24 @@ struct AddSharedCalendarView: View {
         }
         .onAppear {
             loadAvailableCalendars()
+        }
+        .alert("Upgrade to Premium", isPresented: $showPremiumAlert) {
+            Button("Upgrade", action: { })
+            Button("Cancel", role: .cancel, action: { })
+        } message: {
+            Text("You can only add \(premiumManager.freeMaxSharedCalendars) shared calendars on the free plan. Upgrade to Premium to add unlimited calendars.")
+        }
+    }
+
+    private var canAddMoreCalendars: Bool {
+        premiumManager.canAddMoreSharedCalendars(currentCount: sharedCalendars.count)
+    }
+
+    private func handleAddCalendar(_ calendar: AvailableCalendar) {
+        if !canAddMoreCalendars {
+            showPremiumAlert = true
+        } else {
+            addSharedCalendar(calendar)
         }
     }
 

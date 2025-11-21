@@ -13,6 +13,7 @@ struct FamliCalApp: App {
     let persistenceController = PersistenceController.shared
     @State private var hasCompletedOnboarding: Bool?
     @StateObject private var themeManager = ThemeManager()
+    @StateObject private var premiumManager = PremiumManager()
 
     init() {
         let defaults = UserDefaults.standard
@@ -47,15 +48,18 @@ struct FamliCalApp: App {
                         MainTabView()
                             .environment(\.managedObjectContext, persistenceController.container.viewContext)
                             .environmentObject(themeManager)
+                            .environmentObject(premiumManager)
                     } else {
                         OnboardingView()
                             .environment(\.managedObjectContext, persistenceController.container.viewContext)
                             .environmentObject(themeManager)
+                            .environmentObject(premiumManager)
                     }
                 } else {
                     OnboardingView()
                         .environment(\.managedObjectContext, persistenceController.container.viewContext)
                         .environmentObject(themeManager)
+                        .environmentObject(premiumManager)
                         .onAppear {
                             hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
                         }

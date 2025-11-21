@@ -12,6 +12,7 @@ struct SettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var premiumManager: PremiumManager
     @State private var showingFamilySettings = false
     @State private var showingAppSettings = false
     @State private var showingNotifications = false
