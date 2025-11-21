@@ -74,6 +74,7 @@ struct DailyEventsView: View {
                                 }
                             }
                         }
+                        .padding(.top, 10)
                     }
                 }
                 .onAppear {
@@ -133,17 +134,18 @@ struct DailyEventsView: View {
     private var timelineView: some View {
         VStack(spacing: 0) {
             ForEach(0..<24) { hour in
-                HStack(spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     Text(formatHour(hour))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(theme.mutedTagColor)
-                        .frame(width: 40, alignment: .trailing)
+                        .frame(width: 45, alignment: .trailing)
+                        .alignmentGuide(.top) { d in d[VerticalAlignment.center] }
 
                     VStack {
                         Divider()
                     }
                 }
-                .frame(height: hourHeight)
+                .frame(height: hourHeight, alignment: .top)
             }
         }
     }
@@ -168,7 +170,7 @@ struct DailyEventsView: View {
                         }
                 }
             }
-            .padding(.leading, 50)
+            .padding(.leading, 60)
         }
     }
 
@@ -273,7 +275,7 @@ struct DailyEventsView: View {
         }
         
         let totalColumns = columns.count
-        let columnWidth = (availableWidth - 50 - CGFloat(totalColumns > 1 ? (totalColumns - 1) * 4 : 0)) / CGFloat(totalColumns)
+        let columnWidth = (availableWidth - 60 - CGFloat(totalColumns > 1 ? (totalColumns - 1) * 4 : 0)) / CGFloat(totalColumns)
 
         for (columnIndex, column) in columns.enumerated() {
             for event in column {

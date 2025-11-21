@@ -10,7 +10,6 @@ import CoreData
 import MapKit
 import Combine
 import EventKit
-import CoreLocation
 
 struct AddEventView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -34,6 +33,14 @@ struct AddEventView: View {
         sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)]
     )
     private var drivers: FetchedResults<Driver>
+
+    enum TimePicker {
+        case none
+        case startDate
+        case endDate
+        case startTime
+        case endTime
+    }
 
     // Family members who are marked as drivers
     private var driverFamilyMembers: [FamilyMember] {
@@ -93,10 +100,7 @@ struct AddEventView: View {
     @State private var permissionErrorMessage = ""
 
     // UI state
-    @State private var showingStartDatePicker = false
-    @State private var showingEndDatePicker = false
-    @State private var showingStartTimePicker = false
-    @State private var showingEndTimePicker = false
+    @State private var activeTimePicker: TimePicker = .none
     @State private var showingRepeatPicker = false
     @State private var showingAlertPicker = false
     @State private var showingPeoplePicker = false
@@ -843,26 +847,12 @@ struct AddEventView: View {
                         timeText: formattedTime(startTime),
                         dateAction: {
                             withAnimation {
-                                if showingStartDatePicker {
-                                    showingStartDatePicker = false
-                                } else {
-                                    showingStartDatePicker = true
-                                    showingEndDatePicker = false
-                                    showingStartTimePicker = false
-                                    showingEndTimePicker = false
-                                }
+                                activeTimePicker = activeTimePicker == .startDate ? .none : .startDate
                             }
                         },
                         timeAction: {
                             withAnimation {
-                                if showingStartTimePicker {
-                                    showingStartTimePicker = false
-                                } else {
-                                    showingStartTimePicker = true
-                                    showingStartDatePicker = false
-                                    showingEndDatePicker = false
-                                    showingEndTimePicker = false
-                                }
+                                activeTimePicker = activeTimePicker == .startTime ? .none : .startTime
                             }
                         })
 
@@ -873,30 +863,16 @@ struct AddEventView: View {
                         timeText: formattedTime(endTime),
                         dateAction: {
                             withAnimation {
-                                if showingEndDatePicker {
-                                    showingEndDatePicker = false
-                                } else {
-                                    showingEndDatePicker = true
-                                    showingStartDatePicker = false
-                                    showingStartTimePicker = false
-                                    showingEndTimePicker = false
-                                }
+                                activeTimePicker = activeTimePicker == .endDate ? .none : .endDate
                             }
                         },
                         timeAction: {
                             withAnimation {
-                                if showingEndTimePicker {
-                                    showingEndTimePicker = false
-                                } else {
-                                    showingEndTimePicker = true
-                                    showingStartDatePicker = false
-                                    showingEndDatePicker = false
-                                    showingStartTimePicker = false
-                                }
+                                activeTimePicker = activeTimePicker == .endTime ? .none : .endTime
                             }
                         })
-                
-                if showingStartDatePicker {
+
+                if activeTimePicker == .startDate {
                     DatePicker(
                         "Select Start Date",
                         selection: $startTime,
@@ -909,8 +885,8 @@ struct AddEventView: View {
                         eventDate = newValue
                     }
                 }
-                
-                if showingEndDatePicker {
+
+                if activeTimePicker == .endDate {
                     DatePicker(
                         "Select End Date",
                         selection: $endTime,
@@ -935,7 +911,7 @@ struct AddEventView: View {
 
 
 
-            if showingStartTimePicker {
+            if activeTimePicker == .startTime {
                 DatePicker(
                     "Start Time",
                     selection: $startTime,
@@ -944,7 +920,7 @@ struct AddEventView: View {
                 .datePickerStyle(.wheel)
             }
 
-            if showingEndTimePicker {
+            if activeTimePicker == .endTime {
                 DatePicker(
                     "End Time",
                     selection: $endTime,
@@ -1515,39 +1491,35 @@ struct AddEventView: View {
 class LocationSearchCompleter: NSObject, ObservableObject {
     @Published var query: String = "" {
         didSet {
-            searchCompleter.queryFragment = query
+            searchDebounceTimer?.invalidate()
+            searchDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+                self?.searchCompleter.queryFragment = self?.query ?? ""
+            }
         }
     }
     @Published var results: [MKLocalSearchCompletion] = []
 
     private let searchCompleter = MKLocalSearchCompleter()
-    private let locationManager = CLLocationManager()
+    private var searchDebounceTimer: Timer?
 
     override init() {
         super.init()
         searchCompleter.delegate = self
         searchCompleter.resultTypes = [.address, .pointOfInterest]
+    }
 
-        // Request location permission but don't restrict search region
-        locationManager.requestWhenInUseAuthorization()
-
-        // Note: Not setting a region allows MapKit to search globally
-        // This enables searching by postcode, address, or location name worldwide
-        // Results will naturally prioritize based on relevance and user location
+    deinit {
+        searchDebounceTimer?.invalidate()
     }
 }
 
 extension LocationSearchCompleter: MKLocalSearchCompleterDelegate {
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        DispatchQueue.main.async {
-            self.results = completer.results
-        }
+        self.results = completer.results
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        DispatchQueue.main.async {
-            self.results = []
-        }
+        self.results = []
     }
 }
 
