@@ -1,0 +1,288 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/EventPreferencesView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Next Events",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events per person",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "How many upcoming events to show",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 54
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spotlight",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spotlight events",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events to show in spotlight view",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event Date Range",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "Past Days",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show past events",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 105
+        }
+      },
+      {
+        "comment": "",
+        "key": "Days to look back",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "None",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 Month",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 Months",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "3 Months",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 120
+        }
+      },
+      {
+        "comment": "",
+        "key": "6 Months",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 Year",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Future Days",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 147
+        }
+      },
+      {
+        "comment": "",
+        "key": "Look ahead",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "Days to look forward",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 140
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 Month",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "3 Months",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 149
+        }
+      },
+      {
+        "comment": "",
+        "key": "6 Months",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 Year",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 Years",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Default Alert",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 185
+        }
+      },
+      {
+        "comment": "",
+        "key": "Default alert",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Alert time for new events",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spotlight gaps",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 202
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show time between same-day events",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 206
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event Preferences",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 232
+        }
+      }
+    ]
+  },
+  "version": 1
+}

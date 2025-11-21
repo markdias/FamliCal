@@ -6,24 +6,48 @@
         "comment": "",
         "key": "Welcome to FamliCal",
         "location": {
-          "startingColumn": 22,
-          "startingLine": 24
+          "startingColumn": 30,
+          "startingLine": 33
         }
       },
       {
         "comment": "",
-        "key": "Keep your family connected, one calendar at a time",
+        "key": "Plan carpools, sports, and the everyday chaos with a shared family brain.",
         "location": {
-          "startingColumn": 22,
-          "startingLine": 28
+          "startingColumn": 30,
+          "startingLine": 37
         }
       },
       {
         "comment": "",
-        "key": "Get Started",
+        "key": "Link everyone's calendars instantly",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spotlight what's happening today",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 51
+        }
+      },
+      {
+        "comment": "",
+        "key": "Share focus lists like pickups or practice",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "Takes less than a minute",
         "location": {
           "startingColumn": 26,
-          "startingLine": 42
+          "startingLine": 64
         }
       }
     ]

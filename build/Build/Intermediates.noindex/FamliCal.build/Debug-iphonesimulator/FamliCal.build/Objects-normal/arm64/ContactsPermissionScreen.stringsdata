@@ -1,0 +1,40 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/ContactsPermissionScreen.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Import family from Contacts",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add drivers or caregivers straight from contacts so sharing pickups is effortless.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "Access already granted",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "Allow access to Contacts",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 74
+        }
+      }
+    ]
+  },
+  "version": 1
+}

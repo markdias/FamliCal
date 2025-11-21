@@ -4,10 +4,18 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "Upgrade to Premium",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
         "key": "Loading calendars...",
         "location": {
           "startingColumn": 30,
-          "startingLine": 47
+          "startingLine": 49
         }
       },
       {
@@ -15,7 +23,7 @@
         "key": "No calendars available",
         "location": {
           "startingColumn": 30,
-          "startingLine": 58
+          "startingLine": 60
         }
       },
       {
@@ -23,7 +31,7 @@
         "key": "Done",
         "location": {
           "startingColumn": 30,
-          "startingLine": 132
+          "startingLine": 134
         }
       },
       {
@@ -31,7 +39,31 @@
         "key": "Add Shared Calendar",
         "location": {
           "startingColumn": 26,
-          "startingLine": 148
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 160
+        }
+      },
+      {
+        "comment": "",
+        "key": "You can only add %lld shared calendars on the free plan. Upgrade to Premium to add unlimited calendars.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 162
         }
       }
     ]

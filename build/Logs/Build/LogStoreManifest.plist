@@ -5,6 +5,91 @@
 	<key>logFormatVersion</key>
 	<integer>11</integer>
 	<key>logs</key>
-	<dict/>
+	<dict>
+		<key>ADD65348-18F5-4A08-B956-A1C5C2A9913C</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>ADD65348-18F5-4A08-B956-A1C5C2A9913C.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>FamliCal project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>FamliCal</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project FamliCal with scheme FamliCal and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785453967.28420305</real>
+			<key>timeStoppedRecording</key>
+			<real>785453967.59705102</real>
+			<key>title</key>
+			<string>Cleaning project FamliCal with scheme FamliCal and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>ADD65348-18F5-4A08-B956-A1C5C2A9913C</string>
+		</dict>
+		<key>DBA00CA1-C480-4948-8C65-C2D241F2D783</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>DBA00CA1-C480-4948-8C65-C2D241F2D783.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>FamliCal project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>FamliCal</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project FamliCal with scheme FamliCal and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785454550.98015499</real>
+			<key>timeStoppedRecording</key>
+			<real>785454551.37266397</real>
+			<key>title</key>
+			<string>Cleaning project FamliCal with scheme FamliCal and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>DBA00CA1-C480-4948-8C65-C2D241F2D783</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -1,0 +1,40 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/PremiumBannerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "You have unlimited access",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade for more features",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Active",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Membership",
+        "location": {
+          "startingColumn": 76,
+          "startingLine": 22
+        }
+      }
+    ]
+  },
+  "version": 1
+}

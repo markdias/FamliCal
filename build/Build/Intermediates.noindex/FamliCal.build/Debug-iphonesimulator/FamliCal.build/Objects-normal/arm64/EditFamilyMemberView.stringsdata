@@ -4,90 +4,154 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "Calendar Linking",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name that matches an existing calendar. If no match is found after 5 seconds, you'll be offered the option to create a new calendar.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
         "key": "Name",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 30
+          "startingColumn": 18,
+          "startingLine": 55
         }
       },
       {
         "comment": "",
         "key": "Enter family member's name",
         "location": {
-          "startingColumn": 35,
-          "startingLine": 34
+          "startingColumn": 23,
+          "startingLine": 59
         }
       },
       {
         "comment": "",
-        "key": "Color",
+        "key": "",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 47
+          "startingColumn": 20,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Can be a driver",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Allow as event driver",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 84
         }
       },
       {
         "comment": "",
         "key": "Searching for calendar...",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 73
+          "startingColumn": 26,
+          "startingLine": 108
         }
       },
       {
         "comment": "",
         "key": "Calendar Match",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 84
+          "startingColumn": 18,
+          "startingLine": 127
         }
       },
       {
         "comment": "",
         "key": "This calendar will be linked to %@",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 98
+          "startingColumn": 26,
+          "startingLine": 141
         }
       },
       {
         "comment": "",
         "key": "Calendar Match",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 116
+          "startingColumn": 18,
+          "startingLine": 161
         }
       },
       {
         "comment": "",
         "key": "No calendar found",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 126
+          "startingColumn": 26,
+          "startingLine": 171
         }
       },
       {
         "comment": "",
         "key": "No calendar matches '%@'",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 130
+          "startingColumn": 26,
+          "startingLine": 175
         }
       },
       {
         "comment": "",
         "key": "Save Changes",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 152
+          "startingColumn": 22,
+          "startingLine": 202
         }
       },
       {
         "comment": "",
         "key": "Cancel",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 163
+          "startingColumn": 22,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Member",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Calendar?",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 258
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Member?",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 266
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Calendar?",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 274
         }
       },
       {
@@ -95,7 +159,87 @@
         "key": "Edit Family Member",
         "location": {
           "startingColumn": 26,
-          "startingLine": 179
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 259
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 260
+        }
+      },
+      {
+        "comment": "",
+        "key": "Would you like to create a calendar named '%@'?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 264
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 267
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 268
+        }
+      },
+      {
+        "comment": "",
+        "key": "Are you sure you want to delete %@? This action cannot be undone.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 272
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Member Only",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 275
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Member & Calendar",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Would you also like to delete the '%@' calendar from your iOS Calendar app?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 283
         }
       }
     ]

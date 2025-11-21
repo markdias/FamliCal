@@ -1,0 +1,32 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/SpotlightView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Loading events...",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "No events scheduled",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "No upcoming events for %@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 156
+        }
+      }
+    ]
+  },
+  "version": 1
+}

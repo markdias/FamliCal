@@ -2,7 +2,7 @@
 //  FamilyEvent+CoreDataProperties.swift
 //  
 //
-//  Created by Mark Dias on 18/11/2025.
+//  Created by Mark Dias on 21/11/2025.
 //
 //  This file was automatically generated and should not be edited.
 //
@@ -26,6 +26,7 @@ extension FamilyEvent {
     @NSManaged public var createdAt: Date?
     @NSManaged public var isSharedCalendarEvent: Bool
     @NSManaged public var attendees: NSSet?
+    @NSManaged public var driver: Driver?
 
 }
 

@@ -1,0 +1,80 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/NotificationPermissionScreen.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Stay Updated",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get notified about upcoming family events and important dates",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notifications Enabled",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 57
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notifications Disabled",
+        "location": {
+          "startingColumn": 84,
+          "startingLine": 57
+        }
+      },
+      {
+        "comment": "",
+        "key": "You'll receive event notifications",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "You can enable notifications in Settings",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "Request Again",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enable Notifications",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "Skip",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 100
+        }
+      }
+    ]
+  },
+  "version": 1
+}

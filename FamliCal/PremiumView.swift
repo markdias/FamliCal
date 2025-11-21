@@ -213,13 +213,13 @@ struct PremiumView: View {
         [
             FeatureRow(
                 feature: "Family Members",
-                freeValue: "Up to 3",
+                freeValue: "Up to 2",
                 premiumValue: "Unlimited",
                 freeHasFeature: true
             ),
             FeatureRow(
                 feature: "Shared Calendars",
-                freeValue: "Up to 2",
+                freeValue: "Up to 1",
                 premiumValue: "Unlimited",
                 freeHasFeature: true
             ),

@@ -6,16 +6,8 @@
         "comment": "",
         "key": "Family Members",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 30
-        }
-      },
-      {
-        "comment": "",
-        "key": "No family members yet",
-        "location": {
-          "startingColumn": 38,
-          "startingLine": 45
+          "startingColumn": 34,
+          "startingLine": 41
         }
       },
       {
@@ -23,7 +15,15 @@
         "key": "Add Family Member",
         "location": {
           "startingColumn": 34,
-          "startingLine": 79
+          "startingLine": 68
+        }
+      },
+      {
+        "comment": "",
+        "key": "My Family",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 85
         }
       },
       {
@@ -31,23 +31,47 @@
         "key": "Back",
         "location": {
           "startingColumn": 34,
-          "startingLine": 101
+          "startingLine": 94
         }
       },
       {
         "comment": "",
-        "key": "%lld calendar%@ linked",
+        "key": "No family members yet",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 162
+          "startingColumn": 18,
+          "startingLine": 136
         }
       },
       {
         "comment": "",
-        "key": "No calendars linked",
+        "key": "%lld calendar%@",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 172
+          "startingColumn": 30,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendars",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 252
         }
       }
     ]

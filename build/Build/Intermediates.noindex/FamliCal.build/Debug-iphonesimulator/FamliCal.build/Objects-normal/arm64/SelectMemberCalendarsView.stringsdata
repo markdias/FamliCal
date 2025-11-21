@@ -4,18 +4,18 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "%lld calendar%@",
+        "key": "%lld calendar%@ linked",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 80
+          "startingColumn": 46,
+          "startingLine": 97
         }
       },
       {
         "comment": "",
         "key": "Linked Calendars",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 96
+          "startingColumn": 42,
+          "startingLine": 119
         }
       },
       {
@@ -23,15 +23,15 @@
         "key": "Auto-linked",
         "location": {
           "startingColumn": 58,
-          "startingLine": 118
+          "startingLine": 142
         }
       },
       {
         "comment": "",
         "key": "Shared Calendars",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 179
+          "startingColumn": 42,
+          "startingLine": 208
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "Shared with all",
         "location": {
           "startingColumn": 58,
-          "startingLine": 201
+          "startingLine": 231
         }
       },
       {
@@ -47,15 +47,15 @@
         "key": "Loading calendars...",
         "location": {
           "startingColumn": 38,
-          "startingLine": 231
+          "startingLine": 261
         }
       },
       {
         "comment": "",
         "key": "Add More Calendars",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 239
+          "startingColumn": 42,
+          "startingLine": 274
         }
       },
       {
@@ -63,15 +63,7 @@
         "key": "Done",
         "location": {
           "startingColumn": 30,
-          "startingLine": 303
-        }
-      },
-      {
-        "comment": "",
-        "key": "Select Calendars",
-        "location": {
-          "startingColumn": 26,
-          "startingLine": 319
+          "startingLine": 339
         }
       }
     ]

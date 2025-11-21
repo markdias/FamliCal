@@ -6,72 +6,64 @@
         "comment": "",
         "key": "Visible",
         "location": {
-          "startingColumn": 26,
-          "startingLine": 40
+          "startingColumn": 30,
+          "startingLine": 42
         }
       },
       {
         "comment": "",
         "key": "No visible calendars",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 51
+          "startingColumn": 38,
+          "startingLine": 54
         }
       },
       {
         "comment": "",
         "key": "Add family members or shared calendars to see them here",
         "location": {
-          "startingColumn": 34,
-          "startingLine": 55
+          "startingColumn": 38,
+          "startingLine": 58
         }
       },
       {
         "comment": "",
         "key": "Family Members",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 66
+          "startingColumn": 42,
+          "startingLine": 71
         }
       },
       {
         "comment": "",
         "key": "Shared Calendars",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 185
+          "startingColumn": 42,
+          "startingLine": 201
         }
       },
       {
         "comment": "",
-        "key": "Family member",
+        "key": "%lld calendar%@",
         "location": {
-          "startingColumn": 62,
-          "startingLine": 98
-        }
-      },
-      {
-        "comment": "",
-        "key": "(%lld)",
-        "location": {
-          "startingColumn": 66,
-          "startingLine": 93
+          "startingColumn": 70,
+          "startingLine": 111
         }
       },
       {
         "comment": "",
         "key": "Select Calendars",
         "location": {
-          "startingColumn": 62,
-          "startingLine": 160
+          "startingColumn": 66,
+          "startingLine": 176
         }
       },
       {
         "comment": "",
         "key": "Add Shared Calendar",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 219
+          "startingColumn": 46,
+          "startingLine": 235
         }
       },
       {
@@ -79,7 +71,7 @@
         "key": "Back",
         "location": {
           "startingColumn": 34,
-          "startingLine": 247
+          "startingLine": 262
         }
       }
     ]

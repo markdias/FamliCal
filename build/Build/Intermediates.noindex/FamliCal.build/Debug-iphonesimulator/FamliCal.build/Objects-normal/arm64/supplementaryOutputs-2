@@ -1,30 +1,51 @@
 {
-  "/Users/markdias/project/FamliCal/FamliCal/AddEventView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddEventView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddEventView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddEventView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddEventView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddEventView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/CalendarManager.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarManager.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarManager.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarManager.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarManager.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarManager.swiftdeps"
   },
-  "/Users/markdias/project/FamliCal/FamliCal/AddFamilyMemberView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddFamilyMemberView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddFamilyMemberView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddFamilyMemberView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddFamilyMemberView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddFamilyMemberView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/CalendarView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/CalendarView.swiftdeps"
   },
-  "/Users/markdias/project/FamliCal/FamliCal/AddSharedCalendarView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddSharedCalendarView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddSharedCalendarView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddSharedCalendarView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddSharedCalendarView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AddSharedCalendarView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/ColorExtensions.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ColorExtensions.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ColorExtensions.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ColorExtensions.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ColorExtensions.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ColorExtensions.swiftdeps"
   },
-  "/Users/markdias/project/FamliCal/FamliCal/AppSettingsView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AppSettingsView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AppSettingsView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AppSettingsView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AppSettingsView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/AppSettingsView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/ContactPickerView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactPickerView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactPickerView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactPickerView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactPickerView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactPickerView.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/ContactsManager.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsManager.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsManager.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsManager.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsManager.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsManager.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/ContactsPermissionScreen.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsPermissionScreen.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsPermissionScreen.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsPermissionScreen.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsPermissionScreen.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContactsPermissionScreen.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/ContentView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContentView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/ContentView.swiftdeps"
   }
 }

@@ -10,6 +10,7 @@ import CoreData
 
 struct NotificationSettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var premiumManager: PremiumManager
     @StateObject private var notificationManager = NotificationManager.shared
 
     var body: some View {
@@ -36,15 +37,46 @@ struct NotificationSettingsView: View {
                         }
 
                         if notificationManager.notificationsEnabled {
-                            // Morning Brief Section
+                            // Morning Brief Section (Premium only)
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Morning Brief")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 16)
+                                HStack {
+                                    Text("Morning Brief")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.gray)
+
+                                    if !premiumManager.isPremium {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundColor(.orange)
+                                    }
+
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
 
                                 VStack(spacing: 0) {
-                                    morningBriefSection
+                                    if !premiumManager.isPremium {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "6A5AE0"))
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Premium Feature")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.black)
+
+                                                Text("Upgrade to get daily event summaries")
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(.gray)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .padding(16)
+                                    } else {
+                                        morningBriefSection
+                                    }
                                 }
                                 .background(Color.white)
                                 .cornerRadius(12)

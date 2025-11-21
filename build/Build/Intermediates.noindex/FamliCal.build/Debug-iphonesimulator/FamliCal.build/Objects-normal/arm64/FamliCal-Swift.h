@@ -282,6 +282,7 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 @import CoreData;
 @import MapKit;
 @import ObjectiveC;
+@import UserNotifications;
 #endif
 
 #endif
@@ -304,15 +305,47 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 
 #if defined(__OBJC__)
 
+SWIFT_CLASS("_TtC8FamliCal15ContactsManager")
+@interface ContactsManager : NSObject
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
+@end
+
 @class NSEntityDescription;
 @class NSManagedObjectContext;
+SWIFT_CLASS_NAMED("Driver")
+@interface Driver : NSManagedObject
+- (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
+@end
+
+@class FamilyEvent;
+@class NSSet;
+@interface Driver (SWIFT_EXTENSION(FamliCal))
+- (void)addEventsObject:(FamilyEvent * _Nonnull)value;
+- (void)removeEventsObject:(FamilyEvent * _Nonnull)value;
+- (void)addEvents:(NSSet * _Nonnull)values;
+- (void)removeEvents:(NSSet * _Nonnull)values;
+@end
+
+@class NSUUID;
+@class NSString;
+@interface Driver (SWIFT_EXTENSION(FamliCal))
+@property (nonatomic, copy) NSUUID * _Nullable id;
+@property (nonatomic, copy) NSString * _Nullable name;
+@property (nonatomic, copy) NSString * _Nullable phone;
+@property (nonatomic, copy) NSString * _Nullable email;
+@property (nonatomic, copy) NSString * _Nullable notes;
+@property (nonatomic) int16_t travelTimeMinutes;
+@property (nonatomic, copy) NSUUID * _Nullable familyMemberId;
+@property (nonatomic, copy) NSString * _Nullable travelEventIdentifier;
+@property (nonatomic, strong) NSSet * _Nullable events;
+@end
+
 SWIFT_CLASS_NAMED("FamilyEvent")
 @interface FamilyEvent : NSManagedObject
 - (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
 @end
 
 @class FamilyMember;
-@class NSSet;
 @interface FamilyEvent (SWIFT_EXTENSION(FamliCal))
 - (void)addAttendeesObject:(FamilyMember * _Nonnull)value;
 - (void)removeAttendeesObject:(FamilyMember * _Nonnull)value;
@@ -320,8 +353,6 @@ SWIFT_CLASS_NAMED("FamilyEvent")
 - (void)removeAttendees:(NSSet * _Nonnull)values;
 @end
 
-@class NSUUID;
-@class NSString;
 @class NSDate;
 @interface FamilyEvent (SWIFT_EXTENSION(FamliCal))
 @property (nonatomic, copy) NSUUID * _Nullable id;
@@ -331,6 +362,7 @@ SWIFT_CLASS_NAMED("FamilyEvent")
 @property (nonatomic, copy) NSDate * _Nullable createdAt;
 @property (nonatomic) BOOL isSharedCalendarEvent;
 @property (nonatomic, strong) NSSet * _Nullable attendees;
+@property (nonatomic, strong) Driver * _Nullable driver;
 @end
 
 SWIFT_CLASS_NAMED("FamilyMember")
@@ -367,6 +399,7 @@ SWIFT_CLASS_NAMED("FamilyMember")
 @property (nonatomic, copy) NSString * _Nullable linkedCalendarID;
 @property (nonatomic, copy) NSString * _Nullable colorHex;
 @property (nonatomic, copy) NSString * _Nullable avatarInitials;
+@property (nonatomic) BOOL isDriver;
 @property (nonatomic, strong) NSSet * _Nullable memberCalendars;
 @property (nonatomic, strong) NSSet * _Nullable sharedCalendars;
 @property (nonatomic, strong) NSSet * _Nullable familyEvents;
@@ -404,6 +437,46 @@ SWIFT_CLASS("_TtC8FamliCal23LocationSearchCompleter")
 @interface LocationSearchCompleter (SWIFT_EXTENSION(FamliCal)) <MKLocalSearchCompleterDelegate>
 - (void)completerDidUpdateResults:(MKLocalSearchCompleter * _Nonnull)completer;
 - (void)completer:(MKLocalSearchCompleter * _Nonnull)completer didFailWithError:(NSError * _Nonnull)error;
+@end
+
+SWIFT_CLASS("_TtC8FamliCal19NotificationManager")
+@interface NotificationManager : NSObject
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
+@end
+
+@class UNUserNotificationCenter;
+@class UNNotification;
+@class UNNotificationResponse;
+@interface NotificationManager (SWIFT_EXTENSION(FamliCal)) <UNUserNotificationCenterDelegate>
+- (void)userNotificationCenter:(UNUserNotificationCenter * _Nonnull)center willPresentNotification:(UNNotification * _Nonnull)notification withCompletionHandler:(void (^ _Nonnull)(UNNotificationPresentationOptions))completionHandler;
+- (void)userNotificationCenter:(UNUserNotificationCenter * _Nonnull)center didReceiveNotificationResponse:(UNNotificationResponse * _Nonnull)response withCompletionHandler:(void (^ _Nonnull)(void))completionHandler;
+@end
+
+SWIFT_CLASS_NAMED("RecentSearch")
+@interface RecentSearch : NSManagedObject
+- (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
+@end
+
+@interface RecentSearch (SWIFT_EXTENSION(FamliCal))
+@property (nonatomic, copy) NSUUID * _Nullable id;
+@property (nonatomic, copy) NSString * _Nullable query;
+@property (nonatomic, copy) NSDate * _Nullable timestamp;
+@property (nonatomic, copy) NSString * _Nullable address;
+@property (nonatomic) double latitude;
+@property (nonatomic) double longitude;
+@end
+
+SWIFT_CLASS_NAMED("SavedAddress")
+@interface SavedAddress : NSManagedObject
+- (nonnull instancetype)initWithEntity:(NSEntityDescription * _Nonnull)entity insertIntoManagedObjectContext:(NSManagedObjectContext * _Nullable)context OBJC_DESIGNATED_INITIALIZER;
+@end
+
+@interface SavedAddress (SWIFT_EXTENSION(FamliCal))
+@property (nonatomic, copy) NSUUID * _Nullable id;
+@property (nonatomic, copy) NSString * _Nullable name;
+@property (nonatomic, copy) NSString * _Nullable address;
+@property (nonatomic) double latitude;
+@property (nonatomic) double longitude;
 @end
 
 SWIFT_CLASS_NAMED("SharedCalendar")

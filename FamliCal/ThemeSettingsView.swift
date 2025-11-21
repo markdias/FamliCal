@@ -9,38 +9,69 @@ import SwiftUI
 
 struct ThemeSettingsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var premiumManager: PremiumManager
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationView {
             ZStack {
                 Color(hex: "F2F2F7").ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        Text("Pick a theme")
-                            .font(.system(size: 14, weight: .semibold))
+
+                if !premiumManager.isPremium {
+                    VStack(spacing: 16) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 48))
                             .foregroundColor(.gray)
 
-                        VStack(spacing: 18) {
-                            ForEach(AppTheme.allThemes) { theme in
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                        themeManager.select(theme: theme)
-                                    }
-                                }) {
-                                    ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Select \(theme.displayName) theme")
-                                .accessibilityHint(theme.description)
-                                .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
-                            }
+                        Text("Custom Themes")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        Text("Upgrade to Premium to unlock custom themes and personalize your experience.")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+
+                        Spacer()
+
+                        Button(action: { }) {
+                            Text("Upgrade to Premium")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(Color(hex: "6A5AE0"))
+                                .cornerRadius(12)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 48)
+                    .padding(20)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            Text("Pick a theme")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.gray)
+
+                            VStack(spacing: 18) {
+                                ForEach(AppTheme.allThemes) { theme in
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                            themeManager.select(theme: theme)
+                                        }
+                                    }) {
+                                        ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Select \(theme.displayName) theme")
+                                    .accessibilityHint(theme.description)
+                                    .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 28)
+                        .padding(.bottom, 48)
+                    }
                 }
             }
             .navigationTitle("Themes")

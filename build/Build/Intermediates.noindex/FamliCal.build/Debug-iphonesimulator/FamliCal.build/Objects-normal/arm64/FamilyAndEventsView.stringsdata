@@ -1,0 +1,72 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/FamilyAndEventsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Back",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "Family Members",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "No family members yet",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 126
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld calendar%@",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Calendars",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shared",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 262
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Shared Calendar",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 286
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Family Member",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 311
+        }
+      }
+    ]
+  },
+  "version": 1
+}

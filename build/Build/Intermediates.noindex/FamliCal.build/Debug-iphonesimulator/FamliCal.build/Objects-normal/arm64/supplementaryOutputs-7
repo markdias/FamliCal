@@ -1,23 +1,51 @@
 {
-  "/Users/markdias/project/FamliCal/FamliCal/EditFamilyMemberView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EditFamilyMemberView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EditFamilyMemberView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EditFamilyMemberView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EditFamilyMemberView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EditFamilyMemberView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/OnboardingFamilySetupView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingFamilySetupView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingFamilySetupView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingFamilySetupView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingFamilySetupView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingFamilySetupView.swiftdeps"
   },
-  "/Users/markdias/project/FamliCal/FamliCal/EventDetailView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventDetailView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventDetailView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventDetailView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventDetailView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventDetailView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/OnboardingSharedCalendarsView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingSharedCalendarsView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingSharedCalendarsView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingSharedCalendarsView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingSharedCalendarsView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingSharedCalendarsView.swiftdeps"
   },
-  "/Users/markdias/project/FamliCal/FamliCal/EventSearchView.swift" : {
-    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventSearchView.swiftconstvalues",
-    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventSearchView.d",
-    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventSearchView.dia",
-    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventSearchView.o",
-    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/EventSearchView.swiftdeps"
+  "/Users/markdias/project/FamliCal/FamliCal/OnboardingStyle.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingStyle.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingStyle.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingStyle.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingStyle.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingStyle.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/OnboardingView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/OnboardingView.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/PermissionScreen.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionScreen.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionScreen.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionScreen.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionScreen.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionScreen.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/PermissionsView.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionsView.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionsView.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionsView.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionsView.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/PermissionsView.swiftdeps"
+  },
+  "/Users/markdias/project/FamliCal/FamliCal/Persistence.swift" : {
+    "const-values" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/Persistence.swiftconstvalues",
+    "dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/Persistence.d",
+    "diagnostics" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/Persistence.dia",
+    "object" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/Persistence.o",
+    "swift-dependencies" : "/Users/markdias/project/FamliCal/build/Build/Intermediates.noindex/FamliCal.build/Debug-iphonesimulator/FamliCal.build/Objects-normal/arm64/Persistence.swiftdeps"
   }
 }

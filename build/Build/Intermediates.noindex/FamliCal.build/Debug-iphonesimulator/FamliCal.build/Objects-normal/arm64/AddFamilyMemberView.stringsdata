@@ -4,10 +4,42 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "Calendar Linking",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 36
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name that matches an existing calendar. If no match is found after 5 seconds, you'll be offered the option to create a new calendar.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Calendar?",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 226
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade to Premium",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
         "key": "Name",
         "location": {
           "startingColumn": 30,
-          "startingLine": 28
+          "startingLine": 61
         }
       },
       {
@@ -15,15 +47,31 @@
         "key": "Enter family member's name",
         "location": {
           "startingColumn": 35,
-          "startingLine": 32
+          "startingLine": 65
         }
       },
       {
         "comment": "",
-        "key": "Color",
+        "key": "",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 45
+          "startingColumn": 32,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "Can be a driver",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Allow as event driver",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 89
         }
       },
       {
@@ -31,7 +79,7 @@
         "key": "Searching for calendar...",
         "location": {
           "startingColumn": 34,
-          "startingLine": 71
+          "startingLine": 111
         }
       },
       {
@@ -39,7 +87,7 @@
         "key": "Calendar Match",
         "location": {
           "startingColumn": 34,
-          "startingLine": 82
+          "startingLine": 122
         }
       },
       {
@@ -47,7 +95,7 @@
         "key": "This calendar will be linked to %@",
         "location": {
           "startingColumn": 42,
-          "startingLine": 96
+          "startingLine": 136
         }
       },
       {
@@ -55,7 +103,7 @@
         "key": "Calendar Match",
         "location": {
           "startingColumn": 34,
-          "startingLine": 114
+          "startingLine": 154
         }
       },
       {
@@ -63,7 +111,7 @@
         "key": "No calendar found",
         "location": {
           "startingColumn": 42,
-          "startingLine": 124
+          "startingLine": 164
         }
       },
       {
@@ -71,7 +119,7 @@
         "key": "No calendar matches '%@'",
         "location": {
           "startingColumn": 42,
-          "startingLine": 128
+          "startingLine": 168
         }
       },
       {
@@ -79,7 +127,7 @@
         "key": "Add Member",
         "location": {
           "startingColumn": 30,
-          "startingLine": 150
+          "startingLine": 190
         }
       },
       {
@@ -87,7 +135,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 30,
-          "startingLine": 161
+          "startingLine": 201
         }
       },
       {
@@ -95,7 +143,55 @@
         "key": "Add Family Member",
         "location": {
           "startingColumn": 26,
-          "startingLine": 177
+          "startingLine": 217
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 227
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 228
+        }
+      },
+      {
+        "comment": "",
+        "key": "Would you like to create a calendar named '%@'?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 232
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 235
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 236
+        }
+      },
+      {
+        "comment": "",
+        "key": "You can only add %lld family members on the free plan. Upgrade to Premium to add unlimited members.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 238
         }
       }
     ]

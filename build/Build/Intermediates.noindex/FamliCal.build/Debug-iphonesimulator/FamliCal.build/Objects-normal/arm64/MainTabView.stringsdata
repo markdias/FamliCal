@@ -4,18 +4,58 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Open settings",
+        "key": "Add event",
         "location": {
           "startingColumn": 29,
-          "startingLine": 103
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open settings",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 112
         }
       },
       {
         "comment": "",
         "key": "Search events",
         "location": {
-          "startingColumn": 29,
-          "startingLine": 116
+          "startingColumn": 33,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open calendar view",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Return to event list",
+        "location": {
+          "startingColumn": 80,
+          "startingLine": 122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switch to calendar grid",
+        "location": {
+          "startingColumn": 56,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switch to events list",
+        "location": {
+          "startingColumn": 84,
+          "startingLine": 123
         }
       }
     ]

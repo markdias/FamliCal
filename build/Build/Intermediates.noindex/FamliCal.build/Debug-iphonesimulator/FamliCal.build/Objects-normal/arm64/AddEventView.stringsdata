@@ -7,7 +7,7 @@
         "key": "Calendar Access Required",
         "location": {
           "startingColumn": 20,
-          "startingLine": 410
+          "startingLine": 271
         }
       },
       {
@@ -15,143 +15,15 @@
         "key": "Event Created",
         "location": {
           "startingColumn": 20,
-          "startingLine": 415
+          "startingLine": 276
         }
       },
       {
         "comment": "",
-        "key": "Location",
+        "key": "Create Event for Driver?",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 327
-        }
-      },
-      {
-        "comment": "",
-        "key": "Notes",
-        "location": {
-          "startingColumn": 38,
-          "startingLine": 355
-        }
-      },
-      {
-        "comment": "",
-        "key": "Event Title",
-        "location": {
-          "startingColumn": 31,
-          "startingLine": 96
-        }
-      },
-      {
-        "comment": "",
-        "key": "Select Date",
-        "location": {
-          "startingColumn": 29,
-          "startingLine": 115
-        }
-      },
-      {
-        "comment": "",
-        "key": "Start Time",
-        "location": {
-          "startingColumn": 29,
-          "startingLine": 136
-        }
-      },
-      {
-        "comment": "",
-        "key": "End Time",
-        "location": {
-          "startingColumn": 29,
-          "startingLine": 156
-        }
-      },
-      {
-        "comment": "",
-        "key": "Date",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 103
-        }
-      },
-      {
-        "comment": "",
-        "key": "Starts",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 124
-        }
-      },
-      {
-        "comment": "",
-        "key": "Ends",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 144
-        }
-      },
-      {
-        "comment": "",
-        "key": "Attendees",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 171
-        }
-      },
-      {
-        "comment": "",
-        "key": "👥",
-        "location": {
-          "startingColumn": 51,
-          "startingLine": 192
-        }
-      },
-      {
-        "comment": "",
-        "key": "Everyone",
-        "location": {
-          "startingColumn": 38,
-          "startingLine": 193
-        }
-      },
-      {
-        "comment": "",
-        "key": "Calendar",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 231
-        }
-      },
-      {
-        "comment": "",
-        "key": "Select calendar",
-        "location": {
-          "startingColumn": 38,
-          "startingLine": 246
-        }
-      },
-      {
-        "comment": "",
-        "key": "Repeat",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 285
-        }
-      },
-      {
-        "comment": "",
-        "key": "Alert",
-        "location": {
-          "startingColumn": 30,
-          "startingLine": 309
-        }
-      },
-      {
-        "comment": "",
-        "key": "Search location",
-        "location": {
-          "startingColumn": 31,
-          "startingLine": 328
+          "startingColumn": 20,
+          "startingLine": 283
         }
       },
       {
@@ -159,15 +31,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 364
-        }
-      },
-      {
-        "comment": "",
-        "key": "Save",
-        "location": {
-          "startingColumn": 34,
-          "startingLine": 376
+          "startingLine": 199
         }
       },
       {
@@ -175,7 +39,7 @@
         "key": "OK",
         "location": {
           "startingColumn": 24,
-          "startingLine": 411
+          "startingLine": 272
         }
       },
       {
@@ -183,7 +47,7 @@
         "key": "Done",
         "location": {
           "startingColumn": 24,
-          "startingLine": 416
+          "startingLine": 277
         }
       },
       {
@@ -191,7 +55,231 @@
         "key": "Your event has been added successfully!",
         "location": {
           "startingColumn": 22,
-          "startingLine": 420
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Yes",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 284
+        }
+      },
+      {
+        "comment": "",
+        "key": "No",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "Would you like to create a separate event for %@'s drive?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event Title",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 790
+        }
+      },
+      {
+        "comment": "",
+        "key": "Location",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 836
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Location",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 843
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Time",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 964
+        }
+      },
+      {
+        "comment": "",
+        "key": "End Time",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 973
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Start Date",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 925
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select End Date",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 939
+        }
+      },
+      {
+        "comment": "",
+        "key": "All-day",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 881
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 885
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show as",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1002
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attendees",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1050
+        }
+      },
+      {
+        "comment": "",
+        "key": "👥",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 1084
+        }
+      },
+      {
+        "comment": "",
+        "key": "Everyone",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1085
+        }
+      },
+      {
+        "comment": "",
+        "key": "Driver",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1138
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assign driver",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1147
+        }
+      },
+      {
+        "comment": "",
+        "key": "None",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1154
+        }
+      },
+      {
+        "comment": "",
+        "key": "Travel Time",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1201
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 1209
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1218
+        }
+      },
+      {
+        "comment": "",
+        "key": "Repeat",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Custom repeat options",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Alert",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1333
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendar",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1379
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1393
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select calendar",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1474
         }
       }
     ]

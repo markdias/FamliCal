@@ -4,122 +4,298 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Next Events",
+        "key": "General",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 23
+          "startingColumn": 34,
+          "startingLine": 59
         }
       },
       {
         "comment": "",
-        "key": "Events per person",
+        "key": "Default Screen",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 31
+          "startingColumn": 48,
+          "startingLine": 69
         }
       },
       {
         "comment": "",
-        "key": "How many upcoming events to show for each person",
+        "key": "Refresh Interval",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 35
+          "startingColumn": 48,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Maps App",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "1 minute",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld minutes",
+        "location": {
+          "startingColumn": 81,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Drivers",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage drivers for events",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Display",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "Theme",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dark mode",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apply dark colors to current theme",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event Settings",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 197
+        }
+      },
+      {
+        "comment": "",
+        "key": "Events",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spotlight",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Default Alert",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "Past Days",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Future Days",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 274
         }
       },
       {
         "comment": "",
         "key": "%lld",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 53
+          "startingColumn": 54,
+          "startingLine": 209
         }
       },
       {
         "comment": "",
-        "key": "Event Date Range",
+        "key": "%lld",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 80
+          "startingColumn": 54,
+          "startingLine": 225
         }
       },
       {
         "comment": "",
-        "key": "Show past events",
+        "key": "None",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 89
+          "startingColumn": 50,
+          "startingLine": 256
         }
       },
       {
         "comment": "",
-        "key": "Days to look back in history",
+        "key": "1 Month",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 93
+          "startingColumn": 50,
+          "startingLine": 257
         }
       },
       {
         "comment": "",
-        "key": "%lldd",
+        "key": "2 Months",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 111
+          "startingColumn": 50,
+          "startingLine": 258
         }
       },
       {
         "comment": "",
-        "key": "Look ahead",
+        "key": "3 Months",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 136
+          "startingColumn": 50,
+          "startingLine": 259
         }
       },
       {
         "comment": "",
-        "key": "Days to look forward in the future",
+        "key": "6 Months",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 140
+          "startingColumn": 50,
+          "startingLine": 260
         }
       },
       {
         "comment": "",
-        "key": "%lldd",
+        "key": "1 Year",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 158
+          "startingColumn": 50,
+          "startingLine": 261
         }
       },
       {
         "comment": "",
-        "key": "Auto Refresh",
+        "key": "1 Month",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 185
+          "startingColumn": 50,
+          "startingLine": 275
         }
       },
       {
         "comment": "",
-        "key": "Refresh interval",
+        "key": "3 Months",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 193
+          "startingColumn": 50,
+          "startingLine": 276
         }
       },
       {
         "comment": "",
-        "key": "Minutes between auto-refresh",
+        "key": "6 Months",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 197
+          "startingColumn": 50,
+          "startingLine": 277
         }
       },
       {
         "comment": "",
-        "key": "%lldm",
+        "key": "1 Year",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 215
+          "startingColumn": 50,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "2 Years",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendar",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shared calendars",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 303
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendars shared with all members",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 307
+        }
+      },
+      {
+        "comment": "",
+        "key": "Saved places",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 325
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage favorite locations",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 329
         }
       },
       {
@@ -127,7 +303,7 @@
         "key": "App Settings",
         "location": {
           "startingColumn": 26,
-          "startingLine": 248
+          "startingLine": 356
         }
       }
     ]

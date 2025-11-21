@@ -1,0 +1,16 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/DailyEventsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "All-Day",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 179
+        }
+      }
+    ]
+  },
+  "version": 1
+}

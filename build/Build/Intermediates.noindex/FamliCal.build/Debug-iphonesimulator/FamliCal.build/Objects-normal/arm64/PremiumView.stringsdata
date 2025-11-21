@@ -1,0 +1,136 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/PremiumView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Premium Membership",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock unlimited features for your family",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Status",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle for testing purposes",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Active",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "Free Plan",
+        "location": {
+          "startingColumn": 84,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "You have unlimited access to all features",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade to unlock premium features",
+        "location": {
+          "startingColumn": 111,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feature Comparison",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feature",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 99
+        }
+      },
+      {
+        "comment": "",
+        "key": "Free",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 105
+        }
+      },
+      {
+        "comment": "",
+        "key": "Plan",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "Plan",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why Upgrade?",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 149
+        }
+      }
+    ]
+  },
+  "version": 1
+}

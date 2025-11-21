@@ -1,0 +1,32 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/NotificationMemberSelectionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Select Members",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Family Members",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add family members in settings to enable notifications",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 33
+        }
+      }
+    ]
+  },
+  "version": 1
+}

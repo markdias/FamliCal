@@ -4,10 +4,74 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Next Events",
+        "key": "Delete Linked Copies?",
         "location": {
-          "startingColumn": 14,
-          "startingLine": 103
+          "startingColumn": 13,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete only this calendar",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete in all linked calendars",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "This event is linked to other calendars. Delete only here or everywhere?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add event",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open settings",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 200
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search events",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 209
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switch view",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 214
         }
       },
       {
@@ -15,7 +79,7 @@
         "key": "Fetching upcoming events...",
         "location": {
           "startingColumn": 18,
-          "startingLine": 123
+          "startingLine": 286
         }
       },
       {
@@ -23,7 +87,7 @@
         "key": "No upcoming events",
         "location": {
           "startingColumn": 18,
-          "startingLine": 137
+          "startingLine": 300
         }
       },
       {
@@ -31,15 +95,7 @@
         "key": "Link family calendars in Settings to see everyone's next plans.",
         "location": {
           "startingColumn": 18,
-          "startingLine": 140
-        }
-      },
-      {
-        "comment": "",
-        "key": "Next Events",
-        "location": {
-          "startingColumn": 22,
-          "startingLine": 154
+          "startingLine": 303
         }
       },
       {
@@ -47,15 +103,63 @@
         "key": "Upcoming Events",
         "location": {
           "startingColumn": 22,
-          "startingLine": 187
+          "startingLine": 338
         }
       },
       {
         "comment": "",
-        "key": "%@ • %@",
+        "key": "Duplicate",
         "location": {
-          "startingColumn": 22,
-          "startingLine": 258
+          "startingColumn": 55,
+          "startingLine": 390
+        }
+      },
+      {
+        "comment": "",
+        "key": "Move to Calendar",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 408
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This Event",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 417
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This & Future Events",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 420
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 423
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 427
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@, %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 485
         }
       }
     ]

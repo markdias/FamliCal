@@ -4,26 +4,82 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Date",
+        "key": "Delete Event",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 59
+          "startingColumn": 20,
+          "startingLine": 476
         }
       },
       {
         "comment": "",
-        "key": "Time",
+        "key": "Delete Recurring Event?",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 79
+          "startingColumn": 33,
+          "startingLine": 484
         }
       },
       {
         "comment": "",
-        "key": "%@ – %@",
+        "key": "Delete Linked Copies?",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 83
+          "startingColumn": 33,
+          "startingLine": 493
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Event for Driver?",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 506
+        }
+      },
+      {
+        "comment": "",
+        "key": "Duplicate",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "Move to Calendar",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This Event",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 163
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This & Future Events",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 173
         }
       },
       {
@@ -31,23 +87,95 @@
         "key": "Location",
         "location": {
           "startingColumn": 46,
-          "startingLine": 100
+          "startingLine": 189
         }
       },
       {
         "comment": "",
-        "key": "Recurring",
+        "key": "Date",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 126
+          "startingColumn": 38,
+          "startingLine": 219
         }
       },
       {
         "comment": "",
-        "key": "This event repeats",
+        "key": "Time",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 237
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ – %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 240
+        }
+      },
+      {
+        "comment": "",
+        "key": "Calendar",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Driver",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 299
+        }
+      },
+      {
+        "comment": "",
+        "key": "None",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 308
+        }
+      },
+      {
+        "comment": "",
+        "key": "Alert",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 363
+        }
+      },
+      {
+        "comment": "",
+        "key": "Location Preview",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 387
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading map...",
         "location": {
           "startingColumn": 42,
-          "startingLine": 130
+          "startingLine": 404
+        }
+      },
+      {
+        "comment": "",
+        "key": "This is a recurring event",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 424
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Event",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 433
         }
       },
       {
@@ -55,7 +183,111 @@
         "key": "Edit",
         "location": {
           "startingColumn": 30,
-          "startingLine": 161
+          "startingLine": 461
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 477
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 478
+        }
+      },
+      {
+        "comment": "",
+        "key": "Are you sure you want to delete this event?",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 482
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Only This Event",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 485
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This and Future Events",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 488
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 491
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete only this calendar",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 494
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete in all linked calendars",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 497
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 500
+        }
+      },
+      {
+        "comment": "",
+        "key": "This event is linked to other calendars. Delete only here or everywhere?",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "Yes",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 507
+        }
+      },
+      {
+        "comment": "",
+        "key": "No",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 512
+        }
+      },
+      {
+        "comment": "",
+        "key": "Would you like to create a separate event for %@'s drive?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 517
         }
       }
     ]

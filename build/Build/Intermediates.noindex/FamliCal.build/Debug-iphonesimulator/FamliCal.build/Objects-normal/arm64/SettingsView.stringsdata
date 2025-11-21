@@ -6,16 +6,32 @@
         "comment": "",
         "key": "Settings",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 74
+          "startingColumn": 34,
+          "startingLine": 38
         }
       },
       {
         "comment": "",
-        "key": "Layout & Localization",
+        "key": "More",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 49
+          "startingColumn": 34,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Log out",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 104
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 117
         }
       }
     ]

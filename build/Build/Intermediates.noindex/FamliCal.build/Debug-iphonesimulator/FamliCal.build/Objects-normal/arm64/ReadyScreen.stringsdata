@@ -6,24 +6,24 @@
         "comment": "",
         "key": "You're all set!",
         "location": {
-          "startingColumn": 26,
-          "startingLine": 25
+          "startingColumn": 30,
+          "startingLine": 44
         }
       },
       {
         "comment": "",
-        "key": "Your family calendar is ready to go. Start sharing events with your loved ones.",
+        "key": "FamliCal will keep your crew in sync with smart linking, shared timelines, and spotlight summaries.",
         "location": {
-          "startingColumn": 26,
-          "startingLine": 28
+          "startingColumn": 30,
+          "startingLine": 48
         }
       },
       {
         "comment": "",
-        "key": "Start Using FamliCal",
+        "key": "Tip: You can tweak colors and calendars anytime from Settings.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 43
+          "startingLine": 59
         }
       }
     ]

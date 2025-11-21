@@ -16,8 +16,8 @@ class PremiumManager: ObservableObject {
     }
 
     // MARK: - Premium Feature Limits
-    let freeMaxFamilyMembers = 3
-    let freeMaxSharedCalendars = 2
+    let freeMaxFamilyMembers = 2
+    let freeMaxSharedCalendars = 1
 
     init() {
         self.isPremium = UserDefaults.standard.bool(forKey: "isPremium")

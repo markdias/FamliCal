@@ -1,0 +1,48 @@
+{
+  "source": "/Users/markdias/project/FamliCal/FamliCal/ContactPickerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Select Contact",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search contacts",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading Contacts...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Contacts",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "No contacts available in your device",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 41
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -2,7 +2,7 @@
 //  FamilyMember+CoreDataProperties.swift
 //  
 //
-//  Created by Mark Dias on 18/11/2025.
+//  Created by Mark Dias on 21/11/2025.
 //
 //  This file was automatically generated and should not be edited.
 //
@@ -24,6 +24,7 @@ extension FamilyMember {
     @NSManaged public var linkedCalendarID: String?
     @NSManaged public var colorHex: String?
     @NSManaged public var avatarInitials: String?
+    @NSManaged public var isDriver: Bool
     @NSManaged public var memberCalendars: NSSet?
     @NSManaged public var sharedCalendars: NSSet?
     @NSManaged public var familyEvents: NSSet?

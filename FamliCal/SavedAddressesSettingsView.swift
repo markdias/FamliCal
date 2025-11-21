@@ -12,20 +12,50 @@ import MapKit
 struct SavedAddressesSettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject private var premiumManager: PremiumManager
+
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \SavedAddress.name, ascending: true)]
     )
     private var savedAddresses: FetchedResults<SavedAddress>
-    
+
     @State private var showingAddSheet = false
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 Color(hex: "F2F2F7").ignoresSafeArea()
-                
-                ScrollView {
+
+                if !premiumManager.isPremium {
+                    VStack(spacing: 16) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray)
+
+                        Text("Saved Places")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.black)
+
+                        Text("Save and reuse your favorite locations with Premium.")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+
+                        Spacer()
+
+                        Button(action: { }) {
+                            Text("Upgrade to Premium")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(Color(hex: "6A5AE0"))
+                                .cornerRadius(12)
+                        }
+                    }
+                    .padding(20)
+                } else {
+                    ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         // MARK: - Saved Places Section
                         VStack(alignment: .leading, spacing: 12) {
@@ -118,6 +148,7 @@ struct SavedAddressesSettingsView: View {
                         Spacer()
                     }
                     .padding(.vertical, 16)
+                    }
                 }
             }
             .navigationTitle("Saved Places")

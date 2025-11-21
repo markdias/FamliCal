@@ -4,50 +4,114 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Today",
+        "key": "Delete Linked Copies?",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 76
+          "startingColumn": 13,
+          "startingLine": 134
         }
       },
       {
         "comment": "",
-        "key": "Events",
+        "key": "Delete only this calendar",
         "location": {
-          "startingColumn": 38,
-          "startingLine": 129
+          "startingColumn": 20,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete in all linked calendars",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "This event is linked to other calendars. Delete only here or everywhere?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Mode",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 187
         }
       },
       {
         "comment": "",
         "key": "No events scheduled",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 138
+          "startingColumn": 22,
+          "startingLine": 286
         }
       },
       {
         "comment": "",
-        "key": "Events",
+        "key": "Duplicate",
         "location": {
-          "startingColumn": 18,
-          "startingLine": 170
+          "startingColumn": 19,
+          "startingLine": 500
         }
       },
       {
         "comment": "",
-        "key": "All Day",
+        "key": "Move to Calendar",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 234
+          "startingColumn": 19,
+          "startingLine": 518
         }
       },
       {
         "comment": "",
-        "key": "+",
+        "key": "Delete This Event",
         "location": {
-          "startingColumn": 30,
-          "startingLine": 331
+          "startingColumn": 27,
+          "startingLine": 527
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete This & Future Events",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 530
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 533
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 537
         }
       }
     ]
