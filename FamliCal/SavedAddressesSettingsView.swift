@@ -21,25 +21,118 @@ struct SavedAddressesSettingsView: View {
     @State private var showingAddSheet = false
     
     var body: some View {
-        List {
-            ForEach(savedAddresses) { address in
-                VStack(alignment: .leading) {
-                    Text(address.name ?? "Unknown")
-                        .font(.headline)
-                    if let addr = address.address, !addr.isEmpty {
-                        Text(addr)
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+        NavigationView {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // MARK: - Saved Places Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Saved Places")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 16)
+
+                            if savedAddresses.isEmpty {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "mappin.slash.circle")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(.gray)
+
+                                    Text("No saved places")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+
+                                    Text("Add favorite locations for quick access")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 32)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                .padding(.horizontal, 16)
+                            } else {
+                                VStack(spacing: 0) {
+                                    ForEach(savedAddresses) { address in
+                                        HStack(spacing: 16) {
+                                            Image(systemName: "mappin.circle.fill")
+                                                .font(.system(size: 24))
+                                                .foregroundColor(.red)
+                                                .frame(width: 32, height: 32)
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(address.name ?? "Unknown")
+                                                    .font(.system(size: 16, weight: .medium))
+                                                    .foregroundColor(.primary)
+
+                                                if let addr = address.address, !addr.isEmpty {
+                                                    Text(addr)
+                                                        .font(.system(size: 13))
+                                                        .foregroundColor(.gray)
+                                                        .lineLimit(1)
+                                                }
+                                            }
+
+                                            Spacer()
+
+                                            Button(action: { deleteAddress(address) }) {
+                                                Image(systemName: "trash")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(.red)
+                                                    .padding(8)
+                                                    .background(Color.red.opacity(0.1))
+                                                    .clipShape(Circle())
+                                            }
+                                        }
+                                        .padding(16)
+
+                                        if address.id != savedAddresses.last?.id {
+                                            Divider()
+                                                .padding(.horizontal, 16)
+                                        }
+                                    }
+                                }
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                .padding(.horizontal, 16)
+                            }
+
+                            Button(action: { showingAddSheet = true }) {
+                                Text("Add Saved Place")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.blue)
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                            }
+                            .padding(.horizontal, 16)
+                        }
+
+                        Spacer()
                     }
+                    .padding(.vertical, 16)
                 }
             }
-            .onDelete(perform: deleteAddresses)
-        }
-        .navigationTitle("Saved Places")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: { showingAddSheet = true }) {
-                    Image(systemName: "plus")
+            .navigationTitle("Saved Places")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+
+                            Text("Back")
+                        }
+                        .foregroundColor(.black)
+                    }
                 }
             }
         }
@@ -48,9 +141,9 @@ struct SavedAddressesSettingsView: View {
         }
     }
     
-    private func deleteAddresses(offsets: IndexSet) {
+    private func deleteAddress(_ address: SavedAddress) {
         withAnimation {
-            offsets.map { savedAddresses[$0] }.forEach(viewContext.delete)
+            viewContext.delete(address)
             do {
                 try viewContext.save()
             } catch {

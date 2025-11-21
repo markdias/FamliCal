@@ -13,12 +13,14 @@ struct ThemeSettingsView: View {
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+                
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         Text("Pick a theme")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                            .foregroundColor(.gray)
 
                         VStack(spacing: 18) {
                             ForEach(AppTheme.allThemes) { theme in
@@ -42,10 +44,17 @@ struct ThemeSettingsView: View {
                 }
             }
             .navigationTitle("Themes")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Back")
+                        }
+                        .foregroundColor(.black)
+                    }
                 }
             }
         }
@@ -109,7 +118,7 @@ private struct ThemeOptionCard: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(theme.cardStroke.opacity(0.4), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(theme.id == AppTheme.launchFlow.id ? 0.2 : 0.07), radius: 24, x: 0, y: 16)
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
     }
 }
 

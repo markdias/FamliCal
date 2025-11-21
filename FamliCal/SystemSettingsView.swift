@@ -15,10 +15,12 @@ struct SystemSettingsView: View {
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+                
                 ScrollView {
                     VStack(spacing: 24) {
-                        VStack(spacing: 12) {
+                        VStack(spacing: 0) {
                             NavigationLink(destination: AppSettingsView()) {
                                 SettingsMenuRow(
                                     iconName: "square.grid.2x2",
@@ -27,6 +29,8 @@ struct SystemSettingsView: View {
                                     subtitle: "Default screen, refresh, maps"
                                 )
                             }
+                            
+                            Divider().padding(.leading, 76)
 
                             NavigationLink(destination: ThemeSettingsView()) {
                                 SettingsMenuRow(
@@ -36,6 +40,8 @@ struct SystemSettingsView: View {
                                     subtitle: themeManager.selectedTheme.displayName
                                 )
                             }
+                            
+                            Divider().padding(.leading, 76)
 
                             NavigationLink(destination: NotificationSettingsView().environment(\.managedObjectContext, viewContext)) {
                                 SettingsMenuRow(
@@ -45,6 +51,8 @@ struct SystemSettingsView: View {
                                     subtitle: "Event alerts and morning brief"
                                 )
                             }
+                            
+                            Divider().padding(.leading, 76)
 
                             NavigationLink(destination: PermissionsView()) {
                                 SettingsMenuRow(
@@ -55,6 +63,9 @@ struct SystemSettingsView: View {
                                 )
                             }
                         }
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                         .padding(.horizontal, 16)
                         .padding(.top, 24)
 
@@ -62,6 +73,7 @@ struct SystemSettingsView: View {
                     }
                 }
             }
+            .navigationTitle("System Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -72,7 +84,7 @@ struct SystemSettingsView: View {
 
                             Text("Back")
                         }
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : Color(red: 0.33, green: 0.33, blue: 0.33))
+                        .foregroundColor(.black)
                     }
                 }
             }
@@ -100,20 +112,20 @@ private struct SettingsMenuRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                    .foregroundColor(.primary)
 
                 Text(subtitle)
                     .font(.system(size: 11))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                    .foregroundColor(.gray)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                .foregroundColor(.gray.opacity(0.5))
         }
-        .glassyCard(padding: 0)
+        .padding(16)
     }
 }
 

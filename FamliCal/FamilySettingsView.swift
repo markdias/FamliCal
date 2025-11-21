@@ -31,28 +31,69 @@ struct FamilySettingsView: View {
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+                
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 32) {
+                    VStack(alignment: .leading, spacing: 24) {
                         // MARK: - Family Members Section
-                        familyMembersSection
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Family Members")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 16)
+
+                            if familyMembers.isEmpty {
+                                emptyStateView
+                            } else {
+                                VStack(spacing: 0) {
+                                    ForEach(linkedCalendars, id: \.self) { member in
+                                        memberRow(for: member)
+                                        
+                                        if member != linkedCalendars.last {
+                                            Divider().padding(.leading, 56)
+                                        }
+                                    }
+                                }
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                .padding(.horizontal, 16)
+                            }
+                        }
 
                         Spacer()
+                        
+                        Button(action: { showingAddMember = true }) {
+                            Text("Add Family Member")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                                .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 2)
+                        }
+                        .padding(.horizontal, 16)
                     }
                     .padding(.vertical, 24)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("My Family")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-
+                                .font(.system(size: 17, weight: .semibold))
                             Text("Back")
                         }
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : Color(red: 0.33, green: 0.33, blue: 0.33))
+                        .foregroundColor(.black)
                     }
                 }
             }
@@ -85,188 +126,137 @@ struct FamilySettingsView: View {
             print("Error deleting family member: \(nsError), \(nsError.userInfo)")
         }
     }
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.2.circle")
+                .font(.system(size: 48))
+                .foregroundColor(.gray)
 
-    // MARK: - Family Members Section
-    private var familyMembersSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Family Members")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                .padding(.horizontal, 16)
+            Text("No family members yet")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding(.horizontal, 16)
+    }
 
-            if familyMembers.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "person.2.circle")
-                        .font(.system(size: 48))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-
-                    Text("No family members yet")
-                        .font(.system(size: 16, weight: .medium, design: .default))
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 48)
-                .glassyCard(padding: 0)
-                .padding(.horizontal, 16)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(linkedCalendars, id: \.self) { member in
-                        GlassyGridItem(action: {
-                            withAnimation {
-                                if expandedMember?.id == member.id {
-                                    expandedMember = nil
-                                } else {
-                                    expandedMember = member
-                                }
-                            }
-                        }) {
-                            VStack(spacing: 0) {
-                                HStack(spacing: 16) {
-                                    if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
-                                        Circle()
-                                            .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
-                                            .frame(width: 16, height: 16)
-                                    } else {
-                                        Circle()
-                                            .fill(Color.gray)
-                                            .frame(width: 16, height: 16)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(member.name ?? "Unknown")
-                                            .font(.system(size: 16, weight: .semibold, design: .default))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "calendar")
-                                                .font(.system(size: 12, weight: .regular))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-
-                                            Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
-                                                .font(.system(size: 13, weight: .regular, design: .default))
-                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                        }
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: expandedMember?.id == member.id ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                }
-                                .padding(.bottom, expandedMember?.id == member.id ? 16 : 0)
-
-                                // Expanded content - Calendars
-                                if expandedMember?.id == member.id, let memberCals = member.memberCalendars?.allObjects as? [FamilyMemberCalendar] {
-                                    let sortedCals = memberCals.sorted { ($0.isAutoLinked && !$1.isAutoLinked) || ($0.isAutoLinked == $1.isAutoLinked && ($0.calendarName ?? "") < ($1.calendarName ?? "")) }
-
-                                    Divider()
-                                        .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                    VStack(spacing: 0) {
-                                        ForEach(sortedCals, id: \.self) { cal in
-                                            HStack(spacing: 12) {
-                                                Circle()
-                                                    .fill(Color.fromHex(cal.calendarColorHex ?? "#007AFF"))
-                                                    .frame(width: 10, height: 10)
-
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(cal.calendarName ?? "Unknown")
-                                                        .font(.system(size: 14, weight: .regular))
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-                                                }
-
-                                                Spacer()
-
-                                                if cal.isAutoLinked {
-                                                    Image(systemName: "lock.fill")
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                                }
-                                            }
-                                            .padding(.vertical, 12)
-                                            .opacity(cal.isAutoLinked ? 0.6 : 1.0)
-
-                                            if cal.id != sortedCals.last?.id {
-                                                Divider()
-                                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-                                            }
-                                        }
-                                    }
-
-                                    Divider()
-                                        .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                    // Action buttons in expanded section
-                                    VStack(spacing: 0) {
-                                        Button(action: { selectedMember = member }) {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: "pencil.circle.fill")
-                                                    .font(.system(size: 16))
-
-                                                Text("Select Calendars")
-                                                    .font(.system(size: 14, weight: .semibold))
-                                            }
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        Divider()
-                                            .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                        Button(action: { editingMember = member }) {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: "square.and.pencil")
-                                                    .font(.system(size: 16))
-
-                                                Text("Edit Member")
-                                                    .font(.system(size: 14, weight: .semibold))
-                                            }
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        Divider()
-                                            .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                        Button(action: { deleteMember(member) }) {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: "trash.fill")
-                                                    .font(.system(size: 16))
-
-                                                Text("Delete Member")
-                                                    .font(.system(size: 14, weight: .semibold))
-                                            }
-                                            .foregroundColor(.red)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                            }
-                        }
-                        .allowsHitTesting(true)
-                        .padding(.horizontal, 16)
+    private func memberRow(for member: FamilyMember) -> some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                withAnimation {
+                    if expandedMember?.id == member.id {
+                        expandedMember = nil
+                    } else {
+                        expandedMember = member
                     }
                 }
-            }
+            }) {
+                HStack(spacing: 16) {
+                    if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
+                        Circle()
+                            .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                            .frame(width: 32, height: 32)
+                    } else {
+                        Circle()
+                            .fill(Color.gray)
+                            .frame(width: 32, height: 32)
+                    }
 
-            Button(action: { showingAddMember = true }) {
-                Text("Add Family Member")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentFillStyle() : AnyShapeStyle(Color(red: 0.33, green: 0.33, blue: 0.33)))
-                    .cornerRadius(16)
-                    .shadow(color: themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(member.name ?? "Unknown")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+
+                        Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: expandedMember?.id == member.id ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.gray.opacity(0.5))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 16)
+            .buttonStyle(.plain)
+
+            // Expanded content
+            if expandedMember?.id == member.id {
+                expandedContent(for: member)
+            }
+        }
+    }
+    
+    private func expandedContent(for member: FamilyMember) -> some View {
+        VStack(spacing: 0) {
+            Divider()
+            
+            if let memberCals = member.memberCalendars?.allObjects as? [FamilyMemberCalendar] {
+                let sortedCals = memberCals.sorted { ($0.isAutoLinked && !$1.isAutoLinked) || ($0.isAutoLinked == $1.isAutoLinked && ($0.calendarName ?? "") < ($1.calendarName ?? "")) }
+                
+                ForEach(sortedCals, id: \.self) { cal in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(Color.fromHex(cal.calendarColorHex ?? "#007AFF"))
+                            .frame(width: 8, height: 8)
+
+                        Text(cal.calendarName ?? "Unknown")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+
+                        Spacer()
+
+                        if cal.isAutoLinked {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color(hex: "F9F9F9"))
+                }
+            }
+            
+            Divider()
+            
+            // Actions
+            HStack(spacing: 0) {
+                Button(action: { selectedMember = member }) {
+                    Label("Calendars", systemImage: "pencil.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                
+                Divider().frame(height: 24)
+                
+                Button(action: { editingMember = member }) {
+                    Label("Edit", systemImage: "square.and.pencil")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                
+                Divider().frame(height: 24)
+                
+                Button(action: { deleteMember(member) }) {
+                    Label("Delete", systemImage: "trash.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+            }
+            .background(Color(hex: "F9F9F9"))
         }
     }
 }

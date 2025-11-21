@@ -18,26 +18,30 @@ struct DriversListView: View {
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+                
                 ScrollView {
                     VStack(spacing: 24) {
                         if drivers.isEmpty {
                             VStack(spacing: 12) {
                                 Image(systemName: "car.fill")
                                     .font(.system(size: 48))
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    .foregroundColor(.gray)
                                 Text("No Drivers")
                                     .font(.headline)
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .gray)
+                                    .foregroundColor(.primary)
                                 Text("Add drivers to manage who can drive to events")
                                     .font(.subheadline)
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                    .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 48)
-                            .glassyCard(padding: 0)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                             .padding(.horizontal, 16)
                         } else {
                             VStack(spacing: 0) {
@@ -48,21 +52,21 @@ struct DriversListView: View {
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     Text(driver.name ?? "Unknown")
                                                         .font(.headline)
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                                        .foregroundColor(.primary)
                                                     if let phone = driver.phone, !phone.isEmpty {
                                                         Text(phone)
                                                             .font(.subheadline)
-                                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                            .foregroundColor(.gray)
                                                     }
                                                     if let email = driver.email, !email.isEmpty {
                                                         Text(email)
                                                             .font(.subheadline)
-                                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                            .foregroundColor(.gray)
                                                     }
                                                 }
                                                 Spacer()
                                                 Image(systemName: "chevron.right")
-                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                                                    .foregroundColor(.gray.opacity(0.5))
                                             }
                                             .padding()
                                         }
@@ -71,12 +75,13 @@ struct DriversListView: View {
                                         if driver.id != drivers.last?.id {
                                             Divider()
                                                 .padding(.horizontal, 16)
-                                                .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
                                         }
                                     }
                                 }
                             }
-                            .glassyCard(padding: 0)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                             .padding(.horizontal, 16)
                         }
                     }
@@ -84,6 +89,7 @@ struct DriversListView: View {
                 }
             }
             .navigationTitle("Drivers")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
@@ -92,13 +98,13 @@ struct DriversListView: View {
                                 .font(.system(size: 14, weight: .semibold))
                             Text("Back")
                         }
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
+                        .foregroundColor(.black)
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showingAddDriver = true }) {
                         Image(systemName: "plus")
-                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
+                            .foregroundColor(.blue)
                     }
                 }
             }
