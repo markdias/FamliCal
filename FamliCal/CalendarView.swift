@@ -67,7 +67,10 @@ struct CalendarView: View {
     }()
     private var theme: AppTheme { themeManager.selectedTheme }
     private var secondaryTextColor: Color { theme.mutedTagColor }
-    private var selectedDate: Binding<Date> { $selectedDateBinding }
+    private var selectedDate: Date {
+        get { selectedDateBinding }
+        nonmutating set { selectedDateBinding = newValue }
+    }
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     private static let monthFormatter: DateFormatter = {
@@ -1169,7 +1172,8 @@ struct GroupedDayEvent: Identifiable {
 }
 
 #Preview {
-    CalendarView()
+    @Previewable @State var selectedDate = Date()
+    CalendarView(selectedDateBinding: $selectedDate)
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .environmentObject(ThemeManager())
 }
