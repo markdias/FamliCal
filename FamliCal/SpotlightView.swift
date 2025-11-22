@@ -51,6 +51,8 @@ struct SpotlightView: View {
         return formatter
     }()
 
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomLeading) {
@@ -79,12 +81,24 @@ struct SpotlightView: View {
                         } else if events.isEmpty {
                             emptyStateView
                         } else {
-                            VStack(alignment: .leading, spacing: 12) {
+                            let isLandscape = verticalSizeClass == .compact
+                            let columns = isLandscape
+                                ? [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+                                : [GridItem(.flexible())]
+
+                            LazyVGrid(columns: columns, spacing: 12) {
                                 ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
                                     if spotlightShowGapsBetweenEvents,
                                        index > 0,
                                        let gapText = gapText(between: events[index - 1], and: event) {
-                                        gapLabel(gapText)
+                                        // In grid, gap label might need to span full width or be handled differently
+                                        // For simplicity in grid, we might hide it or show it in a full-width item
+                                        // But LazyVGrid doesn't support full-width items easily mixed in without Section
+                                        // Let's just show it if not landscape, or try to handle it.
+                                        // For now, let's only show gaps in portrait (list) mode to avoid grid layout issues
+                                        if !isLandscape {
+                                            gapLabel(gapText)
+                                        }
                                     }
 
                                     Button(action: {
@@ -123,6 +137,7 @@ struct SpotlightView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
         .onAppear(perform: setupView)
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
         .onDisappear(perform: cleanupView)

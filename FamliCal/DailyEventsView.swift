@@ -20,7 +20,7 @@ struct DailyEventsView: View {
     private let overlappingEventSpacing: CGFloat = 4
     private let memberColumnSpacing: CGFloat = 8
     private let allDayTitleLineHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight
-    private let allDayRowHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight + 4
+    private let allDayRowHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight * 2 + 8
     private let calendar = Calendar.current
     private var theme: AppTheme { themeManager.selectedTheme }
 
@@ -279,8 +279,9 @@ struct DailyEventsView: View {
 
             Spacer()
         }
-        .frame(height: allDayRowHeight)
+        .frame(minHeight: allDayRowHeight, alignment: .topLeading)
         .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color(event.color).opacity(isPast ? 0.10 : 0.15))
         .cornerRadius(6)
         .padding(.horizontal, 8)

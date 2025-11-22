@@ -16,6 +16,7 @@ struct FamilyView: View {
     var onChangeViewRequested: (() -> Void)? = nil
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @AppStorage("eventsPerPerson") private var eventsPerPerson: Int = 3
     @AppStorage("spotlightEventsPerPerson") private var spotlightEventsPerPerson: Int = 5
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
@@ -101,6 +102,7 @@ struct FamilyView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
         }
+        .navigationViewStyle(.stack)
         .sheet(isPresented: $showingEventDetail) {
             if let event = selectedEvent {
                 EventDetailView(event: event)
@@ -119,6 +121,7 @@ struct FamilyView: View {
                             UserDefaults.standard.set(spotlightEventsPerPerson, forKey: "spotlightEventsPerPerson")
                         }
                 }
+                .navigationViewStyle(.stack)
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -311,11 +314,16 @@ struct FamilyView: View {
     }
 
     private var eventsListView: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        let isLandscape = verticalSizeClass == .compact
+        
+        return VStack(alignment: .leading, spacing: 24) {
             // MARK: Next Events Section
             VStack(alignment: .leading, spacing: 16) {
+                let columns = isLandscape 
+                    ? Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
+                    : [GridItem(.flexible()), GridItem(.flexible())]
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                LazyVGrid(columns: columns, spacing: 12) {
                     ForEach($memberEvents) { $memberGroup in
                         if let nextEvent = memberGroup.nextEvent,
                            !nextEvent.isAllDay,
@@ -333,106 +341,170 @@ struct FamilyView: View {
                 .padding(.horizontal, 16)
             }
 
+            // MARK: Important Events Section
+            let allImportantEvents = memberEvents
+                .flatMap { $0.upcomingEvents }
+                .filter { $0.isImportant }
+                .reduce(into: [GroupedEvent]()) { result, event in
+                    if !result.contains(where: { $0.eventIdentifier == event.eventIdentifier }) {
+                        result.append(event)
+                    }
+                }
+                .sorted { $0.startDate < $1.startDate }
+
+            if !allImportantEvents.isEmpty {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Important Events")
+                        .font(.system(size: 16, weight: .semibold))
+                        .padding(.horizontal, 16)
+
+                    if isLandscape {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], spacing: 12) {
+                            ForEach(allImportantEvents, id: \.id) { event in
+                                eventButton(for: event)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(allImportantEvents, id: \.id) { event in
+                                eventButton(for: event)
+                            }
+                        }
+                    }
+                }
+            }
+
             // MARK: Upcoming Events Section
             VStack(alignment: .leading, spacing: 16) {
                 Text("Upcoming Events")
                     .font(.system(size: 16, weight: .semibold))
                     .padding(.horizontal, 16)
 
-                VStack(alignment: .leading, spacing: 20) {
-                    ForEach(memberEvents) { memberGroup in
-                        if !memberGroup.upcomingEvents.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                // Member name header
-                                Text(memberGroup.memberName)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(secondaryTextColor)
-                                    .padding(.horizontal, 16)
-
-                                // Events for this member (limited by eventsPerPerson, only future events)
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(memberGroup.upcomingEvents, id: \.id) { groupedEvent in
-                                        Button(action: {
-                                            selectedEvent = UpcomingCalendarEvent(
-                                                id: groupedEvent.eventIdentifier,
-                                                title: groupedEvent.title,
-                                                location: groupedEvent.location,
-                                                startDate: groupedEvent.startDate,
-                                                endDate: groupedEvent.endDate,
-                                                calendarID: groupedEvent.calendarID,
-                                                calendarColor: groupedEvent.memberColor,
-                                                calendarTitle: groupedEvent.calendarTitle,
-                                                hasRecurrence: groupedEvent.hasRecurrence,
-                                                recurrenceRule: nil,
-                                                isAllDay: groupedEvent.isAllDay
-                                            )
-                                            showingEventDetail = true
-                                        }) {
-                                            eventCard(groupedEvent)
-                                        }
-                                        .buttonStyle(.plain)
-                                        .contextMenu {
-                                            let event = UpcomingCalendarEvent(
-                                                id: groupedEvent.eventIdentifier,
-                                                title: groupedEvent.title,
-                                                location: groupedEvent.location,
-                                                startDate: groupedEvent.startDate,
-                                                endDate: groupedEvent.endDate,
-                                                calendarID: groupedEvent.calendarID,
-                                                calendarColor: groupedEvent.memberColor,
-                                                calendarTitle: groupedEvent.calendarTitle,
-                                                hasRecurrence: groupedEvent.hasRecurrence,
-                                                recurrenceRule: nil,
-                                                isAllDay: groupedEvent.isAllDay
-                                            )
-
-                                            Button(action: { duplicateEvent(event) }) {
-                                                Label("Duplicate", systemImage: "doc.on.doc")
-                                            }
-
-                                            // Move to calendar
-                                            Menu {
-                                                ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
-                                                    Button(action: {
-                                                        moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
-                                                    }) {
-                                                        HStack {
-                                                            Text(calendar.title)
-                                                            if calendar.calendarIdentifier == event.calendarID {
-                                                                Image(systemName: "checkmark")
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            } label: {
-                                                Label("Move to Calendar", systemImage: "calendar.badge.plus")
-                                            }
-
-                                            Divider()
-
-                                            // Delete action
-                                            if groupedEvent.hasRecurrence {
-                                                Menu {
-                                                    Button(action: { confirmDelete(event, span: .thisEvent) }) {
-                                                        Label("Delete This Event", systemImage: "trash")
-                                                    }
-                                                    Button(role: .destructive, action: { confirmDelete(event, span: .futureEvents) }) {
-                                                        Label("Delete This & Future Events", systemImage: "trash")
-                                                    }
-                                                } label: {
-                                                    Label("Delete", systemImage: "trash")
-                                                }
-                                            } else {
-                                                Button(role: .destructive, action: { confirmDelete(event, span: .thisEvent) }) {
-                                                    Label("Delete", systemImage: "trash")
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                if isLandscape {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 20, alignment: .top), GridItem(.flexible(), spacing: 20, alignment: .top)], spacing: 20) {
+                        ForEach(memberEvents) { memberGroup in
+                            if !memberGroup.upcomingEvents.isEmpty {
+                                memberUpcomingEventsColumn(memberGroup: memberGroup)
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
+                } else {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(memberEvents) { memberGroup in
+                            if !memberGroup.upcomingEvents.isEmpty {
+                                memberUpcomingEventsColumn(memberGroup: memberGroup)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func memberUpcomingEventsColumn(memberGroup: MemberEventGroup) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Member name header
+            Text(memberGroup.memberName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(secondaryTextColor)
+                .padding(.horizontal, verticalSizeClass == .compact ? 0 : 16)
+
+            // Events for this member (limited by eventsPerPerson, only future events)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(memberGroup.upcomingEvents, id: \.id) { groupedEvent in
+                    eventButton(for: groupedEvent)
+                }
+            }
+        }
+    }
+
+    private func eventButton(for groupedEvent: GroupedEvent) -> some View {
+        Button(action: {
+            selectedEvent = UpcomingCalendarEvent(
+                id: groupedEvent.eventIdentifier,
+                title: groupedEvent.title,
+                location: groupedEvent.location,
+                startDate: groupedEvent.startDate,
+                endDate: groupedEvent.endDate,
+                calendarID: groupedEvent.calendarID,
+                calendarColor: groupedEvent.memberColor,
+                calendarTitle: groupedEvent.calendarTitle,
+                hasRecurrence: groupedEvent.hasRecurrence,
+                recurrenceRule: nil,
+                isAllDay: groupedEvent.isAllDay
+            )
+            showingEventDetail = true
+        }) {
+            eventCard(groupedEvent)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            let event = UpcomingCalendarEvent(
+                id: groupedEvent.eventIdentifier,
+                title: groupedEvent.title,
+                location: groupedEvent.location,
+                startDate: groupedEvent.startDate,
+                endDate: groupedEvent.endDate,
+                calendarID: groupedEvent.calendarID,
+                calendarColor: groupedEvent.memberColor,
+                calendarTitle: groupedEvent.calendarTitle,
+                hasRecurrence: groupedEvent.hasRecurrence,
+                recurrenceRule: nil,
+                isAllDay: groupedEvent.isAllDay
+            )
+
+            Button(action: { duplicateEvent(event) }) {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+
+            // Mark/Unmark as Important
+            if groupedEvent.isImportant {
+                Button(action: { toggleImportance(for: event, isImportant: false) }) {
+                    Label("Unmark Important", systemImage: "star.slash")
+                }
+            } else {
+                Button(action: { toggleImportance(for: event, isImportant: true) }) {
+                    Label("Mark as Important", systemImage: "star")
+                }
+            }
+
+            // Move to calendar
+            Menu {
+                ForEach(availableCalendars, id: \.calendarIdentifier) { calendar in
+                    Button(action: {
+                        moveEventToCalendar(event, calendarID: calendar.calendarIdentifier)
+                    }) {
+                        HStack {
+                            Text(calendar.title)
+                            if calendar.calendarIdentifier == event.calendarID {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label("Move to Calendar", systemImage: "calendar.badge.plus")
+            }
+
+            Divider()
+
+            // Delete action
+            if groupedEvent.hasRecurrence {
+                Menu {
+                    Button(action: { confirmDelete(event, span: .thisEvent) }) {
+                        Label("Delete This Event", systemImage: "trash")
+                    }
+                    Button(role: .destructive, action: { confirmDelete(event, span: .futureEvents) }) {
+                        Label("Delete This & Future Events", systemImage: "trash")
+                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            } else {
+                Button(role: .destructive, action: { confirmDelete(event, span: .thisEvent) }) {
+                    Label("Delete", systemImage: "trash")
                 }
             }
         }
@@ -526,7 +598,7 @@ struct FamilyView: View {
 
         return ZStack(alignment: .leading) {
             RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .fill(theme.cardBackground)
+                .fill(groupedEvent.isImportant ? Color.orange.opacity(0.15) : theme.cardBackground)
 
             // Colored date panel that fills the card height with rounded left edge
             Group {
@@ -648,6 +720,17 @@ struct FamilyView: View {
             RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
                 .stroke(theme.cardStroke, lineWidth: 1)
         )
+        .overlay(
+            Group {
+                if groupedEvent.isImportant {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.orange)
+                        .padding(8)
+                }
+            },
+            alignment: .bottomTrailing
+        )
     }
 
     // MARK: - View Lifecycle
@@ -709,6 +792,12 @@ struct FamilyView: View {
             }
 
             let now = Date()
+
+            // Fetch important events
+            let importantRequest = FamilyEvent.fetchRequest()
+            importantRequest.predicate = NSPredicate(format: "isImportant == YES")
+            let importantEvents = try? viewContext.fetch(importantRequest)
+            let importantEventIDs = Set(importantEvents?.compactMap { $0.eventIdentifier } ?? [])
 
             // Build map of member → their calendar IDs (from memberCalendarLinks and shared calendars)
             var memberCalendarMap: [NSManagedObjectID: (member: FamilyMember, calendars: Set<String>)] = [:]
@@ -778,7 +867,8 @@ struct FamilyView: View {
                                 hasRecurrence: event.hasRecurrence,
                                 recurrenceRule: event.recurrenceRule,
                                 isAllDay: occurrence.isAllDay,
-                                driverName: driverName
+                                driverName: driverName,
+                                isImportant: importantEventIDs.contains(occurrence.id)
                             ))
                         }
                     } else {
@@ -801,7 +891,8 @@ struct FamilyView: View {
                             hasRecurrence: event.hasRecurrence,
                             recurrenceRule: event.recurrenceRule,
                             isAllDay: event.isAllDay,
-                            driverName: driverName
+                            driverName: driverName,
+                            isImportant: importantEventIDs.contains(event.id)
                         ))
                     }
                 }
@@ -913,7 +1004,8 @@ struct FamilyView: View {
                     memberColors: updatedColors,
                     hasRecurrence: existing.hasRecurrence || event.hasRecurrence,
                     isAllDay: existing.isAllDay,
-                    driverName: existing.driverName ?? event.driverName
+                    driverName: existing.driverName ?? event.driverName,
+                    isImportant: existing.isImportant || event.isImportant
                 )
             } else {
                 grouped[key] = GroupedEvent(
@@ -932,7 +1024,8 @@ struct FamilyView: View {
                     memberColors: [event.memberColor],
                     hasRecurrence: event.hasRecurrence,
                     isAllDay: event.isAllDay,
-                    driverName: event.driverName
+                    driverName: event.driverName,
+                    isImportant: event.isImportant
                 )
             }
         }
@@ -1114,6 +1207,34 @@ struct FamilyView: View {
         }
     }
 
+    private func toggleImportance(for event: UpcomingCalendarEvent, isImportant: Bool) {
+        let fetchRequest = FamilyEvent.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "eventIdentifier == %@", event.id)
+
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            let familyEvent: FamilyEvent
+
+            if let existing = results.first {
+                familyEvent = existing
+            } else {
+                familyEvent = FamilyEvent(context: viewContext)
+                familyEvent.id = UUID()
+                familyEvent.eventGroupId = UUID()
+                familyEvent.eventIdentifier = event.id
+                familyEvent.calendarId = event.calendarID
+                familyEvent.createdAt = Date()
+            }
+
+            familyEvent.isImportant = isImportant
+            try viewContext.save()
+            print("✅ Toggled importance for event \(event.title): \(isImportant)")
+            loadNextEvents()
+        } catch {
+            print("❌ Failed to toggle importance: \(error.localizedDescription)")
+        }
+    }
+
     private func confirmDelete(_ event: UpcomingCalendarEvent, span: EKSpan) {
         pendingDeleteEvent = event
         pendingDeleteSpan = span
@@ -1243,6 +1364,7 @@ private struct EventItem: Identifiable {
     let recurrenceRule: EKRecurrenceRule?
     let isAllDay: Bool
     let driverName: String?
+    let isImportant: Bool
 }
 
 private struct GroupedEvent: Identifiable {
@@ -1262,6 +1384,7 @@ private struct GroupedEvent: Identifiable {
     let hasRecurrence: Bool
     let isAllDay: Bool
     let driverName: String?
+    let isImportant: Bool
 }
 
 private struct MemberEventGroup: Identifiable {
