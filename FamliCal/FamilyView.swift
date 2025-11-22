@@ -490,11 +490,14 @@ struct FamilyView: View {
                 .stroke(theme.cardStroke, lineWidth: 1)
         )
         .overlay(
-            // Left side bar - positioned outside the card, full height
+            // Left side bar - positioned outside the card, full height with rounded corners
             Rectangle()
                 .fill(barColor)
                 .frame(width: barWidth)
-                .cornerRadius(barWidth / 2)
+                .clipShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 12,
+                    bottomLeadingRadius: 12
+                ))
                 .frame(maxHeight: .infinity, alignment: .center),
             alignment: .leading
         )
