@@ -18,8 +18,8 @@ struct NextEventWidget: Widget {
             NextEventWidgetView(entry: entry)
         }
         .configurationDisplayName("Next Family Event")
-        .description("Shows the next upcoming event for your family members")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .description("Shows the next upcoming event for your family or a specific member")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 

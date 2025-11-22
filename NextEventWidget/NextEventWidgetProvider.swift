@@ -282,8 +282,8 @@ struct NextEventProvider: AppIntentTimelineProvider {
             let targetMemberName: String? = {
                 let selectedMode = intent?.mode ?? .familyNext
                 guard selectedMode == .memberNext else { return nil }
-                let name = intent?.memberName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                if !name.isEmpty && name.lowercased() != "auto" { return name }
+                let name = intent?.selectedMemberName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !name.isEmpty { return name }
                 return defaultMemberName
             }()
 

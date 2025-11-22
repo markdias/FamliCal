@@ -26,9 +26,8 @@ struct NextEventWidgetView: View {
 
     var body: some View {
         ZStack {
-            // No background - let the system handle it
             if let event = entry.event, let member = entry.familyMember {
-                // Content with event - matches FamilyView's nextEventCard design
+                // Content with event - expands edge-to-edge
                 eventCardContent(event: event, member: member)
             } else if let error = entry.errorMessage {
                 // Error state
@@ -45,7 +44,6 @@ struct NextEventWidgetView: View {
 
                     Spacer()
                 }
-                .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
                 // Loading/placeholder state
@@ -59,17 +57,15 @@ struct NextEventWidgetView: View {
 
                     Spacer()
                 }
-                .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.zero)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .widgetURL(deepLinkURL)
         .widgetBackground()
     }
 
-    // Event card matching FamilyView design - expanded to fill widget
+    // Event card matching FamilyView design - expanded to fill widget edge-to-edge
     private func eventCardContent(event: WidgetEventData, member: FamilyMemberData) -> some View {
         let resolvedUIColor = UIColor(hex: event.colorHex, fallback: UIColor(hex: member.colorHex))
         let barColor = Color(resolvedUIColor)
@@ -80,23 +76,15 @@ struct NextEventWidgetView: View {
         let timeRange = timeRangeFormatter(startDate: event.startDate, endDate: event.endDate)
 
         return ZStack(alignment: .topLeading) {
-            // Card background - no rounded corners for edge-to-edge
+            // Card background - fills entire widget
             Color(UIColor.secondarySystemBackground)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Card content
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
                 // Left side bar
-                VStack(spacing: 0) {
-                    barColor
-                        .frame(width: barWidth)
-
-                    barColor
-                        .frame(width: barWidth)
-
-                    barColor
-                        .frame(width: barWidth)
-                }
-                .frame(maxWidth: barWidth, maxHeight: .infinity, alignment: .topLeading)
+                barColor
+                    .frame(width: barWidth)
 
                 VStack(alignment: .leading, spacing: 6) {
                     // Member name
@@ -131,8 +119,8 @@ struct NextEventWidgetView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(12)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func getEventStatus(_ event: WidgetEventData) -> (status: String, color: Color) {
