@@ -12,86 +12,24 @@ import WidgetKit
 struct NextEventWidgetView: View {
     let entry: NextEventProvider.Entry
 
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM"
+        return formatter
+    }()
+
+    private static let dayOfWeekFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter
+    }()
+
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(UIColor.systemBackground),
-                    Color(UIColor.secondarySystemBackground)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
+            // No background - let the system handle it
             if let event = entry.event, let member = entry.familyMember {
-                // Content with event
-                VStack(alignment: .leading, spacing: 8) {
-                    // Header: Member avatar and name
-                    HStack(spacing: 8) {
-                        // Avatar
-                        ZStack {
-                            Circle()
-                                .fill(Color(UIColor(hex: member.colorHex)))
-
-                            Text(member.initials)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: 32, height: 32)
-
-                        // Member name
-                        Text(member.name)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        // Status badge
-                        StatusBadge(event: event)
-                            .font(.system(size: 10, weight: .medium))
-                    }
-
-                    Divider()
-                        .opacity(0.5)
-
-                    // Event title
-                    Text(event.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-
-                    // Time
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 11))
-
-                        Text(event.startDate.formatted(date: .omitted, time: .shortened))
-                            .font(.system(size: 12))
-
-                        Spacer()
-                    }
-                    .foregroundColor(.secondary)
-
-                    // Location (if available)
-                    if let location = event.location, !location.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 11))
-
-                            Text(location)
-                                .font(.system(size: 11))
-                                .lineLimit(1)
-
-                            Spacer()
-                        }
-                        .foregroundColor(.secondary)
-                    }
-
-                    Spacer()
-                }
-                .padding(12)
+                // Content with event - matches FamilyView's nextEventCard design
+                eventCardContent(event: event, member: member)
             } else if let error = entry.errorMessage {
                 // Error state
                 VStack(alignment: .center, spacing: 8) {
@@ -125,7 +63,106 @@ struct NextEventWidgetView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.zero)
         .widgetURL(deepLinkURL)
+        .widgetBackground()
+    }
+
+    // Event card matching FamilyView design - expanded to fill widget
+    private func eventCardContent(event: WidgetEventData, member: FamilyMemberData) -> some View {
+        let resolvedUIColor = UIColor(hex: event.colorHex, fallback: UIColor(hex: member.colorHex))
+        let barColor = Color(resolvedUIColor)
+        let barWidth: CGFloat = 5
+        let (statusText, statusColor) = getEventStatus(event)
+        let dayOfWeek = Self.dayOfWeekFormatter.string(from: event.startDate)
+        let dateStr = Self.dateFormatter.string(from: event.startDate)
+        let timeRange = timeRangeFormatter(startDate: event.startDate, endDate: event.endDate)
+
+        return ZStack(alignment: .topLeading) {
+            // Card background - no rounded corners for edge-to-edge
+            Color(UIColor.secondarySystemBackground)
+
+            // Card content
+            HStack(spacing: 0) {
+                // Left side bar
+                VStack(spacing: 0) {
+                    barColor
+                        .frame(width: barWidth)
+
+                    barColor
+                        .frame(width: barWidth)
+
+                    barColor
+                        .frame(width: barWidth)
+                }
+                .frame(maxWidth: barWidth, maxHeight: .infinity, alignment: .topLeading)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    // Member name
+                    Text(member.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    // Event title
+                    Text(event.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    Spacer(minLength: 0)
+
+                    // Day name and date
+                    Text("\(dayOfWeek), \(dateStr)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.secondary)
+
+                    // Time on its own line
+                    Text(timeRange)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.secondary)
+
+                    // Status
+                    Text(statusText)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(statusColor)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(12)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func getEventStatus(_ event: WidgetEventData) -> (status: String, color: Color) {
+        let now = Date()
+
+        // Check if event is in progress
+        if event.startDate <= now && now < event.endDate {
+            return ("In Progress", .orange)
+        }
+
+        // Check if event is upcoming soon (within 1 hour)
+        let oneHourFromNow = now.addingTimeInterval(3600)
+        if event.startDate > now && event.startDate <= oneHourFromNow {
+            return ("Starting Soon", Color(red: 0.33, green: 0.33, blue: 0.33))
+        }
+
+        // Default to upcoming
+        return ("Upcoming", .gray)
+    }
+
+    private func timeRangeFormatter(startDate: Date, endDate: Date) -> String {
+        let timeFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter
+        }()
+
+        let start = timeFormatter.string(from: startDate)
+        let end = timeFormatter.string(from: endDate)
+        return "\(start) – \(end)"
     }
 
     /// Generate deep link to event (to be handled by main app)
@@ -188,17 +225,71 @@ extension FamilyMemberData {
 
 /// Extension to create UIColor from hex string
 extension UIColor {
-    convenience init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        let scanner = Scanner(string: hex)
-        var rgbValue: UInt64 = 0
-        scanner.scanHexInt64(&rgbValue)
+    convenience init(hex: String, fallback: UIColor = UIColor(red: 0.33, green: 0.33, blue: 0.33, alpha: 1)) {
+        let cleaned = hex
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
 
-        let r = CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0
-        let g = CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0
-        let b = CGFloat(rgbValue & 0x0000FF) / 255.0
+        var value: UInt64 = 0
+        guard Scanner(string: cleaned).scanHexInt64(&value) else {
+            self.init(cgColor: fallback.cgColor)
+            return
+        }
 
-        self.init(red: r, green: g, blue: b, alpha: 1.0)
+        let r, g, b, a: CGFloat
+        switch cleaned.count {
+        case 6:
+            r = CGFloat((value & 0xFF0000) >> 16) / 255.0
+            g = CGFloat((value & 0x00FF00) >> 8) / 255.0
+            b = CGFloat(value & 0x0000FF) / 255.0
+            a = 1.0
+        case 8:
+            // Expect RRGGBBAA
+            r = CGFloat((value & 0xFF000000) >> 24) / 255.0
+            g = CGFloat((value & 0x00FF0000) >> 16) / 255.0
+            b = CGFloat((value & 0x0000FF00) >> 8) / 255.0
+            a = CGFloat(value & 0x000000FF) / 255.0
+        default:
+            // Fallback for unexpected lengths
+            self.init(cgColor: fallback.cgColor)
+            return
+        }
+
+        self.init(red: r, green: g, blue: b, alpha: a)
+    }
+}
+
+/// View extension for rounded corners on specific edges
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+/// Shape for rounding specific corners
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect,
+                                byRoundingCorners: corners,
+                                cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+extension View {
+    /// Apply a system-matching widget background on iOS 17+ and a plain background on earlier OS versions.
+    @ViewBuilder
+    func widgetBackground() -> some View {
+        if #available(iOS 17.0, *) {
+            containerBackground(for: .widget) {
+                Color(UIColor.systemBackground)
+            }
+        } else {
+            background(Color(UIColor.systemBackground))
+        }
     }
 }
 

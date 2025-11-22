@@ -8,12 +8,15 @@
 import SwiftUI
 import EventKit
 import Contacts
+import UserNotifications
 
 struct PermissionsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
+    @StateObject private var notificationManager = NotificationManager.shared
     @State private var calendarPermissionStatus = ""
     @State private var contactsPermissionStatus = ""
+    @State private var notificationPermissionStatus = ""
     @State private var showingPermissionAlert = false
     @State private var eventStore = EKEventStore()
 
@@ -82,7 +85,7 @@ struct PermissionsView: View {
                                         .font(.system(size: 20))
                                         .foregroundColor(.blue)
                                         .frame(width: 24, height: 24)
-                                    
+
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Contacts Permission")
                                             .font(.system(size: 16, weight: .medium))
@@ -99,7 +102,7 @@ struct PermissionsView: View {
                                         Text(getContactsPermissionText())
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(getContactsPermissionColor())
-                                        
+
                                         Image(systemName: getContactsPermissionIcon())
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(getContactsPermissionColor())
@@ -113,7 +116,52 @@ struct PermissionsView: View {
                             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                             .padding(.horizontal, 16)
                         }
-                        
+
+                        // Notifications Permissions Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Notifications")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 16)
+
+                            VStack(spacing: 0) {
+                                HStack(spacing: 16) {
+                                    Image(systemName: "bell")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.blue)
+                                        .frame(width: 24, height: 24)
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Notification Permission")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.primary)
+
+                                        Text("Reminders for events and activities")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.gray)
+                                    }
+
+                                    Spacer()
+
+                                    HStack(spacing: 6) {
+                                        Text(getNotificationPermissionText())
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(getNotificationPermissionColor())
+
+                                        Image(systemName: getNotificationPermissionIcon())
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(getNotificationPermissionColor())
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            .padding(.horizontal, 16)
+                        }
+
                         // Request Permission Buttons
                         VStack(spacing: 12) {
                             if getPermissionText() != "Granted" {
@@ -139,6 +187,18 @@ struct PermissionsView: View {
                                         .cornerRadius(12)
                                 }
                             }
+
+                            if getNotificationPermissionText() != "Granted" {
+                                Button(action: requestNotificationPermission) {
+                                    Text("Request Notification Permission")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
                         }
                         .padding(.horizontal, 16)
 
@@ -156,13 +216,22 @@ struct PermissionsView: View {
                                     description: "FamliCal needs access to your device calendars to display family events, birthdays, and shared calendar events."
                                 )
                                 .padding(.bottom, 12)
-                                
+
                                 Divider().padding(.leading, 40)
-                                
+
                                 PermissionInfoRow(
                                     icon: "person.crop.circle.fill.badge.plus",
                                     title: "Contacts Access",
                                     description: "FamliCal needs access to your contacts to let you quickly add drivers from your contact list when creating events."
+                                )
+                                .padding(.vertical, 12)
+
+                                Divider().padding(.leading, 40)
+
+                                PermissionInfoRow(
+                                    icon: "bell.badge",
+                                    title: "Notifications",
+                                    description: "FamliCal sends reminders before events to keep your family on schedule and alert you to last-minute changes."
                                 )
                                 .padding(.top, 12)
                             }
@@ -201,6 +270,7 @@ struct PermissionsView: View {
         .onAppear {
             checkCalendarPermission()
             checkContactsPermission()
+            checkNotificationPermission()
         }
     }
 
@@ -310,6 +380,56 @@ struct PermissionsView: View {
 
     private func getContactsPermissionColor() -> Color {
         switch contactsPermissionStatus {
+        case "Granted":
+            return .green
+        case "Denied", "Restricted":
+            return .red
+        case "Not Determined":
+            return .orange
+        default:
+            return .gray
+        }
+    }
+
+    private func checkNotificationPermission() {
+        Task {
+            let granted = await notificationManager.checkNotificationPermission()
+            await MainActor.run {
+                notificationPermissionStatus = granted ? "Granted" : "Denied"
+            }
+        }
+    }
+
+    private func requestNotificationPermission() {
+        Task {
+            let granted = await notificationManager.requestNotificationPermission()
+            await MainActor.run {
+                notificationPermissionStatus = granted ? "Granted" : "Denied"
+            }
+        }
+    }
+
+    private func getNotificationPermissionText() -> String {
+        notificationPermissionStatus.isEmpty ? "Checking..." : notificationPermissionStatus
+    }
+
+    private func getNotificationPermissionIcon() -> String {
+        switch notificationPermissionStatus {
+        case "Granted":
+            return "checkmark.circle.fill"
+        case "Denied":
+            return "xmark.circle.fill"
+        case "Restricted":
+            return "exclamationmark.circle.fill"
+        case "Not Determined":
+            return "questionmark.circle.fill"
+        default:
+            return "circle"
+        }
+    }
+
+    private func getNotificationPermissionColor() -> Color {
+        switch notificationPermissionStatus {
         case "Granted":
             return .green
         case "Denied", "Restricted":

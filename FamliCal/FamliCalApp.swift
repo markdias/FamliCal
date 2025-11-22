@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import WidgetKit
 
 @main
 struct FamliCalApp: App {
@@ -38,6 +39,15 @@ struct FamliCalApp: App {
         DispatchQueue.global(qos: .utility).async {
             PersistenceController.printStoreDiagnostics()
             print("🚀 FamliCal app launched")
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .NSManagedObjectContextDidSave,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Nudge widgets to reload quickly after data changes
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 

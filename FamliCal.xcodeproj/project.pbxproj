@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3a0192659a8a4bfcb239d9d3 /* NextEventWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 248EE1941C8C48C19FF54ED3 /* NextEventWidget.appex */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4BC37E97CDB642CFA7717A5C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,12 +33,6 @@
 			remoteInfo = FamliCal;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXBuildFile section */
-		3a0192659a8a4bfcb239d9d3 /* NextEventWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 248EE1941C8C48C19FF54ED3 /* NextEventWidget.appex */; };
-/* End PBXBuildFile section */
-
-
 
 /* Begin PBXCopyFilesBuildPhase section */
 		1BAA52DAC51B46DD976D7195 /* Embed Foundation Extensions */ = {
@@ -151,7 +149,7 @@
 			children = (
 				FD1B9A6D2ECB1ED700B8C72E /* FamliCal.app */,
 				FD1B9A812ECB1ED800B8C72E /* FamliCalTests.xctest */,
-				248EE1941C8C48C19FF54ED3 /* NextEventWidget */,
+				248EE1941C8C48C19FF54ED3 /* NextEventWidget.appex */,
 				FD1B9A8B2ECB1ED800B8C72E /* FamliCalUITests.xctest */,
 			);
 			name = Products;
@@ -179,7 +177,7 @@
 			packageProductDependencies = (
 			);
 			productName = NextEventWidget;
-			productReference = 248EE1941C8C48C19FF54ED3 /* NextEventWidget */;
+			productReference = 248EE1941C8C48C19FF54ED3 /* NextEventWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		FD1B9A6C2ECB1ED700B8C72E /* FamliCal */ = {

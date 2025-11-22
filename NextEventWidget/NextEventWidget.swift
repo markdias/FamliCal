@@ -7,13 +7,14 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
-@main
+@available(iOS 17.0, *)
 struct NextEventWidget: Widget {
     let kind: String = "NextEventWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: NextEventProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: NextEventConfigurationIntent.self, provider: NextEventProvider()) { entry in
             NextEventWidgetView(entry: entry)
         }
         .configurationDisplayName("Next Family Event")

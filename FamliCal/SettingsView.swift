@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var showingAppSettings = false
     @State private var showingNotifications = false
     @State private var showingPermissions = false
+    @State private var showingWidgetSettings = false
     @State private var showingHelp = false
 
     var body: some View {
@@ -57,6 +58,11 @@ struct SettingsView: View {
                                 
                                 Button(action: { showingAppSettings = true }) {
                                     SettingsRowView(iconName: "gearshape", title: "App Settings")
+                                }
+                                Divider().padding(.leading, 56)
+
+                                Button(action: { showingWidgetSettings = true }) {
+                                    SettingsRowView(iconName: "square.grid.2x2", title: "Widgets")
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -144,6 +150,11 @@ struct SettingsView: View {
         .sheet(isPresented: $showingPermissions) {
             NavigationView {
                 PermissionsView()
+            }
+        }
+        .sheet(isPresented: $showingWidgetSettings) {
+            NavigationView {
+                WidgetSettingsView()
             }
         }
         .sheet(isPresented: $showingHelp) {

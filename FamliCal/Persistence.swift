@@ -60,14 +60,20 @@ struct PersistenceController {
         } else {
             // Configure app groups for widget access
             let appGroupID = "group.com.markdias.famli"
-            let storeURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
-                .appendingPathComponent("FamliCal.sqlite")
 
-            if let storeURL = storeURL {
+            print("🔍 Persistence: Looking for app group container '\(appGroupID)'")
+            if let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
+                let storeURL = appGroupURL.appendingPathComponent("FamliCal.sqlite")
+                print("✅ Persistence: Found app group container at \(appGroupURL.path)")
+                print("   Store URL: \(storeURL.path)")
+
                 if let description = container.persistentStoreDescriptions.first {
                     description.url = storeURL
                     description.cloudKitContainerOptions = nil  // Disable CloudKit sync
+                    print("✅ Persistence: Configured store URL in description")
                 }
+            } else {
+                print("❌ Persistence: App group container not found!")
             }
 
             // Delete old store once to force recreation with new schema (includes Driver entity)
@@ -86,58 +92,56 @@ struct PersistenceController {
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
 
-    /// Delete old persistent store files once to force CoreData to recreate with current schema
-    /// This is necessary during development when the data model is updated with new entities/relationships
+    /// Delete old persistent store files to ensure fresh schema
+    /// Runs once per app version to handle schema changes during development
     private static func deleteOldPersistentStoreOnce() {
         let fileManager = FileManager.default
+        let appGroupID = "group.com.markdias.famli"
 
-        // Get the Application Support directory
-        guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            print("⚠️ Could not find Application Support directory")
-            return
-        }
+        // Try app group container first (new location)
+        if let appGroupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
+            let markerFile = appGroupURL.appendingPathComponent(".famli_store_migrated_v1")
 
-        // Construct paths for the SQLite store and its associated files
-        let storeURL = appSupportURL.appendingPathComponent("FamliCal.sqlite")
-        let shmURL = appSupportURL.appendingPathComponent("FamliCal.sqlite-shm")
-        let walURL = appSupportURL.appendingPathComponent("FamliCal.sqlite-wal")
-        let markerFile = appSupportURL.appendingPathComponent(".famli_store_migrated")
-
-        // Check if we've already migrated by looking for a marker file
-        if fileManager.fileExists(atPath: markerFile.path) {
-            return // Already performed migration, skip
-        }
-
-        // Attempt to delete each file
-        do {
-            var deletedAny = false
-
-            if fileManager.fileExists(atPath: storeURL.path) {
-                try fileManager.removeItem(at: storeURL)
-                print("✅ Deleted old FamliCal.sqlite store")
-                deletedAny = true
-            }
-            if fileManager.fileExists(atPath: shmURL.path) {
-                try fileManager.removeItem(at: shmURL)
-                print("✅ Deleted FamliCal.sqlite-shm")
-                deletedAny = true
-            }
-            if fileManager.fileExists(atPath: walURL.path) {
-                try fileManager.removeItem(at: walURL)
-                print("✅ Deleted FamliCal.sqlite-wal")
-                deletedAny = true
+            // Check if we've already migrated this version
+            if fileManager.fileExists(atPath: markerFile.path) {
+                return // Already performed migration for this version, skip
             }
 
-            if deletedAny {
-                // Create marker file to track that migration happened
-                // This file persists in the same location as the database
-                let success = fileManager.createFile(atPath: markerFile.path, contents: "migrated".data(using: .utf8), attributes: nil)
-                if success {
-                    print("✅ Store migration completed and marked")
+            // Construct paths for the SQLite store and its associated files in app group
+            let storeURL = appGroupURL.appendingPathComponent("FamliCal.sqlite")
+            let shmURL = appGroupURL.appendingPathComponent("FamliCal.sqlite-shm")
+            let walURL = appGroupURL.appendingPathComponent("FamliCal.sqlite-wal")
+
+            // Attempt to delete each file
+            do {
+                var deletedAny = false
+
+                if fileManager.fileExists(atPath: storeURL.path) {
+                    try fileManager.removeItem(at: storeURL)
+                    print("✅ Deleted old FamliCal.sqlite store from app group")
+                    deletedAny = true
                 }
+                if fileManager.fileExists(atPath: shmURL.path) {
+                    try fileManager.removeItem(at: shmURL)
+                    print("✅ Deleted FamliCal.sqlite-shm from app group")
+                    deletedAny = true
+                }
+                if fileManager.fileExists(atPath: walURL.path) {
+                    try fileManager.removeItem(at: walURL)
+                    print("✅ Deleted FamliCal.sqlite-wal from app group")
+                    deletedAny = true
+                }
+
+                // Always create marker file to track that migration happened for this version
+                let success = fileManager.createFile(atPath: markerFile.path, contents: "migrated_v1".data(using: .utf8), attributes: nil)
+                if success {
+                    print("✅ Store migration completed and marked (v1)")
+                } else if deletedAny {
+                    print("⚠️ Store deleted but could not create marker file")
+                }
+            } catch {
+                print("⚠️ Error managing persistent store in app group: \(error.localizedDescription)")
             }
-        } catch {
-            print("⚠️ Error deleting old persistent store: \(error.localizedDescription)")
         }
     }
 }

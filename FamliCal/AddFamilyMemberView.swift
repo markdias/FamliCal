@@ -286,10 +286,12 @@ struct AddFamilyMemberView: View {
 
         do {
             try viewContext.save()
+            print("✅ App: Family member '\(name)' saved successfully")
+            print("   Store URL: \(viewContext.persistentStoreCoordinator?.persistentStores.first?.url?.path ?? "unknown")")
             dismiss()
         } catch {
             let nsError = error as NSError
-            print("Error saving member: \(nsError), \(nsError.userInfo)")
+            print("❌ App: Error saving member '\(name)': \(nsError), \(nsError.userInfo)")
         }
     }
 
