@@ -23,7 +23,10 @@ struct FamilyView: View {
 
     @FetchRequest(
         entity: FamilyMember.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \FamilyMember.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)
+        ]
     )
     private var familyMembers: FetchedResults<FamilyMember>
 
@@ -42,7 +45,6 @@ struct FamilyView: View {
     @State private var memberEvents: [MemberEventGroup] = []
     @State private var eventsTask: Task<Void, Never>? = nil
     @State private var selectedEvent: UpcomingCalendarEvent? = nil
-    @State private var showingEventDetail = false
     @State private var spotlightMemberName: String? = nil
     @State private var eventStore = EKEventStore()
     @State private var refreshTimer: Timer? = nil
@@ -103,10 +105,8 @@ struct FamilyView: View {
             }
         }
         .navigationViewStyle(.stack)
-        .sheet(isPresented: $showingEventDetail) {
-            if let event = selectedEvent {
-                EventDetailView(event: event)
-            }
+        .sheet(item: $selectedEvent) { event in
+            EventDetailView(event: event)
         }
         .sheet(isPresented: Binding(
             get: { spotlightMemberName != nil },
@@ -435,7 +435,7 @@ struct FamilyView: View {
                 recurrenceRule: nil,
                 isAllDay: groupedEvent.isAllDay
             )
-            showingEventDetail = true
+            // showingEventDetail = true // No longer needed, setting selectedEvent triggers sheet
         }) {
             eventCard(groupedEvent)
         }

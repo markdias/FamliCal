@@ -15,7 +15,10 @@ struct FamilySettingsView: View {
 
     @FetchRequest(
         entity: FamilyMember.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)]
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \FamilyMember.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \FamilyMember.name, ascending: true)
+        ]
     )
     private var familyMembers: FetchedResults<FamilyMember>
 
@@ -38,27 +41,39 @@ struct FamilySettingsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // MARK: - Family Members Section
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Family Members")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 16)
+                            HStack {
+                                Text("Family Members")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.gray)
+                                
+                                Spacer()
+                                
+                                if !familyMembers.isEmpty {
+                                    EditButton()
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+                            }
+                            .padding(.horizontal, 16)
 
                             if familyMembers.isEmpty {
                                 emptyStateView
                             } else {
-                                VStack(spacing: 0) {
-                                    ForEach(linkedCalendars, id: \.self) { member in
+                                List {
+                                    ForEach(familyMembers) { member in
                                         memberRow(for: member)
-                                        
-                                        if member != linkedCalendars.last {
-                                            Divider().padding(.leading, 56)
-                                        }
+                                            .listRowInsets(EdgeInsets())
+                                            .listRowSeparator(.hidden)
+                                            .listRowBackground(Color.clear)
                                     }
+                                    .onMove(perform: moveMembers)
                                 }
+                                .listStyle(.plain)
+                                .frame(height: CGFloat(familyMembers.count * 70 + (expandedMember != nil ? 150 : 0))) // Dynamic height approximation
                                 .background(Color.white)
                                 .cornerRadius(12)
                                 .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                                 .padding(.horizontal, 16)
+                                .scrollDisabled(true) // Disable scrolling within the list, let the main ScrollView handle it
                             }
                         }
 
@@ -124,6 +139,22 @@ struct FamilySettingsView: View {
         } catch {
             let nsError = error as NSError
             print("Error deleting family member: \(nsError), \(nsError.userInfo)")
+        }
+    }
+    
+    private func moveMembers(from source: IndexSet, to destination: Int) {
+        var revisedItems = familyMembers.map { $0 }
+        revisedItems.move(fromOffsets: source, toOffset: destination)
+        
+        for (index, item) in revisedItems.enumerated() {
+            item.sortOrder = Int16(index)
+        }
+        
+        do {
+            try viewContext.save()
+        } catch {
+            let nsError = error as NSError
+            print("Error saving order: \(nsError), \(nsError.userInfo)")
         }
     }
     

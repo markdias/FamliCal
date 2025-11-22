@@ -17,7 +17,7 @@ struct AvailableCalendar {
     let sourceType: EKSourceType
 }
 
-struct UpcomingCalendarEvent {
+struct UpcomingCalendarEvent: Identifiable {
     let id: String
     let title: String
     let location: String?
