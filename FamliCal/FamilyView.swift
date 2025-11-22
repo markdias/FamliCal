@@ -440,7 +440,7 @@ struct FamilyView: View {
 
     private func nextEventCard(for memberGroup: MemberEventGroup, event: GroupedEvent) -> some View {
         let (statusText, _) = getEventStatus(event)
-        let barColor = Color(uiColor: event.memberColor)
+        let barColor = Color(uiColor: event.calendarColor)
         let barWidth: CGFloat = 5
 
         return ZStack(alignment: .topLeading) {
@@ -448,64 +448,63 @@ struct FamilyView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(theme.cardBackground)
 
-            // Card content
-            HStack(spacing: 0) {
-                // Left side bar inside the card
-                VStack(spacing: 0) {
-                    barColor
-                        .frame(width: barWidth)
-                        .cornerRadius(barWidth / 2, corners: [.topLeft])
+            // Card content without the bar
+            VStack(alignment: .leading, spacing: 6) {
+                // Member name
+                Text(memberGroup.memberName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
 
-                    barColor
-                        .frame(width: barWidth)
+                // Event title
+                Text(event.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
 
-                    barColor
-                        .frame(width: barWidth)
-                        .cornerRadius(barWidth / 2, corners: [.bottomLeft])
-                }
-                .frame(maxWidth: barWidth, maxHeight: .infinity, alignment: .topLeading)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Spacer(minLength: 0)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    // Member name
-                    Text(memberGroup.memberName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+                // Day name and date
+                Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(secondaryTextColor)
 
-                    // Event title
-                    Text(event.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-
-                    Spacer(minLength: 0)
-
-                    // Day name and date
-                    Text("\(Self.dayOfWeekFormatter.string(from: event.startDate)), \(Self.dateFormatter.string(from: event.startDate))")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(secondaryTextColor)
-
-                    // Time on its own line to avoid truncation
-                    if let timeRange = event.timeRange {
-                        Text(timeRange)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(secondaryTextColor)
-                    }
-
-                    // Status on separate line
-                    Text(statusText)
+                // Time on its own line to avoid truncation
+                if let timeRange = event.timeRange {
+                    Text(timeRange)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(secondaryTextColor)
                 }
-                .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
-                .padding(12)
+
+                // Status on separate line
+                Text(statusText)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(secondaryTextColor)
             }
+            .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
+            .padding(12)
         }
         .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .overlay(
+            // Left side bar - positioned outside the card
+            VStack(spacing: 0) {
+                barColor
+                    .frame(width: barWidth)
+                    .cornerRadius(barWidth / 2, corners: [.topLeft])
+
+                barColor
+                    .frame(width: barWidth)
+
+                barColor
+                    .frame(width: barWidth)
+                    .cornerRadius(barWidth / 2, corners: [.bottomLeft])
+            }
+            .frame(width: barWidth, height: 90, alignment: .topLeading),
+            alignment: .leading
         )
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
@@ -778,6 +777,7 @@ struct FamilyView: View {
                                 timeRange: occurrenceTimeRange,
                                 memberName: member.name ?? "Unknown",
                                 memberColor: event.calendarColor,
+                                calendarColor: event.calendarColor,
                                 calendarTitle: event.calendarTitle,
                                 calendarID: event.calendarID,
                                 hasRecurrence: event.hasRecurrence,
@@ -800,6 +800,7 @@ struct FamilyView: View {
                             timeRange: timeRange,
                             memberName: member.name ?? "Unknown",
                             memberColor: event.calendarColor,
+                            calendarColor: event.calendarColor,
                             calendarTitle: event.calendarTitle,
                             calendarID: event.calendarID,
                             hasRecurrence: event.hasRecurrence,
@@ -911,6 +912,7 @@ struct FamilyView: View {
                     endDate: existing.endDate,
                     memberNames: updatedNames,
                     memberColor: existing.memberColor,
+                    calendarColor: existing.calendarColor,
                     calendarTitle: existing.calendarTitle,
                     calendarID: existing.calendarID,
                     memberColors: updatedColors,
@@ -929,6 +931,7 @@ struct FamilyView: View {
                     endDate: event.endDate,
                     memberNames: [event.memberName],
                     memberColor: event.memberColor,
+                    calendarColor: event.calendarColor,
                     calendarTitle: event.calendarTitle,
                     calendarID: event.calendarID,
                     memberColors: [event.memberColor],
@@ -1238,6 +1241,7 @@ private struct EventItem: Identifiable {
     let timeRange: String?
     let memberName: String
     let memberColor: UIColor
+    let calendarColor: UIColor
     let calendarTitle: String
     let calendarID: String
     let hasRecurrence: Bool
@@ -1256,6 +1260,7 @@ private struct GroupedEvent: Identifiable {
     let endDate: Date
     var memberNames: [String]
     let memberColor: UIColor
+    let calendarColor: UIColor
     let calendarTitle: String
     let calendarID: String
     var memberColors: [UIColor] = []

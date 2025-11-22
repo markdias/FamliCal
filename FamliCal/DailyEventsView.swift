@@ -38,24 +38,24 @@ struct DailyEventsView: View {
             let activeMembers = currentActiveMembers
 
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(selectedDateString)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.cardBackground)
+                if !isLandscape {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(selectedDateString)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(theme.cardBackground)
 
-                    memberFilterView
-                        .padding(.bottom, 8)
-
-                    if isLandscape && !activeMembers.isEmpty {
-                        memberColumnsHeader(for: activeMembers, totalWidth: proxy.size.width)
+                        memberFilterView
                             .padding(.bottom, 8)
                     }
-                }
 
-                Divider()
+                    Divider()
+                } else if !activeMembers.isEmpty {
+                    memberColumnsHeader(for: activeMembers, totalWidth: proxy.size.width)
+                        .padding(.vertical, 4)
+                }
 
                 ScrollViewReader { scrollProxy in
                     ScrollView {
@@ -110,9 +110,14 @@ struct DailyEventsView: View {
             .background(theme.cardBackground)
             .cornerRadius(isLandscape ? 0 : 16)
             .overlay(
-                RoundedRectangle(cornerRadius: isLandscape ? 0 : 16)
-                    .stroke(theme.cardStroke, lineWidth: 1)
+                Group {
+                    if !isLandscape {
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(theme.cardStroke, lineWidth: 1)
+                    }
+                }
             )
+            .ignoresSafeArea(isLandscape ? .container : [], edges: .horizontal)
         }
         .onAppear {
             selectedMemberIDs = familyMembers.map { $0.objectID }

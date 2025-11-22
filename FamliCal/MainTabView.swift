@@ -9,6 +9,7 @@ import SwiftUI
 import CoreData
 
 struct MainTabView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     private enum ActiveView: String {
         case events
         case calendar
@@ -65,7 +66,7 @@ struct MainTabView: View {
             }
 
             // Floating action buttons
-            if activeView == .calendar {
+            if activeView == .calendar && verticalSizeClass != .compact {
                 VStack {
                     Spacer()
                     HStack(alignment: .center) {

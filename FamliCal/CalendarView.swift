@@ -14,6 +14,7 @@ import MapKit
 struct CalendarView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @AppStorage("autoRefreshInterval") private var autoRefreshInterval: Int = 5
     @AppStorage("defaultMapsApp") private var defaultMapsApp: String = "Apple Maps"
 
@@ -71,6 +72,7 @@ struct CalendarView: View {
         get { selectedDateBinding }
         nonmutating set { selectedDateBinding = newValue }
     }
+    private var isCompactHeight: Bool { verticalSizeClass == .compact }
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     private static let monthFormatter: DateFormatter = {
@@ -130,6 +132,11 @@ struct CalendarView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
             loadEvents()
         }
+        .onAppear {
+            if isCompactHeight {
+                calendarDisplayMode = .day
+            }
+        }
         .confirmationDialog(
             "Delete Linked Copies?",
             isPresented: $showingLinkedDeleteDialog,
@@ -163,50 +170,58 @@ struct CalendarView: View {
         .onChange(of: familyMembers.count) { _, _ in loadEvents() }
         .onChange(of: memberCalendarLinks.count) { _, _ in loadEvents() }
         .onChange(of: autoRefreshInterval) { _, _ in startRefreshTimer() }
+        .onChange(of: verticalSizeClass) { _, newValue in
+            if newValue == .compact {
+                calendarDisplayMode = .day
+            }
+        }
         .onDisappear(perform: cleanupView)
     }
 
     @ViewBuilder
     private var content: some View {
         let isDayMode = calendarDisplayMode == .day
+        let fullScreenDay = isCompactHeight && isDayMode
 
         VStack(alignment: .leading, spacing: isDayMode ? 16 : 24) {
-            // Header with month/year and Today button
-            HStack {
-                Text(Self.monthFormatter.string(from: currentMonth))
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .padding(.leading)
+            if !fullScreenDay {
+                // Header with month/year and Today button
+                HStack {
+                    Text(Self.monthFormatter.string(from: currentMonth))
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .padding(.leading)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    withAnimation {
-                        currentMonth = Date()
-                        selectedDate = Date()
+                    Button(action: {
+                        withAnimation {
+                            currentMonth = Date()
+                            selectedDate = Date()
+                        }
+                    }) {
+                        Text("Today")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(theme.accentFillStyle())
+                            )
                     }
-                }) {
-                    Text("Today")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(theme.accentFillStyle())
-                        )
+                    .padding(.trailing)
                 }
-                .padding(.trailing)
-            }
-            .padding(.vertical, 12)
+                .padding(.vertical, 12)
 
-            Picker("View Mode", selection: $calendarDisplayMode.animation()) {
-                ForEach(CalendarDisplayMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
+                Picker("View Mode", selection: $calendarDisplayMode.animation()) {
+                    ForEach(CalendarDisplayMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
             }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal)
 
             // Calendar grid
             if calendarDisplayMode == .month {
@@ -218,8 +233,8 @@ struct CalendarView: View {
             }
         }
         .padding(.horizontal, isDayMode ? 0 : 16)
-        .padding(.top, 16)
-        .padding(.bottom, isDayMode ? 0 : 120)
+        .padding(.top, fullScreenDay ? 0 : 16)
+        .padding(.bottom, fullScreenDay ? 0 : 120)
         .frame(maxWidth: .infinity, maxHeight: isDayMode ? .infinity : nil, alignment: .top)
     }
 
