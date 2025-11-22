@@ -573,6 +573,18 @@ struct FamilyView: View {
                 .frame(maxHeight: .infinity, alignment: .center),
             alignment: .leading
         )
+        .overlay(alignment: .bottomTrailing) {
+            if let bubble = timeBubble(for: event) {
+                Text(bubble.text)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(bubble.foreground)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(bubble.background)
+                    .clipShape(Capsule())
+                    .padding(10)
+            }
+        }
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
@@ -1132,6 +1144,37 @@ struct FamilyView: View {
 
         // Default to upcoming
         return ("Upcoming", .gray)
+    }
+
+    private func timeBubble(for event: GroupedEvent) -> (text: String, background: Color, foreground: Color)? {
+        let now = currentTime
+        let calendar = Calendar.current
+
+        if now < event.startDate {
+            let components = calendar.dateComponents([.day, .hour, .minute], from: now, to: event.startDate)
+            guard let text = bubbleText(from: components) else { return nil }
+            let color = Color.blue
+            return (text, color.opacity(0.16), color)
+        } else if now < event.endDate {
+            let components = calendar.dateComponents([.day, .hour, .minute], from: now, to: event.endDate)
+            guard let text = bubbleText(from: components) else { return nil }
+            let color = Color.green
+            return (text, color.opacity(0.16), color)
+        }
+
+        return nil
+    }
+
+    private func bubbleText(from components: DateComponents) -> String? {
+        if let days = components.day, days > 0 {
+            return "\(days)d"
+        } else if let hours = components.hour, hours > 0 {
+            return "\(hours)h"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "\(minutes)m"
+        } else {
+            return "<1m"
+        }
     }
 
     // MARK: - Context Menu Actions

@@ -22,74 +22,90 @@ struct FamilySettingsView: View {
     )
     private var familyMembers: FetchedResults<FamilyMember>
 
-    @State private var showingAddMember = false
-    @State private var editingMember: FamilyMember? = nil
-    @State private var spotlightMember: FamilyMember? = nil
-    @State private var expandedMember: FamilyMember? = nil
-    @State private var selectedMember: FamilyMember? = nil
+    @State private var activeSheet: ActiveSheet? = nil
+    @State private var memberPendingDelete: FamilyMember? = nil
+    @State private var showingDeleteConfirmation = false
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
-    private var linkedCalendars: [FamilyMember] {
-        familyMembers.filter { ($0.memberCalendars?.count ?? 0) > 0 }
+    private enum ActiveSheet: Identifiable {
+        case addMember
+        case editMember(FamilyMember)
+        case selectCalendars(FamilyMember)
+        case spotlight(FamilyMember)
+
+        var id: String {
+            switch self {
+            case .addMember:
+                return "addMember"
+            case .editMember(let member),
+                 .selectCalendars(let member),
+                 .spotlight(let member):
+                return member.objectID.uriRepresentation().absoluteString
+            }
+        }
     }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
-                
+                theme.backgroundLayer().ignoresSafeArea()
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         // MARK: - Family Members Section
                         VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Family Members")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                
-                                Spacer()
-                                
-                                if !familyMembers.isEmpty {
-                                    EditButton()
-                                        .font(.system(size: 13, weight: .semibold))
-                                }
-                            }
-                            .padding(.horizontal, 16)
+                            Text("Family Members")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(primaryTextColor)
+                                .padding(.horizontal, 16)
 
                             if familyMembers.isEmpty {
                                 emptyStateView
                             } else {
-                                List {
-                                    ForEach(familyMembers) { member in
+                                settingsContainer {
+                                    ForEach(Array(familyMembers.enumerated()), id: \.element.id) { index, member in
                                         memberRow(for: member)
-                                            .listRowInsets(EdgeInsets())
-                                            .listRowSeparator(.hidden)
-                                            .listRowBackground(Color.clear)
+
+                                        if index < familyMembers.count - 1 {
+                                            Divider()
+                                                .padding(.leading, 56)
+                                        }
                                     }
-                                    .onMove(perform: moveMembers)
                                 }
-                                .listStyle(.plain)
-                                .frame(height: CGFloat(familyMembers.count * 70 + (expandedMember != nil ? 150 : 0))) // Dynamic height approximation
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                                .padding(.horizontal, 16)
-                                .scrollDisabled(true) // Disable scrolling within the list, let the main ScrollView handle it
+                                .padding(.vertical, 8)
                             }
                         }
 
-                        Spacer()
-                        
-                        Button(action: { showingAddMember = true }) {
-                            Text("Add Family Member")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.blue)
-                                .cornerRadius(12)
-                                .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 2)
+                        // MARK: - Add Button Section
+                        Button(action: { activeSheet = .addMember }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(theme.accentColor)
+
+                                Text("Add Family Member")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(theme.accentColor)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
                         }
                         .padding(.horizontal, 16)
+
+                        Spacer()
+                            .frame(height: 24)
                     }
                     .padding(.vertical, 24)
                 }
@@ -99,35 +115,40 @@ struct FamilySettingsView: View {
                 ToolbarItem(placement: .principal) {
                     Text("My Family")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
         }
-        .sheet(isPresented: $showingAddMember) {
-            AddFamilyMemberView()
-                .environment(\.managedObjectContext, viewContext)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .addMember:
+                AddFamilyMemberView()
+                    .environment(\.managedObjectContext, viewContext)
+            case .editMember(let member):
+                EditFamilyMemberView(member: member)
+                    .environment(\.managedObjectContext, viewContext)
+            case .selectCalendars(let member):
+                SelectMemberCalendarsView(member: member)
+                    .environment(\.managedObjectContext, viewContext)
+            case .spotlight(let member):
+                SpotlightView(member: member)
+                    .environment(\.managedObjectContext, viewContext)
+            }
         }
-        .sheet(item: $editingMember) { member in
-            EditFamilyMemberView(member: member)
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(item: $spotlightMember) { member in
-            SpotlightView(member: member)
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(item: $selectedMember) { member in
-            SelectMemberCalendarsView(member: member)
-                .environment(\.managedObjectContext, viewContext)
+        .alert("Delete Member?", isPresented: $showingDeleteConfirmation, presenting: memberPendingDelete) { member in
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteMember(member)
+            }
+        } message: { member in
+            Text("Are you sure you want to delete \(member.name ?? "this member")? This cannot be undone.")
         }
     }
 
@@ -142,22 +163,6 @@ struct FamilySettingsView: View {
         }
     }
     
-    private func moveMembers(from source: IndexSet, to destination: Int) {
-        var revisedItems = familyMembers.map { $0 }
-        revisedItems.move(fromOffsets: source, toOffset: destination)
-        
-        for (index, item) in revisedItems.enumerated() {
-            item.sortOrder = Int16(index)
-        }
-        
-        do {
-            try viewContext.save()
-        } catch {
-            let nsError = error as NSError
-            print("Error saving order: \(nsError), \(nsError.userInfo)")
-        }
-    }
-    
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "person.2.circle")
@@ -166,129 +171,87 @@ struct FamilySettingsView: View {
 
             Text("No family members yet")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
-        .background(Color.white)
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
         .padding(.horizontal, 16)
     }
 
     private func memberRow(for member: FamilyMember) -> some View {
-        VStack(spacing: 0) {
+        Menu {
             Button(action: {
-                withAnimation {
-                    if expandedMember?.id == member.id {
-                        expandedMember = nil
-                    } else {
-                        expandedMember = member
-                    }
-                }
+                activeSheet = .selectCalendars(member)
             }) {
-                HStack(spacing: 16) {
-                    if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
-                        Circle()
-                            .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
-                            .frame(width: 32, height: 32)
-                    } else {
-                        Circle()
-                            .fill(Color.gray)
-                            .frame(width: 32, height: 32)
-                    }
+                Label("Edit Calendars", systemImage: "pencil.circle.fill")
+            }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(member.name ?? "Unknown")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
+            Button(action: {
+                activeSheet = .editMember(member)
+            }) {
+                Label("Edit Member", systemImage: "square.and.pencil")
+            }
 
-                        Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                    }
+            Divider()
 
-                    Spacer()
-
-                    Image(systemName: expandedMember?.id == member.id ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.gray.opacity(0.5))
+            Button(role: .destructive, action: {
+                memberPendingDelete = member
+                showingDeleteConfirmation = true
+            }) {
+                Label("Delete", systemImage: "trash.fill")
+            }
+        } label: {
+            HStack(spacing: 16) {
+                if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
+                    Circle()
+                        .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                        .frame(width: 12, height: 12)
+                } else {
+                    Circle()
+                        .fill(Color.gray)
+                        .frame(width: 12, height: 12)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
 
-            // Expanded content
-            if expandedMember?.id == member.id {
-                expandedContent(for: member)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.name ?? "Unknown")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(primaryTextColor)
+
+                    Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
+                        .font(.system(size: 13))
+                        .foregroundColor(secondaryTextColor)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(secondaryTextColor.opacity(0.6))
             }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
     }
-    
-    private func expandedContent(for member: FamilyMember) -> some View {
+
+    private func settingsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
-            Divider()
-            
-            if let memberCals = member.memberCalendars?.allObjects as? [FamilyMemberCalendar] {
-                let sortedCals = memberCals.sorted { ($0.isAutoLinked && !$1.isAutoLinked) || ($0.isAutoLinked == $1.isAutoLinked && ($0.calendarName ?? "") < ($1.calendarName ?? "")) }
-                
-                ForEach(sortedCals, id: \.self) { cal in
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.fromHex(cal.calendarColorHex ?? "#007AFF"))
-                            .frame(width: 8, height: 8)
-
-                        Text(cal.calendarName ?? "Unknown")
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-
-                        Spacer()
-
-                        if cal.isAutoLinked {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color(hex: "F9F9F9"))
-                }
-            }
-            
-            Divider()
-            
-            // Actions
-            HStack(spacing: 0) {
-                Button(action: { selectedMember = member }) {
-                    Label("Calendars", systemImage: "pencil.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                
-                Divider().frame(height: 24)
-                
-                Button(action: { editingMember = member }) {
-                    Label("Edit", systemImage: "square.and.pencil")
-                        .font(.system(size: 12, weight: .medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                
-                Divider().frame(height: 24)
-                
-                Button(action: { deleteMember(member) }) {
-                    Label("Delete", systemImage: "trash.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-            }
-            .background(Color(hex: "F9F9F9"))
+            content()
         }
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+        .padding(.horizontal, 16)
     }
 }
 

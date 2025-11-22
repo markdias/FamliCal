@@ -46,11 +46,16 @@ struct AppSettingsView: View {
             set: { themeManager.setDarkMode($0) }
         )
     }
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
+    private var toggleColor: Color { theme.accentGradient?.colors.first ?? theme.accentColor }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                theme.backgroundLayer().ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -58,10 +63,10 @@ struct AppSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("General")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 settingCard(
                                     title: "Default screen",
                                     subtitle: "Choose where the app opens",
@@ -72,7 +77,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -89,7 +94,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -105,7 +110,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -116,50 +121,46 @@ struct AppSettingsView: View {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("Drivers")
                                                 .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(primaryTextColor)
 
                                             Text("Manage drivers for events")
                                                 .font(.system(size: 13))
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(secondaryTextColor)
                                         }
                                         Spacer()
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.gray.opacity(0.5))
+                                            .foregroundColor(secondaryTextColor.opacity(0.6))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                 }
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Display Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Display")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 NavigationLink(destination: ThemeSettingsView()) {
                                     HStack(spacing: 16) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("Theme")
                                                 .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(primaryTextColor)
 
                                             Text(themeManager.selectedTheme.displayName)
                                                 .font(.system(size: 13))
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(secondaryTextColor)
                                         }
                                         Spacer()
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.gray.opacity(0.5))
+                                            .foregroundColor(secondaryTextColor.opacity(0.6))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
@@ -171,35 +172,31 @@ struct AppSettingsView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Dark mode")
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(primaryTextColor)
 
                                         Text("Apply dark colors to current theme")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(secondaryTextColor)
                                     }
 
                                     Spacer()
 
                                     Toggle("", isOn: darkModeBinding)
-                                        .tint(.blue)
+                                        .tint(toggleColor)
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Event Settings Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Event Settings")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 settingCard(
                                     title: "Events per person",
                                     subtitle: "How many upcoming events to show",
@@ -210,7 +207,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -226,7 +223,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -242,7 +239,7 @@ struct AppSettingsView: View {
                                             }
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -261,7 +258,7 @@ struct AppSettingsView: View {
                                             Text("1 Year").tag(365)
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                                 
@@ -279,39 +276,35 @@ struct AppSettingsView: View {
                                             Text("2 Years").tag(730)
                                         }
                                         .pickerStyle(.menu)
-                                        .tint(.blue)
+                                        .tint(theme.accentColor)
                                     )
                                 )
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // MARK: - Calendar Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Calendar")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 NavigationLink(destination: SharedCalendarsView().environment(\.managedObjectContext, viewContext)) {
                                     HStack(spacing: 16) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("Shared calendars")
                                                 .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(primaryTextColor)
 
                                             Text("Calendars shared with all members")
                                                 .font(.system(size: 13))
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(secondaryTextColor)
                                         }
                                         Spacer()
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.gray.opacity(0.5))
+                                            .foregroundColor(secondaryTextColor.opacity(0.6))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
@@ -324,25 +317,21 @@ struct AppSettingsView: View {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("Saved places")
                                                 .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(primaryTextColor)
 
                                             Text("Manage favorite locations")
                                                 .font(.system(size: 13))
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(secondaryTextColor)
                                         }
                                         Spacer()
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.gray.opacity(0.5))
+                                            .foregroundColor(secondaryTextColor.opacity(0.6))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                 }
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         Spacer()
@@ -355,14 +344,14 @@ struct AppSettingsView: View {
                 ToolbarItem(placement: .principal) {
                     Text("App Settings")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
@@ -374,11 +363,11 @@ struct AppSettingsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
+                    .foregroundColor(primaryTextColor)
 
                 Text(subtitle)
                     .font(.system(size: 13))
-                    .foregroundColor(.gray)
+                    .foregroundColor(secondaryTextColor)
             }
 
             Spacer()
@@ -387,6 +376,20 @@ struct AppSettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private func settingsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+        .padding(.horizontal, 16)
     }
 }
 

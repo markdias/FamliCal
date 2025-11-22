@@ -37,7 +37,7 @@ struct AddFamilyMemberView: View {
                     Text("Enter a name that matches an existing calendar. If no match is found after 5 seconds, you'll be offered the option to create a new calendar.")
                         .font(.system(size: 13, weight: .regular, design: .default))
                         .foregroundColor(.gray)
-                        .lineLimit(4)
+                        .lineLimit(nil)
                 }
             }
         }
@@ -210,7 +210,7 @@ struct AddFamilyMemberView: View {
             .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .principal) {
                     Text("Add Family Member")
                         .font(.system(size: 16, weight: .semibold, design: .default))
                 }

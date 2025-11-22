@@ -8,27 +8,32 @@
 import SwiftUI
 
 struct SettingsRowView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let iconName: String
     let title: String
     var showChevron: Bool = true
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
     
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: iconName)
                 .font(.system(size: 20))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
                 .frame(width: 24, height: 24)
             
             Text(title)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.primary)
+                .foregroundColor(primaryTextColor)
             
             Spacer()
             
             if showChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.gray.opacity(0.5))
+                    .foregroundColor(secondaryTextColor.opacity(0.6))
             }
         }
         .padding(.vertical, 12)
@@ -41,4 +46,5 @@ struct SettingsRowView: View {
         SettingsRowView(iconName: "lock", title: "Password")
     }
     .padding()
+    .environmentObject(ThemeManager())
 }

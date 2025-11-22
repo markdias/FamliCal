@@ -10,54 +10,42 @@ import SwiftUI
 struct ThemeSettingsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        Text("Pick a theme")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.gray)
+        ZStack {
+            theme.backgroundLayer().ignoresSafeArea()
 
-                        VStack(spacing: 18) {
-                            ForEach(AppTheme.allThemes) { theme in
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                        themeManager.select(theme: theme)
-                                    }
-                                }) {
-                                    ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("Pick a theme")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(theme.textSecondary)
+
+                    VStack(spacing: 18) {
+                        ForEach(AppTheme.allThemes) { theme in
+                            Button(action: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                    themeManager.select(theme: theme)
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Select \(theme.displayName) theme")
-                                .accessibilityHint(theme.description)
-                                .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
+                            }) {
+                                ThemeOptionCard(theme: theme, isSelected: themeManager.selectedTheme.id == theme.id)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Select \(theme.displayName) theme")
+                            .accessibilityHint(theme.description)
+                            .accessibilityAddTraits(themeManager.selectedTheme.id == theme.id ? .isSelected : [])
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 48)
                 }
-            }
-            .navigationTitle("Themes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
-                    }
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 28)
+                .padding(.bottom, 48)
             }
         }
+        .navigationTitle("Themes")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

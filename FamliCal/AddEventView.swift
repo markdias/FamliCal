@@ -92,6 +92,7 @@ struct AddEventView: View {
     // Driver selection
     @State private var selectedDriver: DriverWrapper?
     @State private var driverTravelTimeMinutes: Int = 15
+    @State private var shouldCreateTravelEvent: Bool = false
 
     // Location search
     @State private var showingLocationSearch = false
@@ -282,11 +283,11 @@ struct AddEventView: View {
             }
             .alert("Create Event for Driver?", isPresented: $showingCreateEventForDriverAlert) {
                 Button("Yes") {
-                    if let driver = driverToCreateEventFor {
-                        createEventForDriver(driver)
-                    }
+                    shouldCreateTravelEvent = true
+                    driverToCreateEventFor = nil
                 }
                 Button("No") {
+                    shouldCreateTravelEvent = false
                     driverToCreateEventFor = nil
                 }
             } message: {
@@ -532,25 +533,23 @@ struct AddEventView: View {
                         print("🚗 Added regular driver: \(driver.name ?? "Unknown")")
 
                     case .familyMember(let member):
-                        // Create a new Driver record for this family member
-                        let driver = Driver(context: viewContext)
-                        driver.id = UUID()
-                        driver.name = member.name ?? "Unknown"
-                        driver.familyMemberId = member.id
-                        familyEvent.driver = driver
+                        // Store family member ID as driver (don't create Driver entity)
+                        familyEvent.driverFamilyMemberId = member.id
+                        print("🚗 Set family member as driver: \(member.name ?? "Unknown")")
 
-                        // Create travel event for family member driver
-                        let travelEventId = createTravelEvent(
-                            for: member,
-                            eventName: title,
-                            eventStartTime: eventStartDate,
-                            travelTimeMinutes: driverTravelTimeMinutes
-                        )
+                        // Create travel event only if user confirmed
+                        if shouldCreateTravelEvent {
+                            _ = createTravelEvent(
+                                for: member,
+                                eventName: title,
+                                eventStartTime: eventStartDate,
+                                travelTimeMinutes: driverTravelTimeMinutes
+                            )
 
-                        // Update driver with travel event info
-                        driver.travelEventIdentifier = travelEventId
-                        driver.travelTimeMinutes = Int16(driverTravelTimeMinutes)
-                        print("🚗 Created travel event for family member driver: \(member.name ?? "Unknown"), travel time: \(driverTravelTimeMinutes) min")
+                            print("🚗 Created travel event for family member driver: \(member.name ?? "Unknown"), travel time: \(driverTravelTimeMinutes) min")
+                        } else {
+                            print("🚗 Skipped travel event creation for family member driver: \(member.name ?? "Unknown")")
+                        }
                     }
                 }
 
@@ -563,12 +562,24 @@ struct AddEventView: View {
                 if !selectEveryone {
                     for memberID in selectedMembers {
                         if let member = familyMembers.first(where: { $0.objectID == memberID }) {
+                            // Skip adding the driver if they're a family member (they shouldn't be in attendees list)
+                            if let driverWrapper = selectedDriver, case .familyMember(let driverMember) = driverWrapper {
+                                if driverMember.id == member.id {
+                                    continue
+                                }
+                            }
                             familyEvent.addToAttendees(member)
                         }
                     }
                 } else {
-                    // If "Everyone" selected, add all family members
+                    // If "Everyone" selected, add all family members except the driver if they're a family member
                     for member in familyMembers {
+                        // Skip adding the driver if they're a family member (they shouldn't be in attendees list)
+                        if let driverWrapper = selectedDriver, case .familyMember(let driverMember) = driverWrapper {
+                            if driverMember.id == member.id {
+                                continue
+                            }
+                        }
                         familyEvent.addToAttendees(member)
                     }
                 }
@@ -613,6 +624,7 @@ struct AddEventView: View {
             // Show success message and auto-dismiss
             await MainActor.run {
                 showingSuccessMessage = true
+                shouldCreateTravelEvent = false
             }
 
             // Wait a bit before showing the alert, then auto-dismiss after 2 seconds
@@ -931,6 +943,15 @@ struct AddEventView: View {
                     .onChange(of: startTime) { _, newValue in
                         // Update eventDate for recurrence anchor if needed, or just keep it in sync
                         eventDate = newValue
+                        // When start date changes, also update end date to same date and end time to 1 hour later
+                        let calendar = Calendar.current
+                        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: startTime)
+                        var endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endTime)
+                        endComponents.year = startComponents.year
+                        endComponents.month = startComponents.month
+                        endComponents.day = startComponents.day
+                        endComponents.hour = (startComponents.hour ?? 0) + 1
+                        endTime = calendar.date(from: endComponents) ?? endTime
                     }
                 }
 
@@ -962,7 +983,29 @@ struct AddEventView: View {
             if activeTimePicker == .startTime {
                 DatePicker(
                     "Start Time",
-                    selection: $startTime,
+                    selection: Binding(
+                        get: { startTime },
+                        set: { newValue in
+                            // Round to nearest 5 minutes
+                            let calendar = Calendar.current
+                            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: newValue)
+                            let minute = components.minute ?? 0
+                            let roundedMinute = (minute / 5) * 5
+
+                            var adjustedComponents = components
+                            adjustedComponents.minute = roundedMinute
+                            let adjustedValue = calendar.date(from: adjustedComponents) ?? newValue
+
+                            startTime = adjustedValue
+
+                            // When start time changes, update end time to 1 hour later (same date)
+                            let startComponents = calendar.dateComponents([.hour, .minute], from: adjustedValue)
+                            var endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endTime)
+                            endComponents.hour = (startComponents.hour ?? 0) + 1
+                            endComponents.minute = startComponents.minute
+                            endTime = calendar.date(from: endComponents) ?? endTime
+                        }
+                    ),
                     displayedComponents: .hourAndMinute
                 )
                 .datePickerStyle(.wheel)
@@ -971,7 +1014,20 @@ struct AddEventView: View {
             if activeTimePicker == .endTime {
                 DatePicker(
                     "End Time",
-                    selection: $endTime,
+                    selection: Binding(
+                        get: { endTime },
+                        set: { newValue in
+                            // Round to nearest 5 minutes
+                            let calendar = Calendar.current
+                            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: newValue)
+                            let minute = components.minute ?? 0
+                            let roundedMinute = (minute / 5) * 5
+
+                            var adjustedComponents = components
+                            adjustedComponents.minute = roundedMinute
+                            endTime = calendar.date(from: adjustedComponents) ?? newValue
+                        }
+                    ),
                     displayedComponents: .hourAndMinute
                 )
                 .datePickerStyle(.wheel)

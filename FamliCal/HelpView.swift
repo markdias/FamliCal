@@ -9,11 +9,16 @@ import SwiftUI
 
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                theme.backgroundLayer().ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -21,17 +26,21 @@ struct HelpView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Welcome to FamliCal")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.black)
+                                .foregroundColor(primaryTextColor)
 
                             Text("FamliCal helps you keep track of your family's events and calendars in one place. Here's how to get the most out of the app.")
                                 .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .lineSpacing(1.5)
                         }
                         .padding(16)
-                        .background(Color.white)
+                        .background(theme.cardBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(theme.cardStroke, lineWidth: 1)
+                        )
                         .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
 
                         // Getting Started Section
                         HelpSection(
@@ -270,17 +279,14 @@ struct HelpView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Help")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
 
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
@@ -291,9 +297,14 @@ struct HelpView: View {
 // MARK: - Helper Components
 
 private struct HelpSection: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let title: String
     let icon: String
     let items: [HelpItem]
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -303,12 +314,12 @@ private struct HelpSection: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(width: 40, height: 40)
-                    .background(Color.blue)
+                    .background(theme.accentColor)
                     .cornerRadius(8)
 
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.black)
+                    .foregroundColor(primaryTextColor)
 
                 Spacer()
             }
@@ -319,11 +330,11 @@ private struct HelpSection: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.title)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(primaryTextColor)
 
                         Text(item.description)
                             .font(.system(size: 13, weight: .regular))
-                            .foregroundColor(.gray)
+                            .foregroundColor(secondaryTextColor)
                             .lineSpacing(1.2)
                     }
 
@@ -334,13 +345,21 @@ private struct HelpSection: View {
                 }
             }
             .padding(12)
-            .background(Color(hex: "F9F9F9"))
+            .background(theme.cardBackground.opacity(0.85))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(theme.cardStroke, lineWidth: 1)
+            )
             .cornerRadius(8)
         }
         .padding(16)
-        .background(Color.white)
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
     }
 }
 
@@ -356,4 +375,5 @@ private struct HelpItem: Identifiable, Equatable {
 
 #Preview {
     HelpView()
+        .environmentObject(ThemeManager())
 }

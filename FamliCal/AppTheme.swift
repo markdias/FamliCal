@@ -122,49 +122,71 @@ extension AppTheme {
 final class ThemeManager: ObservableObject {
     @Published private(set) var selectedTheme: AppTheme
     @Published var isDarkModeEnabled: Bool
+    private var baseTheme: AppTheme
     private let storageKey = "selectedThemeID"
     private let darkModeKey = "darkModeEnabled"
 
     init(defaultTheme: AppTheme = .classic) {
         let stored = UserDefaults.standard.string(forKey: storageKey)
-        selectedTheme = AppTheme.theme(with: stored) ?? defaultTheme
-        isDarkModeEnabled = UserDefaults.standard.bool(forKey: darkModeKey)
+        let initialBaseTheme = AppTheme.theme(with: stored) ?? defaultTheme
+        let initialDarkModeEnabled = UserDefaults.standard.bool(forKey: darkModeKey)
+
+        baseTheme = initialBaseTheme
+        isDarkModeEnabled = initialDarkModeEnabled
+        selectedTheme = ThemeManager.makeEffectiveTheme(from: initialBaseTheme, darkModeEnabled: initialDarkModeEnabled)
     }
 
     func select(theme: AppTheme) {
-        guard theme != selectedTheme else { return }
-        selectedTheme = theme
+        guard theme != baseTheme else { return }
+        baseTheme = theme
         UserDefaults.standard.set(theme.id, forKey: storageKey)
+        applyEffectiveTheme()
     }
 
     func setDarkMode(_ enabled: Bool) {
+        guard enabled != isDarkModeEnabled else { return }
         isDarkModeEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: darkModeKey)
+        applyEffectiveTheme()
     }
 
     func getEffectiveTheme() -> AppTheme {
-        guard isDarkModeEnabled else { return selectedTheme }
+        ThemeManager.makeEffectiveTheme(from: baseTheme, darkModeEnabled: isDarkModeEnabled)
+    }
 
-        // Create a dark mode variant of the current theme
-        let baseTheme = selectedTheme
+    private func applyEffectiveTheme() {
+        selectedTheme = ThemeManager.makeEffectiveTheme(from: baseTheme, darkModeEnabled: isDarkModeEnabled)
+    }
+
+    private static func makeEffectiveTheme(from baseTheme: AppTheme, darkModeEnabled: Bool) -> AppTheme {
+        guard darkModeEnabled else { return baseTheme }
+
         return AppTheme(
-            id: baseTheme.id + "_dark",
+            id: baseTheme.id,
             displayName: baseTheme.displayName,
             description: baseTheme.description,
             prefersDarkInterface: true,
-            backgroundColor: Color(red: 0.1, green: 0.1, blue: 0.1),
-            backgroundGradient: nil,
-            cardBackground: Color(red: 0.15, green: 0.15, blue: 0.15),
-            cardStroke: Color.white.opacity(0.1),
-            floatingControlsBackground: Color(red: 0.2, green: 0.2, blue: 0.2),
-            floatingControlsBorder: Color.white.opacity(0.15),
+            backgroundColor: Color(red: 0.07, green: 0.08, blue: 0.12),
+            backgroundGradient: ThemeGradient(
+                colors: [
+                    Color(red: 0.06, green: 0.07, blue: 0.12),
+                    Color(red: 0.07, green: 0.1, blue: 0.16),
+                    Color(red: 0.05, green: 0.08, blue: 0.14)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            cardBackground: Color(red: 0.13, green: 0.14, blue: 0.2),
+            cardStroke: Color.white.opacity(0.08),
+            floatingControlsBackground: Color.white.opacity(0.06),
+            floatingControlsBorder: Color.white.opacity(0.12),
             floatingControlForeground: Color.white,
             accentColor: baseTheme.accentColor,
             accentGradient: baseTheme.accentGradient,
             textPrimary: Color.white,
             textSecondary: Color.white.opacity(0.7),
-            chromeOverlay: Color.white.opacity(0.1),
-            mutedTagColor: Color.white.opacity(0.5)
+            chromeOverlay: Color.white.opacity(0.12),
+            mutedTagColor: Color.white.opacity(0.55)
         )
     }
 }

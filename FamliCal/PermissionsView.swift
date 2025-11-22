@@ -19,11 +19,15 @@ struct PermissionsView: View {
     @State private var notificationPermissionStatus = ""
     @State private var showingPermissionAlert = false
     @State private var eventStore = EKEventStore()
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                theme.backgroundLayer().ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -31,24 +35,24 @@ struct PermissionsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Calendar Access")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 HStack(spacing: 16) {
                                     Image(systemName: "calendar")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(theme.accentColor)
                                         .frame(width: 24, height: 24)
                                     
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Calendar Permission")
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(primaryTextColor)
 
                                         Text("Access to your calendar events")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(secondaryTextColor)
                                     }
 
                                     Spacer()
@@ -66,34 +70,30 @@ struct PermissionsView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // Contacts Permissions Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Contacts Access")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 HStack(spacing: 16) {
                                     Image(systemName: "person.crop.circle")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(theme.accentColor)
                                         .frame(width: 24, height: 24)
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Contacts Permission")
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(primaryTextColor)
 
                                         Text("Quick add drivers from contacts")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(secondaryTextColor)
                                     }
 
                                     Spacer()
@@ -111,34 +111,30 @@ struct PermissionsView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // Notifications Permissions Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Notifications")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 HStack(spacing: 16) {
                                     Image(systemName: "bell")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(theme.accentColor)
                                         .frame(width: 24, height: 24)
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Notification Permission")
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(primaryTextColor)
 
                                         Text("Reminders for events and activities")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(secondaryTextColor)
                                     }
 
                                     Spacer()
@@ -156,10 +152,6 @@ struct PermissionsView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         // Request Permission Buttons
@@ -171,7 +163,7 @@ struct PermissionsView: View {
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 12)
-                                        .background(Color.blue)
+                                        .background(theme.accentFillStyle())
                                         .cornerRadius(12)
                                 }
                             }
@@ -183,7 +175,7 @@ struct PermissionsView: View {
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 12)
-                                        .background(Color.blue)
+                                        .background(theme.accentFillStyle())
                                         .cornerRadius(12)
                                 }
                             }
@@ -195,7 +187,7 @@ struct PermissionsView: View {
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 12)
-                                        .background(Color.blue)
+                                        .background(theme.accentFillStyle())
                                         .cornerRadius(12)
                                 }
                             }
@@ -206,10 +198,10 @@ struct PermissionsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("About Permissions")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 PermissionInfoRow(
                                     icon: "calendar",
                                     title: "Calendar Access",
@@ -236,10 +228,6 @@ struct PermissionsView: View {
                                 .padding(.top, 12)
                             }
                             .padding(16)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         Spacer()
@@ -252,17 +240,14 @@ struct PermissionsView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Permissions")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
 
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
@@ -272,6 +257,20 @@ struct PermissionsView: View {
             checkContactsPermission()
             checkNotificationPermission()
         }
+    }
+
+    private func settingsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+        .padding(.horizontal, 16)
     }
 
     private func checkCalendarPermission() {
@@ -443,26 +442,29 @@ struct PermissionsView: View {
 }
 
 private struct PermissionInfoRow: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let icon: String
     let title: String
     let description: String
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.blue)
+                .foregroundColor(theme.accentColor)
                 .frame(width: 24, height: 24)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.textPrimary)
 
                 Text(description)
                     .font(.system(size: 13))
-                    .foregroundColor(.gray)
+                    .foregroundColor(theme.textSecondary)
                     .lineLimit(nil)
             }
 

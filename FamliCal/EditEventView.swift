@@ -83,6 +83,7 @@ struct EditEventView: View {
     // Driver selection
     @State private var selectedDriver: DriverWrapper?
     @State private var driverTravelTimeMinutes: Int = 15
+    @State private var shouldCreateTravelEvent: Bool = false
 
     // UI state
     @State private var showingStartDatePicker = false
@@ -305,11 +306,11 @@ struct EditEventView: View {
                 }
                 .alert("Create Event for Driver?", isPresented: $showingCreateEventForDriverAlert) {
                     Button("Yes") {
-                        if let driver = driverToCreateEventFor {
-                            createEventForDriver(driver)
-                        }
+                        shouldCreateTravelEvent = true
+                        driverToCreateEventFor = nil
                     }
                     Button("No") {
+                        shouldCreateTravelEvent = false
                         driverToCreateEventFor = nil
                     }
                 } message: {
@@ -739,44 +740,31 @@ struct EditEventView: View {
                     print("🚗 Assigned regular driver: \(driver.name ?? "Unknown")")
 
                 case .familyMember(let member):
-                    // Check if there's already a driver record for this family member
-                    let driverFetchRequest = Driver.fetchRequest()
-                    if let memberId = member.id {
-                        driverFetchRequest.predicate = NSPredicate(format: "familyMemberId == %@", memberId as CVarArg)
-                    }
+                    // Store family member ID as driver (don't create Driver entity)
+                    familyEvent.driverFamilyMemberId = member.id
+                    // Clear any regular driver that was previously set
+                    familyEvent.driver = nil
+                    print("🚗 Set family member as driver: \(member.name ?? "Unknown")")
 
-                    if let existingDriver = try viewContext.fetch(driverFetchRequest).first {
-                        // Use existing driver record
-                        familyEvent.driver = existingDriver
-                        print("🚗 Using existing driver record for family member: \(member.name ?? "Unknown")")
-                    } else {
-                        // Create a new driver record for this family member
-                        let newDriver = Driver(context: viewContext)
-                        newDriver.id = UUID()
-                        newDriver.name = member.name ?? "Unknown"
-                        newDriver.familyMemberId = member.id
-                        familyEvent.driver = newDriver
-                        print("🚗 Created new driver record for family member: \(member.name ?? "Unknown")")
-                    }
-
-                    // Update or create travel event
-                    if let driver = familyEvent.driver {
+                    // Update or create travel event only if user confirmed
+                    if shouldCreateTravelEvent {
                         updateTravelEvent(
                             for: member,
                             eventName: eventTitle,
                             eventStartTime: combineDateAndTime(date: eventDate, time: startTime),
                             travelTimeMinutes: driverTravelTimeMinutes,
-                            driver: driver
+                            driver: nil
                         )
 
-                        // Update driver travel time
-                        driver.travelTimeMinutes = Int16(driverTravelTimeMinutes)
                         print("🚗 Updated travel event for family member driver: \(member.name ?? "Unknown"), travel time: \(driverTravelTimeMinutes) min")
+                    } else if !shouldCreateTravelEvent {
+                        print("🚗 Skipped travel event update for family member driver: \(member.name ?? "Unknown")")
                     }
                 }
             } else {
                 // No driver selected - clear the driver
                 familyEvent.driver = nil
+                familyEvent.driverFamilyMemberId = nil
             }
 
             print("   Driver assigned: \(familyEvent.driver?.name ?? "nil")")
@@ -802,7 +790,7 @@ struct EditEventView: View {
         eventName: String,
         eventStartTime: Date,
         travelTimeMinutes: Int,
-        driver: Driver
+        driver: Driver?
     ) {
         // Get the family member's linked personal calendar
         guard let memberCalendars = familyMember.memberCalendars as? Set<FamilyMemberCalendar>,
@@ -818,7 +806,7 @@ struct EditEventView: View {
         let travelEventTitle = "Travel to \(eventName)"
 
         // If there's an existing travel event, update it
-        if let existingTravelEventId = driver.travelEventIdentifier, !existingTravelEventId.isEmpty {
+        if let existingTravelEventId = driver?.travelEventIdentifier, !existingTravelEventId.isEmpty {
             let success = CalendarManager.shared.updateEvent(
                 withIdentifier: existingTravelEventId,
                 occurrenceStartDate: travelEventStartTime,
@@ -847,7 +835,7 @@ struct EditEventView: View {
             )
 
             if let eventId = travelEventId {
-                driver.travelEventIdentifier = eventId
+                driver?.travelEventIdentifier = eventId
                 print("✈️ Travel event created: '\(travelEventTitle)' on \(personalCalendar.calendarName ?? "Personal Calendar"), duration: \(travelTimeMinutes) min")
             } else {
                 print("❌ Failed to create travel event")
@@ -1114,6 +1102,15 @@ struct EditEventView: View {
                     .onChange(of: startTime) { _, newValue in
                         // Update eventDate for recurrence anchor if needed
                         eventDate = newValue
+                        // When start date changes, also update end date to same date and end time to 1 hour later
+                        let calendar = Calendar.current
+                        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: startTime)
+                        var endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endTime)
+                        endComponents.year = startComponents.year
+                        endComponents.month = startComponents.month
+                        endComponents.day = startComponents.day
+                        endComponents.hour = (startComponents.hour ?? 0) + 1
+                        endTime = calendar.date(from: endComponents) ?? endTime
                     }
                 }
                 
@@ -1145,7 +1142,29 @@ struct EditEventView: View {
             if showingStartTimePicker {
                 DatePicker(
                     "Start Time",
-                    selection: $startTime,
+                    selection: Binding(
+                        get: { startTime },
+                        set: { newValue in
+                            // Round to nearest 5 minutes
+                            let calendar = Calendar.current
+                            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: newValue)
+                            let minute = components.minute ?? 0
+                            let roundedMinute = (minute / 5) * 5
+
+                            var adjustedComponents = components
+                            adjustedComponents.minute = roundedMinute
+                            let adjustedValue = calendar.date(from: adjustedComponents) ?? newValue
+
+                            startTime = adjustedValue
+
+                            // When start time changes, update end time to 1 hour later (same date)
+                            let startComponents = calendar.dateComponents([.hour, .minute], from: adjustedValue)
+                            var endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endTime)
+                            endComponents.hour = (startComponents.hour ?? 0) + 1
+                            endComponents.minute = startComponents.minute
+                            endTime = calendar.date(from: endComponents) ?? endTime
+                        }
+                    ),
                     displayedComponents: .hourAndMinute
                 )
                 .datePickerStyle(.wheel)
@@ -1154,7 +1173,20 @@ struct EditEventView: View {
             if showingEndTimePicker {
                 DatePicker(
                     "End Time",
-                    selection: $endTime,
+                    selection: Binding(
+                        get: { endTime },
+                        set: { newValue in
+                            // Round to nearest 5 minutes
+                            let calendar = Calendar.current
+                            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: newValue)
+                            let minute = components.minute ?? 0
+                            let roundedMinute = (minute / 5) * 5
+
+                            var adjustedComponents = components
+                            adjustedComponents.minute = roundedMinute
+                            endTime = calendar.date(from: adjustedComponents) ?? newValue
+                        }
+                    ),
                     displayedComponents: .hourAndMinute
                 )
                 .datePickerStyle(.wheel)

@@ -36,6 +36,7 @@ struct EventDetailView: View {
     @State private var pendingDeleteSpan: EKSpan = .thisEvent
     @State private var pendingDeleteScope: DeleteScope = .single
     @State private var driver: Driver?
+    @State private var driverFamilyMemberId: UUID?
     @State private var selectedDriver: DriverWrapper?
     @State private var driverTravelTimeMinutes: Int = 15
     @State private var eventStore = EKEventStore()
@@ -554,11 +555,17 @@ struct EventDetailView: View {
 
             if let familyEvent = results.first {
                 self.driver = familyEvent.driver
+                self.driverFamilyMemberId = familyEvent.driverFamilyMemberId
+
                 // Set selectedDriver for editing
                 if let driver = familyEvent.driver {
                     self.selectedDriver = .regular(driver)
+                    print("✅ Regular driver loaded: \(driver.name ?? "nil")")
+                } else if let driverMemberId = familyEvent.driverFamilyMemberId,
+                          let familyMember = self.familyMembers.first(where: { $0.id == driverMemberId }) {
+                    self.selectedDriver = .familyMember(familyMember)
+                    print("✅ Family member driver loaded: \(familyMember.name ?? "nil")")
                 }
-                print("✅ Driver loaded: \(familyEvent.driver?.name ?? "nil")")
             } else {
                 print("ℹ️ No FamilyEvent found for this event")
             }

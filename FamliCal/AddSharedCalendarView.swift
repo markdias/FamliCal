@@ -12,6 +12,7 @@ import EventKit
 struct AddSharedCalendarView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
 
     @FetchRequest(
         entity: SharedCalendar.entity(),
@@ -27,6 +28,10 @@ struct AddSharedCalendarView: View {
 
     @State private var availableCalendars: [AvailableCalendar] = []
     @State private var isLoading = false
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var calendarsBySource: [String: [AvailableCalendar]] {
         Dictionary(grouping: availableCalendars) { $0.sourceTitle }
@@ -38,115 +43,138 @@ struct AddSharedCalendarView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                if isLoading {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                            .tint(Color(red: 0.33, green: 0.33, blue: 0.33))
+            ZStack {
+                theme.backgroundLayer().ignoresSafeArea()
 
-                        Text("Loading calendars...")
-                            .font(.system(size: 15, weight: .regular, design: .default))
-                            .foregroundColor(.gray)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if availableCalendars.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
+                VStack(spacing: 0) {
+                    if isLoading {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(theme.accentColor)
 
-                        Text("No calendars available")
-                            .font(.system(size: 15, weight: .regular, design: .default))
-                            .foregroundColor(.gray)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            ForEach(Array(calendarsBySource.keys.sorted()), id: \.self) { sourceTitle in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(sourceTitle)
-                                        .font(.system(size: 14, weight: .semibold, design: .default))
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 16)
+                            Text("Loading calendars...")
+                                .font(.system(size: 15, weight: .regular, design: .default))
+                                .foregroundColor(secondaryTextColor)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if availableCalendars.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 48))
+                                .foregroundColor(secondaryTextColor)
 
-                                    VStack(spacing: 0) {
-                                        ForEach(calendarsBySource[sourceTitle] ?? [], id: \.id) { calendar in
-                                            let isAlreadyAdded = sharedCalendars.contains { $0.calendarID == calendar.id }
+                            Text("No calendars available")
+                                .font(.system(size: 15, weight: .regular, design: .default))
+                                .foregroundColor(secondaryTextColor)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 24) {
+                                ForEach(Array(calendarsBySource.keys.sorted()), id: \.self) { sourceTitle in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(sourceTitle)
+                                            .font(.system(size: 16, weight: .semibold, design: .default))
+                                            .foregroundColor(primaryTextColor)
+                                            .padding(.horizontal, 16)
 
-                                            Button(action: {
-                                                if !isAlreadyAdded {
-                                                    addSharedCalendar(calendar)
-                                                }
-                                            }) {
-                                                HStack(spacing: 12) {
-                                                    Circle()
-                                                        .fill(Color(uiColor: calendar.color))
-                                                        .frame(width: 12, height: 12)
+                                        VStack(spacing: 0) {
+                                            ForEach(Array((calendarsBySource[sourceTitle] ?? []).enumerated()), id: \.element.id) { index, calendar in
+                                                let isAlreadyAdded = sharedCalendars.contains { $0.calendarID == calendar.id }
 
-                                                    VStack(alignment: .leading, spacing: 2) {
-                                                        Text(calendar.title)
-                                                            .font(.system(size: 16, weight: .semibold, design: .default))
-                                                            .foregroundColor(.primary)
+                                                Button(action: {
+                                                    if !isAlreadyAdded {
+                                                        addSharedCalendar(calendar)
                                                     }
+                                                }) {
+                                                    HStack(spacing: 12) {
+                                                        Circle()
+                                                            .fill(Color(uiColor: calendar.color))
+                                                            .frame(width: 12, height: 12)
 
-                                                    Spacer()
+                                                       VStack(alignment: .leading, spacing: 2) {
+                                                           Text(calendar.title)
+                                                               .font(.system(size: 16, weight: .semibold, design: .default))
+                                                                .foregroundColor(primaryTextColor)
+                                                       }
 
-                                                    if isAlreadyAdded {
-                                                        Image(systemName: "checkmark.circle.fill")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.green)
-                                                    } else {
-                                                        Image(systemName: "circle")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.gray)
-                                                    }
+                                                        Spacer()
+
+                                                        if isAlreadyAdded {
+                                                            Image(systemName: "checkmark.circle.fill")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(.green)
+                                                        } else {
+                                                           Image(systemName: "circle")
+                                                               .font(.system(size: 20))
+                                                                .foregroundColor(secondaryTextColor)
+                                                       }
+                                                   }
+                                                   .padding(.vertical, 12)
+                                                   .contentShape(Rectangle())
+                                               }
+                                                .disabled(isAlreadyAdded)
+
+                                                if index < (calendarsBySource[sourceTitle] ?? []).count - 1 {
+                                                    Divider()
+                                                        .padding(.leading, 56)
                                                 }
-                                                .padding(.horizontal, 16)
-                                                .padding(.vertical, 12)
-                                                .contentShape(Rectangle())
-                                            }
-                                            .disabled(isAlreadyAdded)
-
-                                            if calendar.id != (calendarsBySource[sourceTitle] ?? []).last?.id {
-                                                Divider()
-                                                    .padding(.horizontal, 16)
                                             }
                                         }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(theme.cardBackground)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .stroke(theme.cardStroke, lineWidth: 1)
+                                        )
+                                        .cornerRadius(12)
+                                        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                        .padding(.horizontal, 16)
                                     }
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                    .padding(.horizontal, 16)
                                 }
+
+                                Spacer()
+                                    .frame(height: 16)
                             }
-
-                            Spacer()
-                                .frame(height: 16)
+                            .padding(.vertical, 24)
                         }
-                        .padding(.vertical, 16)
                     }
-                }
 
-                VStack(spacing: 12) {
-                    Button(action: { dismiss() }) {
-                        Text("Done")
-                            .font(.system(size: 16, weight: .semibold, design: .default))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color(red: 0.33, green: 0.33, blue: 0.33))
+                    VStack(spacing: 12) {
+                        Button(action: { dismiss() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(theme.accentColor)
+
+                                Text("Done")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(theme.accentColor)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
                             .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                        }
+                        .padding(.horizontal, 16)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
             }
-            .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .principal) {
                     Text("Add Shared Calendar")
-                        .font(.system(size: 16, weight: .semibold, design: .default))
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(primaryTextColor)
                 }
             }
         }

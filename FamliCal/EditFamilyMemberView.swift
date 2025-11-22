@@ -244,7 +244,7 @@ struct EditFamilyMemberView: View {
             .background(Color(.systemBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .principal) {
                     Text("Edit Family Member")
                         .font(.system(size: 16, weight: .semibold, design: .default))
                 }

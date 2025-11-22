@@ -11,7 +11,6 @@ import CoreData
 struct VisibleCalendarsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject private var themeManager: ThemeManager
 
     @FetchRequest(
         entity: FamilyMember.entity(),
@@ -26,8 +25,9 @@ struct VisibleCalendarsView: View {
     private var sharedCalendars: FetchedResults<SharedCalendar>
 
     @State private var showingAddSharedCalendar = false
-    @State private var expandedMember: FamilyMember? = nil
     @State private var selectedMember: FamilyMember? = nil
+    @State private var sharedCalendarPendingDelete: SharedCalendar? = nil
+    @State private var showingDeleteConfirmation = false
 
     var linkedCalendars: [FamilyMember] {
         familyMembers.filter { ($0.memberCalendars?.count ?? 0) > 0 }
@@ -35,233 +35,115 @@ struct VisibleCalendarsView: View {
 
     var body: some View {
         NavigationView {
-            GlassyBackground {
+            ZStack {
+                Color(hex: "F2F2F7").ignoresSafeArea()
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Header
-                        Text("Visible")
-                            .font(.system(size: 28, weight: .bold, design: .default))
-                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 16)
+                        // MARK: - Visible Calendars Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Visible Calendars")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 16)
 
-                        if linkedCalendars.isEmpty && sharedCalendars.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "calendar.badge.exclamationmark")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
+                            if linkedCalendars.isEmpty && sharedCalendars.isEmpty {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "calendar.badge.exclamationmark")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(.gray)
 
-                                Text("No visible calendars")
-                                    .font(.system(size: 16, weight: .semibold, design: .default))
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
+                                    Text("No visible calendars")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
 
-                                Text("Add family members or shared calendars to see them here")
-                                    .font(.system(size: 14, weight: .regular, design: .default))
-                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 48)
-                            .glassyCard(padding: 0)
-                            .padding(.horizontal, 16)
-                        } else {
-                            VStack(alignment: .leading, spacing: 16) {
-                                // Family Member Calendars
-                                if !linkedCalendars.isEmpty {
-                                    Text("Family Members")
-                                        .font(.system(size: 14, weight: .semibold, design: .default))
-                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                        .padding(.horizontal, 16)
+                                    Text("Add family members or shared calendars to see them here")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 48)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                .padding(.horizontal, 16)
+                            } else {
+                                VStack(spacing: 0) {
+                                    // Family Member Calendars
+                                    ForEach(Array(linkedCalendars.enumerated()), id: \.element.id) { index, member in
+                                        memberRow(for: member)
 
-                                    VStack(spacing: 0) {
-                                        ForEach(linkedCalendars, id: \.self) { member in
-                                            VStack(spacing: 0) {
-                                                // Member row (clickable)
-                                                Button(action: {
-                                                    withAnimation {
-                                                        if expandedMember?.id == member.id {
-                                                            expandedMember = nil
-                                                        } else {
-                                                            expandedMember = member
-                                                        }
-                                                    }
-                                                }) {
-                                                    HStack(spacing: 12) {
-                                                        // Colored dot from first linked calendar
-                                                        if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
-                                                            Circle()
-                                                                .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
-                                                                .frame(width: 12, height: 12)
-                                                        } else {
-                                                            Circle()
-                                                                .fill(Color.gray)
-                                                                .frame(width: 12, height: 12)
-                                                        }
-
-                                                        VStack(alignment: .leading, spacing: 2) {
-                                                            Text(member.name ?? "Unknown")
-                                                                .font(.system(size: 16, weight: .semibold, design: .default))
-                                                                .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                                                            HStack(spacing: 4) {
-                                                                Image(systemName: "calendar")
-                                                                    .font(.system(size: 11, weight: .regular))
-                                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-
-                                                                Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
-                                                                    .font(.system(size: 12, weight: .regular, design: .default))
-                                                                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                                            }
-                                                        }
-
-                                                        Spacer()
-
-                                                        Image(systemName: expandedMember?.id == member.id ? "chevron.up" : "chevron.down")
-                                                            .font(.system(size: 14, weight: .semibold))
-                                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                                    }
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 12)
-                                                    .contentShape(Rectangle())
-                                                }
-                                                .buttonStyle(.plain)
-
-                                                // Expanded content
-                                                if expandedMember?.id == member.id, let memberCals = member.memberCalendars?.allObjects as? [FamilyMemberCalendar] {
-                                                    let sortedCals = memberCals.sorted { ($0.isAutoLinked && !$1.isAutoLinked) || ($0.isAutoLinked == $1.isAutoLinked && ($0.calendarName ?? "") < ($1.calendarName ?? "")) }
-
-                                                    Divider()
-                                                        .padding(.horizontal, 16)
-                                                        .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-
-                                                    VStack(spacing: 0) {
-                                                        ForEach(sortedCals, id: \.self) { cal in
-                                                            HStack(spacing: 12) {
-                                                                Circle()
-                                                                    .fill(Color.fromHex(cal.calendarColorHex ?? "#007AFF"))
-                                                                    .frame(width: 8, height: 8)
-
-                                                                VStack(alignment: .leading, spacing: 2) {
-                                                                    Text(cal.calendarName ?? "Unknown")
-                                                                        .font(.system(size: 14, weight: .regular))
-                                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-                                                                }
-
-                                                                Spacer()
-
-                                                                if cal.isAutoLinked {
-                                                                    Image(systemName: "lock.fill")
-                                                                        .font(.system(size: 12))
-                                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                                                }
-                                                            }
-                                                            .padding(.horizontal, 16)
-                                                            .padding(.vertical, 10)
-                                                            .opacity(cal.isAutoLinked ? 0.6 : 1.0)
-
-                                                            if cal.id != sortedCals.last?.id {
-                                                                Divider()
-                                                                    .padding(.horizontal, 16)
-                                                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Edit button in expanded section
-                                                    Button(action: { selectedMember = member }) {
-                                                        HStack(spacing: 8) {
-                                                            Image(systemName: "pencil.circle.fill")
-                                                                .font(.system(size: 16))
-
-                                                            Text("Select Calendars")
-                                                                .font(.system(size: 14, weight: .semibold))
-                                                        }
-                                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-                                                        .frame(maxWidth: .infinity)
-                                                        .padding(.horizontal, 16)
-                                                        .padding(.vertical, 10)
-                                                    }
-                                                    .buttonStyle(.plain)
-                                                }
-
-                                                if member.id != linkedCalendars.last?.id {
-                                                    Divider()
-                                                        .padding(.horizontal, 16)
-                                                        .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
-                                                }
-                                            }
+                                        if index < linkedCalendars.count - 1 {
+                                            Divider()
+                                                .padding(.leading, 56)
                                         }
                                     }
-                                    .glassyCard(padding: 0)
-                                    .padding(.horizontal, 16)
-                                }
 
-                                // Shared Calendars
-                                if !sharedCalendars.isEmpty {
-                                    Text("Shared Calendars")
-                                        .font(.system(size: 14, weight: .semibold, design: .default))
-                                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-                                        .padding(.horizontal, 16)
+                                    // Shared Calendars
+                                    if !sharedCalendars.isEmpty {
+                                        if !linkedCalendars.isEmpty {
+                                            Divider()
+                                                .padding(.leading, 56)
+                                        }
 
-                                    VStack(spacing: 0) {
-                                        ForEach(sharedCalendars, id: \.self) { calendar in
-                                            CalendarRow(
-                                                title: calendar.calendarName ?? "Unknown",
-                                                subtitle: "Shared Family Calendar",
-                                                colorHex: calendar.calendarColorHex ?? "#007AFF",
-                                                onDelete: {
-                                                    deleteSharedCalendar(calendar)
-                                                }
-                                            )
+                                        ForEach(Array(sharedCalendars.enumerated()), id: \.element.id) { index, calendar in
+                                            sharedCalendarRow(for: calendar)
 
-                                            if calendar.id != sharedCalendars.last?.id {
+                                            if index < sharedCalendars.count - 1 {
                                                 Divider()
-                                                    .padding(.horizontal, 16)
-                                                    .opacity(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? 0.3 : 1.0)
+                                                    .padding(.leading, 56)
                                             }
                                         }
                                     }
-                                    .glassyCard(padding: 0)
-                                    .padding(.horizontal, 16)
-                                }
-
-                                // Add Shared Calendar Button
-                                Button(action: { showingAddSharedCalendar = true }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-
-                                        Text("Add Shared Calendar")
-                                            .font(.system(size: 15, weight: .regular, design: .default))
-                                            .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.accentColor : .blue)
-
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .glassyCard(padding: 0)
                                 }
                                 .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                .padding(.horizontal, 16)
                             }
+
+                            Button(action: { showingAddSharedCalendar = true }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.blue)
+
+                                    Text("Add Shared Calendar")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.blue)
+
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            }
+                            .padding(.horizontal, 16)
                         }
 
                         Spacer()
                             .frame(height: 24)
                     }
+                    .padding(.vertical, 24)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Visible Calendars")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-
-                            Text("Back")
-                        }
-                        .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? .white : .blue)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.black)
                     }
                 }
             }
@@ -273,6 +155,84 @@ struct VisibleCalendarsView: View {
         .sheet(item: $selectedMember) { member in
             SelectMemberCalendarsView(member: member)
                 .environment(\.managedObjectContext, viewContext)
+        }
+        .alert("Delete Calendar?", isPresented: $showingDeleteConfirmation, presenting: sharedCalendarPendingDelete) { calendar in
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteSharedCalendar(calendar)
+            }
+        } message: { calendar in
+            Text("Are you sure you want to remove \(calendar.calendarName ?? "this calendar")? This cannot be undone.")
+        }
+    }
+
+    private func memberRow(for member: FamilyMember) -> some View {
+        HStack(spacing: 16) {
+            if let firstCalendar = (member.memberCalendars?.allObjects as? [FamilyMemberCalendar])?.first {
+                Circle()
+                    .fill(Color.fromHex(firstCalendar.calendarColorHex ?? "#007AFF"))
+                    .frame(width: 12, height: 12)
+            } else {
+                Circle()
+                    .fill(Color.gray)
+                    .frame(width: 12, height: 12)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(member.name ?? "Unknown")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+
+                Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.gray.opacity(0.5))
+        }
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedMember = member
+        }
+    }
+
+    private func sharedCalendarRow(for calendar: SharedCalendar) -> some View {
+        Menu {
+            Button(role: .destructive, action: {
+                sharedCalendarPendingDelete = calendar
+                showingDeleteConfirmation = true
+            }) {
+                Label("Remove", systemImage: "trash.fill")
+            }
+        } label: {
+            HStack(spacing: 16) {
+                Circle()
+                    .fill(Color.fromHex(calendar.calendarColorHex ?? "#007AFF"))
+                    .frame(width: 12, height: 12)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(calendar.calendarName ?? "Unknown")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+
+                    Text("Shared Family Calendar")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray.opacity(0.5))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
     }
 
@@ -288,50 +248,7 @@ struct VisibleCalendarsView: View {
     }
 }
 
-// MARK: - CalendarRow View
-
-struct CalendarRow: View {
-    @EnvironmentObject private var themeManager: ThemeManager
-    let title: String
-    let subtitle: String
-    let colorHex: String
-    var onDelete: (() -> Void)? = nil
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Color.fromHex(colorHex))
-                .frame(width: 10, height: 10)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 16, weight: .regular, design: .default))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textPrimary : .primary)
-
-                Text(subtitle)
-                    .font(.system(size: 12, weight: .regular, design: .default))
-                    .foregroundColor(themeManager.selectedTheme.id == AppTheme.launchFlow.id ? themeManager.selectedTheme.textSecondary : .gray)
-            }
-
-            Spacer()
-
-            if let onDelete = onDelete {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(Color(.systemGray3))
-                }
-                .buttonStyle(.plain) // Use plain style to prevent the whole row from being tappable
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-}
-
-
 #Preview {
     VisibleCalendarsView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        .environmentObject(ThemeManager())
 }

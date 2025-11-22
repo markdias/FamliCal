@@ -12,105 +12,195 @@ struct DriversListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var themeManager: ThemeManager
-    @FetchRequest(entity: Driver.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)]) private var drivers: FetchedResults<Driver>
+
+    @FetchRequest(entity: Driver.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Driver.name, ascending: true)])
+    private var drivers: FetchedResults<Driver>
 
     @State private var showingAddDriver = false
+    @State private var driverPendingDelete: Driver? = nil
+    @State private var showingDeleteConfirmation = false
+    @State private var editingDriver: Driver? = nil
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-                        if drivers.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "car.fill")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(.gray)
-                                Text("No Drivers")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                Text("Add drivers to manage who can drive to events")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 48)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
-                        } else {
-                            VStack(spacing: 0) {
-                                ForEach(drivers, id: \.self) { driver in
-                                    VStack(spacing: 0) {
-                                        NavigationLink(destination: EditDriverView(driver: driver)) {
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(driver.name ?? "Unknown")
-                                                        .font(.headline)
-                                                        .foregroundColor(.primary)
-                                                    if let phone = driver.phone, !phone.isEmpty {
-                                                        Text(phone)
-                                                            .font(.subheadline)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    if let email = driver.email, !email.isEmpty {
-                                                        Text(email)
-                                                            .font(.subheadline)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                }
-                                                Spacer()
-                                                Image(systemName: "chevron.right")
-                                                    .foregroundColor(.gray.opacity(0.5))
-                                            }
-                                            .padding()
-                                        }
-                                        .buttonStyle(.plain)
+                theme.backgroundLayer().ignoresSafeArea()
 
-                                        if driver.id != drivers.last?.id {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // MARK: - Drivers Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Drivers")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(primaryTextColor)
+                                .padding(.horizontal, 16)
+
+                            if drivers.isEmpty {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "car.fill")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(secondaryTextColor)
+
+                                    Text("No Drivers")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(primaryTextColor)
+
+                                    Text("Add drivers to manage who can drive to events")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(secondaryTextColor)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 48)
+                                .background(theme.cardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(theme.cardStroke, lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                .padding(.horizontal, 16)
+                            } else {
+                                VStack(spacing: 0) {
+                                    ForEach(Array(drivers.enumerated()), id: \.element.id) { index, driver in
+                                        driverRow(for: driver)
+
+                                        if index < drivers.count - 1 {
                                             Divider()
-                                                .padding(.horizontal, 16)
+                                                .padding(.leading, 56)
                                         }
                                     }
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(theme.cardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(theme.cardStroke, lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                .padding(.horizontal, 16)
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+
+                            Button(action: { showingAddDriver = true }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(theme.accentColor)
+
+                                    Text("Add Driver")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(theme.accentColor)
+
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(theme.cardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(theme.cardStroke, lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                            }
                             .padding(.horizontal, 16)
                         }
+
+                        Spacer()
+                            .frame(height: 24)
                     }
-                    .padding(.top, 24)
+                    .padding(.vertical, 24)
                 }
             }
-            .navigationTitle("Drivers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
-                    }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showingAddDriver = true }) {
-                        Image(systemName: "plus")
-                            .foregroundColor(.blue)
-                    }
+                ToolbarItem(placement: .principal) {
+                    Text("Drivers")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(primaryTextColor)
                 }
             }
-            .sheet(isPresented: $showingAddDriver) {
-                AddDriverView()
+        }
+        .sheet(isPresented: $showingAddDriver) {
+            AddDriverView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(item: $editingDriver) { driver in
+            NavigationStack {
+                EditDriverView(driver: driver)
             }
+            .environment(\.managedObjectContext, viewContext)
+        }
+        .alert("Delete Driver?", isPresented: $showingDeleteConfirmation, presenting: driverPendingDelete) { driver in
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteDriver(driver)
+            }
+        } message: { driver in
+            Text("Are you sure you want to delete \(driver.name ?? "this driver")? This cannot be undone.")
+        }
+    }
+
+    private func driverRow(for driver: Driver) -> some View {
+        Menu {
+            Button(action: { editingDriver = driver }) {
+                Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive, action: {
+                driverPendingDelete = driver
+                showingDeleteConfirmation = true
+            }) {
+                Label("Delete", systemImage: "trash.fill")
+            }
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: "car.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                    .frame(width: 12, height: 12)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(driver.name ?? "Unknown")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(primaryTextColor)
+
+                    if let phone = driver.phone, !phone.isEmpty {
+                        Text(phone)
+                            .font(.system(size: 13))
+                            .foregroundColor(secondaryTextColor)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(secondaryTextColor.opacity(0.6))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private func deleteDriver(_ driver: Driver) {
+        viewContext.delete(driver)
+
+        do {
+            try viewContext.save()
+            print("✅ Driver deleted successfully: \(driver.name ?? "Unknown")")
+        } catch {
+            print("❌ Failed to delete driver: \(error.localizedDescription)")
+            let nsError = error as NSError
+            print("   Error domain: \(nsError.domain)")
+            print("   Error code: \(nsError.code)")
         }
     }
 

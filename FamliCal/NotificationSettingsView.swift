@@ -11,11 +11,16 @@ import CoreData
 struct NotificationSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var notificationManager = NotificationManager.shared
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                theme.backgroundLayer().ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -23,16 +28,12 @@ struct NotificationSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("General")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 notificationsToggle
                             }
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
 
                         if notificationManager.notificationsEnabled {
@@ -40,16 +41,12 @@ struct NotificationSettingsView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Morning Brief")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(secondaryTextColor)
                                     .padding(.horizontal, 16)
 
-                                VStack(spacing: 0) {
+                                settingsContainer {
                                     morningBriefSection
                                 }
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                                .padding(.horizontal, 16)
                             }
                         }
 
@@ -64,16 +61,13 @@ struct NotificationSettingsView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Notifications")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                            Text("Back")
-                        }
-                        .foregroundColor(.black)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
@@ -84,17 +78,17 @@ struct NotificationSettingsView: View {
         HStack(spacing: 16) {
             Image(systemName: "bell.fill")
                 .font(.system(size: 20))
-                .foregroundColor(.blue)
+                .foregroundColor(theme.accentColor)
                 .frame(width: 24, height: 24)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Notifications")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
+                    .foregroundColor(primaryTextColor)
 
                 Text("Receive event notifications")
                     .font(.system(size: 13))
-                    .foregroundColor(.gray)
+                    .foregroundColor(secondaryTextColor)
             }
 
             Spacer()
@@ -118,17 +112,17 @@ struct NotificationSettingsView: View {
             HStack(spacing: 16) {
                 Image(systemName: "sunrise.fill")
                     .font(.system(size: 20))
-                    .foregroundColor(.orange)
+                    .foregroundColor(theme.accentColor)
                     .frame(width: 24, height: 24)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Morning Brief")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundColor(primaryTextColor)
 
                     Text("Daily event summary")
                         .font(.system(size: 13))
-                        .foregroundColor(.gray)
+                        .foregroundColor(secondaryTextColor)
                 }
 
                 Spacer()
@@ -153,14 +147,14 @@ struct NotificationSettingsView: View {
         VStack(spacing: 16) {
             Text("Notification Time")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary)
+                .foregroundColor(primaryTextColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 16) {
                 VStack(spacing: 8) {
                     Text("Hour")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(secondaryTextColor)
 
                     Picker("Hour", selection: $notificationManager.morningBriefTime.hour) {
                         ForEach(0..<24, id: \.self) { hour in
@@ -174,7 +168,7 @@ struct NotificationSettingsView: View {
                 VStack(spacing: 8) {
                     Text("Minute")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(secondaryTextColor)
 
                     Picker("Minute", selection: $notificationManager.morningBriefTime.minute) {
                         ForEach(Array(stride(from: 0, to: 60, by: 15)), id: \.self) { minute in
@@ -193,9 +187,23 @@ struct NotificationSettingsView: View {
         }
     }
 
+    private func settingsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+        .padding(.horizontal, 16)
+    }
 }
 
 #Preview {
     NotificationSettingsView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ThemeManager())
 }

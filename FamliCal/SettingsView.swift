@@ -18,12 +18,16 @@ struct SettingsView: View {
     @State private var showingPermissions = false
     @State private var showingWidgetSettings = false
     @State private var showingHelp = false
+    
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
 
     var body: some View {
         NavigationView {
             ZStack {
                 // Background
-                Color(hex: "F2F2F7") // System Grouped Background
+                theme.backgroundLayer()
                     .ignoresSafeArea()
                 
                 ScrollView {
@@ -37,10 +41,10 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Settings")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.black)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
                             
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 Button(action: { showingFamilySettings = true }) {
                                     SettingsRowView(iconName: "person.circle", title: "My Family")
                                 }
@@ -65,22 +69,17 @@ struct SettingsView: View {
                                     SettingsRowView(iconName: "square.grid.2x2", title: "Widgets")
                                 }
                             }
-                            .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
                         
                         // More Section
                         VStack(alignment: .leading, spacing: 8) {
                             Text("More")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.black)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
                             
-                            VStack(spacing: 0) {
+                            settingsContainer {
                                 Button(action: { /* Rate & Review Action */ }) {
                                     SettingsRowView(iconName: "star.bubble", title: "Rate & Review")
                                 }
@@ -90,12 +89,7 @@ struct SettingsView: View {
                                     SettingsRowView(iconName: "questionmark.circle", title: "Help")
                                 }
                             }
-                            .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            .padding(.horizontal, 16)
                         }
                         
                         Spacer(minLength: 40)
@@ -109,7 +103,7 @@ struct SettingsView: View {
                                 Text("Log out")
                             }
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.gray)
+                            .foregroundColor(secondaryTextColor)
                         }
                         .padding(.bottom, 20)
                     }
@@ -121,14 +115,14 @@ struct SettingsView: View {
                 ToolbarItem(placement: .principal) {
                     Text("Settings")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .foregroundColor(primaryTextColor)
                 }
                 
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(primaryTextColor)
                     }
                 }
             }
@@ -160,6 +154,20 @@ struct SettingsView: View {
         .sheet(isPresented: $showingHelp) {
             HelpView()
         }
+    }
+    
+    private func settingsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(theme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(theme.cardStroke, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+        .padding(.horizontal, 16)
     }
 }
 

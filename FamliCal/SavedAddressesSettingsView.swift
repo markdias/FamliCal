@@ -12,132 +12,163 @@ import MapKit
 struct SavedAddressesSettingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject private var themeManager: ThemeManager
+
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \SavedAddress.name, ascending: true)]
     )
     private var savedAddresses: FetchedResults<SavedAddress>
-    
+
     @State private var showingAddSheet = false
+    @State private var addressPendingDelete: SavedAddress? = nil
+    @State private var showingDeleteConfirmation = false
     
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
+
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // MARK: - Saved Places Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Saved Places")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 16)
+        ZStack {
+            theme.backgroundLayer().ignoresSafeArea()
 
-                            if savedAddresses.isEmpty {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "mappin.slash.circle")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(.gray)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // MARK: - Saved Places Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Saved Places")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(primaryTextColor)
+                            .padding(.horizontal, 16)
 
-                                    Text("No saved places")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
+                        if savedAddresses.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "mappin.slash.circle")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(secondaryTextColor)
 
-                                    Text("Add favorite locations for quick access")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 32)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                                .padding(.horizontal, 16)
-                            } else {
-                                VStack(spacing: 0) {
-                                    ForEach(savedAddresses) { address in
-                                        HStack(spacing: 16) {
-                                            Image(systemName: "mappin.circle.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(.red)
-                                                .frame(width: 32, height: 32)
+                                Text("No saved places")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(primaryTextColor)
 
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(address.name ?? "Unknown")
-                                                    .font(.system(size: 16, weight: .medium))
-                                                    .foregroundColor(.primary)
+                                Text("Add favorite locations for quick access")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(secondaryTextColor)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 32)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                            .padding(.horizontal, 16)
+                        } else {
+                            VStack(spacing: 0) {
+                                ForEach(Array(savedAddresses.enumerated()), id: \.element.id) { index, address in
+                                    addressRow(for: address)
 
-                                                if let addr = address.address, !addr.isEmpty {
-                                                    Text(addr)
-                                                        .font(.system(size: 13))
-                                                        .foregroundColor(.gray)
-                                                        .lineLimit(1)
-                                                }
-                                            }
-
-                                            Spacer()
-
-                                            Button(action: { deleteAddress(address) }) {
-                                                Image(systemName: "trash")
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(.red)
-                                                    .padding(8)
-                                                    .background(Color.red.opacity(0.1))
-                                                    .clipShape(Circle())
-                                            }
-                                        }
-                                        .padding(16)
-
-                                        if address.id != savedAddresses.last?.id {
-                                            Divider()
-                                                .padding(.horizontal, 16)
-                                        }
+                                    if index < savedAddresses.count - 1 {
+                                        Divider()
+                                            .padding(.leading, 56)
                                     }
                                 }
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                                .padding(.horizontal, 16)
                             }
-
-                            Button(action: { showingAddSheet = true }) {
-                                Text("Add Saved Place")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(Color.blue)
-                                    .cornerRadius(12)
-                                    .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 3)
-                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
                             .padding(.horizontal, 16)
                         }
 
-                        Spacer()
-                    }
-                    .padding(.vertical, 16)
-                }
-            }
-            .navigationTitle("Saved Places")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
+                        Button(action: { showingAddSheet = true }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(theme.accentColor)
 
-                            Text("Back")
+                                Text("Add Saved Place")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(theme.accentColor)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
                         }
-                        .foregroundColor(.black)
+                        .padding(.horizontal, 16)
                     }
+
+                    Spacer()
+                        .frame(height: 24)
                 }
+                .padding(.vertical, 24)
             }
         }
         .sheet(isPresented: $showingAddSheet) {
             AddSavedAddressView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .alert("Delete Place?", isPresented: $showingDeleteConfirmation, presenting: addressPendingDelete) { address in
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteAddress(address)
+            }
+        } message: { address in
+            Text("Are you sure you want to delete \(address.name ?? "this place")? This cannot be undone.")
+        }
+    }
+
+    private func addressRow(for address: SavedAddress) -> some View {
+        Menu {
+            Button(role: .destructive, action: {
+                addressPendingDelete = address
+                showingDeleteConfirmation = true
+            }) {
+                Label("Delete", systemImage: "trash.fill")
+            }
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(themeManager.selectedTheme.accentColor)
+                    .frame(width: 12, height: 12)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(address.name ?? "Unknown")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(primaryTextColor)
+
+                    if let addr = address.address, !addr.isEmpty {
+                        Text(addr)
+                            .font(.system(size: 13))
+                            .foregroundColor(secondaryTextColor)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(secondaryTextColor.opacity(0.6))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
     }
     
@@ -156,76 +187,182 @@ struct SavedAddressesSettingsView: View {
 struct AddSavedAddressView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject private var themeManager: ThemeManager
+
     @State private var name = ""
     @State private var address = ""
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @State private var isSearching = false
     
+    private var theme: AppTheme { themeManager.selectedTheme }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
+
+    var isFormValid: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !address.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Name") {
-                    TextField("e.g. Home, Work, Gym", text: $name)
-                }
-                
-                Section("Address") {
-                    TextField("Search address", text: $address)
-                        .onChange(of: address) { _, newValue in
-                            if !isSearching {
-                                searchCompleter.query = newValue
+        VStack(spacing: 0) {
+            ZStack {
+                theme.backgroundLayer().ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // MARK: - Form Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            // Name Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Name")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(secondaryTextColor)
+                                    .padding(.horizontal, 16)
+
+                                TextField("e.g. Home, Work, Gym", text: $name)
+                                    .font(.system(size: 16, weight: .regular))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(theme.cardBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(theme.cardStroke, lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                    .padding(.horizontal, 16)
                             }
-                        }
-                    
-                    if !searchCompleter.results.isEmpty && !isSearching {
-                        List {
-                            ForEach(searchCompleter.results, id: \.self) { result in
-                                Button(action: {
-                                    isSearching = true
-                                    address = result.title + ", " + result.subtitle
-                                    searchCompleter.query = ""
-                                    searchCompleter.results = []
-                                    // Reset flag after a delay to allow editing again
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        isSearching = false
+
+                            // Address Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Address")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(secondaryTextColor)
+                                    .padding(.horizontal, 16)
+
+                                TextField("Search address", text: $address)
+                                    .font(.system(size: 16, weight: .regular))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(theme.cardBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(theme.cardStroke, lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                    .padding(.horizontal, 16)
+                                    .onChange(of: address) { _, newValue in
+                                        if !isSearching {
+                                            searchCompleter.query = newValue
+                                        }
                                     }
-                                }) {
-                                    VStack(alignment: .leading) {
-                                        Text(result.title)
-                                        Text(result.subtitle)
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                            }
-                        }
+
+                                // Search Results
+                                if !searchCompleter.results.isEmpty && !isSearching {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(searchCompleter.results.enumerated()), id: \.element.self) { index, result in
+                                            Button(action: {
+                                                isSearching = true
+                                                address = result.title + ", " + result.subtitle
+                                                searchCompleter.query = ""
+                                                searchCompleter.results = []
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    isSearching = false
+                                                }
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "mappin.circle.fill")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(.gray)
+                                                        .frame(width: 12, height: 12)
+
+                                                   VStack(alignment: .leading, spacing: 2) {
+                                                       Text(result.title)
+                                                           .font(.system(size: 14, weight: .medium))
+                                                            .foregroundColor(primaryTextColor)
+
+                                                       Text(result.subtitle)
+                                                           .font(.system(size: 12))
+                                                            .foregroundColor(secondaryTextColor)
+                                                            .lineLimit(1)
+                                                   }
+
+                                                    Spacer()
+                                                }
+                                                .padding(.vertical, 12)
+                                                .contentShape(Rectangle())
+                                            }
+                                            .buttonStyle(.plain)
+
+                                            if index < searchCompleter.results.count - 1 {
+                                                Divider()
+                                                    .padding(.leading, 56)
+                                            }
+                                        }
+                                   }
+                                   .padding(.horizontal, 16)
+                                   .padding(.vertical, 8)
+                                    .background(theme.cardBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(theme.cardStroke, lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
+                                    .padding(.horizontal, 16)
+                               }
+                           }
+                       }
+
+                        Spacer()
                     }
+                    .padding(.vertical, 24)
                 }
             }
-            .navigationTitle("Add Place")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button(action: { dismiss() }) {
+                        Text("Cancel")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(secondaryTextColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(theme.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(theme.cardStroke, lineWidth: 1)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
                     }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveAddress()
+
+                    Button(action: { saveAddress() }) {
+                        Text("Save")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(isFormValid ? theme.accentFillStyle() : AnyShapeStyle(Color.gray.opacity(0.5)))
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(theme.prefersDarkInterface ? 0.4 : 0.06), radius: theme.prefersDarkInterface ? 14 : 6, x: 0, y: theme.prefersDarkInterface ? 8 : 3)
                     }
-                    .disabled(name.isEmpty || address.isEmpty)
+                    .disabled(!isFormValid)
                 }
+                .padding(.horizontal, 16)
             }
+            .padding(.bottom, 24)
+            .background(theme.backgroundLayer())
         }
     }
-    
+
     private func saveAddress() {
         let newAddress = SavedAddress(context: viewContext)
         newAddress.id = UUID()
-        newAddress.name = name
-        newAddress.address = address
-        
+        newAddress.name = name.trimmingCharacters(in: .whitespaces)
+        newAddress.address = address.trimmingCharacters(in: .whitespaces)
+
         do {
             try viewContext.save()
             dismiss()
