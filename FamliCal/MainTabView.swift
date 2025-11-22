@@ -73,11 +73,15 @@ struct MainTabView: View {
                 VStack {
                     Spacer()
                     HStack(alignment: .center) {
-                        compactControlStack
+                        leftControlCluster
+
+                        if activeView == .calendar {
+                            Spacer().frame(width: 16)
+                            middleControlCluster
+                        }
 
                         Spacer()
 
-                        // Add event button in bottom right
                         primaryActionButton
                     }
                     .padding(.horizontal, 16)
@@ -111,7 +115,7 @@ struct MainTabView: View {
         }
     }
 
-    private var compactControlStack: some View {
+    private var leftControlCluster: some View {
         HStack(spacing: 12) {
             SettingsControlButton(imageName: "gearshape.fill", action: {
                 showingSettings = true
@@ -128,31 +132,40 @@ struct MainTabView: View {
             }, theme: theme)
             .accessibilityLabel(activeView == .events ? "Open calendar view" : "Return to event list")
             .accessibilityHint(activeView == .events ? "Switch to calendar grid" : "Switch to events list")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(theme.floatingControlsBackground)
+        .overlay(
+            Capsule()
+                .stroke(theme.floatingControlsBorder, lineWidth: 1)
+        )
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+    }
 
-            if activeView == .calendar {
-                SettingsControlButton(imageName: calendarDisplayMode == .month ? "calendar.day.timeline.left" : "calendar", action: {
-                    toggleCalendarDisplayMode()
-                }, theme: theme)
-                .accessibilityLabel("Toggle month or day view")
-            }
+    private var middleControlCluster: some View {
+        HStack(spacing: 12) {
+            SettingsControlButton(imageName: calendarDisplayMode == .month ? "calendar.day.timeline.left" : "calendar", action: {
+                toggleCalendarDisplayMode()
+            }, theme: theme)
+            .accessibilityLabel("Toggle month or day view")
 
-            if activeView == .calendar {
-                Button(action: {
-                    calendarTodayTrigger = UUID()
-                }) {
-                    Text("Today")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(theme.accentFillStyle())
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Jump to today")
+            Button(action: {
+                calendarTodayTrigger = UUID()
+            }) {
+                Text("Today")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(theme.accentFillStyle())
+                    )
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Jump to today")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

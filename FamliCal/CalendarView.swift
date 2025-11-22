@@ -137,6 +137,7 @@ struct CalendarView: View {
             }
             .navigationBarHidden(true)
         }
+        .navigationViewStyle(.stack)
         .sheet(isPresented: $showingEventDetail) {
             if let event = selectedEvent {
                 EventDetailView(event: event)
@@ -234,7 +235,6 @@ struct CalendarView: View {
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             } else {
                 dailyView
-                    .modifier(FullScreenDayModifier(enabled: fullScreenDay))
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             }
         }
@@ -242,6 +242,7 @@ struct CalendarView: View {
         .padding(.top, fullScreenDay ? 0 : 16)
         .padding(.bottom, fullScreenDay ? 0 : 120)
         .frame(maxWidth: .infinity, maxHeight: isDayMode ? .infinity : nil, alignment: .top)
+        .modifier(FullScreenDayModifier(enabled: fullScreenDay))
     }
 
     private var monthView: some View {

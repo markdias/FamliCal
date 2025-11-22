@@ -191,7 +191,6 @@ struct DailyEventsView: View {
             }
         }
         .padding(.leading, timeColumnWidth)
-        .padding(.horizontal, 8)
     }
 
     private var timelineView: some View {
@@ -204,7 +203,7 @@ struct DailyEventsView: View {
                         .frame(width: 45, alignment: .trailing)
                         .alignmentGuide(.top) { d in d[VerticalAlignment.center] }
 
-                    VStack {
+                    VStack(spacing: 0) {
                         Divider()
                     }
                 }
