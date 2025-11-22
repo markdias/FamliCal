@@ -490,20 +490,12 @@ struct FamilyView: View {
                 .stroke(theme.cardStroke, lineWidth: 1)
         )
         .overlay(
-            // Left side bar - positioned outside the card
-            VStack(spacing: 0) {
-                barColor
-                    .frame(width: barWidth)
-                    .cornerRadius(barWidth / 2, corners: [.topLeft])
-
-                barColor
-                    .frame(width: barWidth)
-
-                barColor
-                    .frame(width: barWidth)
-                    .cornerRadius(barWidth / 2, corners: [.bottomLeft])
-            }
-            .frame(width: barWidth, height: 90, alignment: .topLeading),
+            // Left side bar - positioned outside the card, full height
+            Rectangle()
+                .fill(barColor)
+                .frame(width: barWidth)
+                .cornerRadius(barWidth / 2)
+                .frame(maxHeight: .infinity, alignment: .center),
             alignment: .leading
         )
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
