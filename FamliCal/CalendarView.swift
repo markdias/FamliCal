@@ -50,8 +50,10 @@ struct CalendarView: View {
     @State private var memberColors: [NSManagedObjectID: UIColor] = [:]
     @Namespace private var animationNamespace
     @State private var calendarDisplayMode: CalendarDisplayMode
+    private var externalDisplayMode: Binding<CalendarDisplayMode>?
+    private var todayTrigger: Binding<UUID>?
 
-    private enum CalendarDisplayMode: String, CaseIterable {
+    enum CalendarDisplayMode: String, CaseIterable {
         case month = "Month"
         case day = "Day"
     }
@@ -81,6 +83,18 @@ struct CalendarView: View {
         return formatter
     }()
 
+    private static let monthOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter
+    }()
+
+    private static let yearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        return formatter
+    }()
+
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "d"
@@ -99,8 +113,10 @@ struct CalendarView: View {
         return formatter
     }()
 
-    init(startInDayMode: Bool = false, selectedDateBinding: Binding<Date>, onAddEventRequested: ((Date) -> Void)? = nil) {
-        _calendarDisplayMode = State(initialValue: startInDayMode ? .day : .month)
+    init(startInDayMode: Bool = false, selectedDateBinding: Binding<Date>, displayMode: Binding<CalendarDisplayMode>? = nil, todayTrigger: Binding<UUID>? = nil, onAddEventRequested: ((Date) -> Void)? = nil) {
+        _calendarDisplayMode = State(initialValue: displayMode?.wrappedValue ?? (startInDayMode ? .day : .month))
+        self.externalDisplayMode = displayMode
+        self.todayTrigger = todayTrigger
         self._selectedDateBinding = selectedDateBinding
         self.onAddEventRequested = onAddEventRequested
     }
@@ -131,6 +147,12 @@ struct CalendarView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
             loadEvents()
+        }
+        .onChange(of: calendarDisplayMode) { _, newValue in
+            externalDisplayMode?.wrappedValue = newValue
+        }
+        .onChange(of: externalDisplayMode?.wrappedValue ?? calendarDisplayMode) { _, newValue in
+            calendarDisplayMode = newValue
         }
         .onAppear {
             if isCompactHeight {
@@ -175,6 +197,10 @@ struct CalendarView: View {
                 calendarDisplayMode = .day
             }
         }
+        .onChange(of: todayTrigger?.wrappedValue) { _, _ in
+            currentMonth = Date()
+            selectedDate = Date()
+        }
         .onDisappear(perform: cleanupView)
     }
 
@@ -185,42 +211,21 @@ struct CalendarView: View {
 
         VStack(alignment: .leading, spacing: isDayMode ? 16 : 24) {
             if !fullScreenDay {
-                // Header with month/year and Today button
+                // Header with centered month/year
                 HStack {
-                    Text(Self.monthFormatter.string(from: currentMonth))
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .padding(.leading)
-
                     Spacer()
 
-                    Button(action: {
-                        withAnimation {
-                            currentMonth = Date()
-                            selectedDate = Date()
-                        }
-                    }) {
-                        Text("Today")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .fill(theme.accentFillStyle())
-                            )
+                    VStack(spacing: 2) {
+                        Text(Self.monthOnlyFormatter.string(from: currentMonth))
+                            .font(.system(size: 22, weight: .bold))
+                        Text(Self.yearFormatter.string(from: currentMonth))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(secondaryTextColor)
                     }
-                    .padding(.trailing)
+
+                    Spacer()
                 }
                 .padding(.vertical, 12)
-
-                Picker("View Mode", selection: $calendarDisplayMode.animation()) {
-                    ForEach(CalendarDisplayMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
             }
 
             // Calendar grid
@@ -229,10 +234,11 @@ struct CalendarView: View {
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             } else {
                 dailyView
+                    .modifier(FullScreenDayModifier(enabled: fullScreenDay))
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             }
         }
-        .padding(.horizontal, isDayMode ? 0 : 16)
+        .padding(.horizontal, 0)
         .padding(.top, fullScreenDay ? 0 : 16)
         .padding(.bottom, fullScreenDay ? 0 : 120)
         .frame(maxWidth: .infinity, maxHeight: isDayMode ? .infinity : nil, alignment: .top)
@@ -260,7 +266,7 @@ struct CalendarView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 0)
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -284,8 +290,10 @@ struct CalendarView: View {
             // Selected day details
             if let events = dayEvents[formatDateKey(selectedDate)], !events.isEmpty {
                 dayDetailsView(for: events)
+                    .padding(.horizontal, 16)
             } else {
                 noEventsView
+                    .padding(.horizontal, 16)
             }
         }
     }
@@ -1131,6 +1139,19 @@ struct CalendarView: View {
         } catch {
             print("⚠️ Failed to load linked events: \(error.localizedDescription)")
             return []
+        }
+    }
+}
+
+private struct FullScreenDayModifier: ViewModifier {
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .ignoresSafeArea(.all)
+        } else {
+            content
         }
     }
 }

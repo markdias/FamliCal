@@ -33,6 +33,8 @@ struct MainTabView: View {
     @State private var showingSearch = false
     @State private var addEventInitialDate: Date? = nil
     @State private var calendarSelectedDate: Date = Date()
+    @State private var calendarDisplayMode: CalendarView.CalendarDisplayMode
+    @State private var calendarTodayTrigger = UUID()
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var themeManager: ThemeManager
 
@@ -44,6 +46,7 @@ struct MainTabView: View {
         let savedDefault = DefaultHomeScreen(rawValue: UserDefaults.standard.string(forKey: "defaultHomeScreen") ?? "") ?? .family
         _activeView = State(initialValue: MainTabView.activeView(for: savedDefault))
         _startCalendarInDayMode = State(initialValue: savedDefault == .calendarDay)
+        _calendarDisplayMode = State(initialValue: savedDefault == .calendarDay ? .day : .month)
     }
 
     var body: some View {
@@ -57,7 +60,7 @@ struct MainTabView: View {
                         onChangeViewRequested: { switchToView(.calendar) }
                     )
                 case .calendar:
-                    CalendarView(startInDayMode: startCalendarInDayMode, selectedDateBinding: $calendarSelectedDate, onAddEventRequested: { date in
+                    CalendarView(startInDayMode: startCalendarInDayMode, selectedDateBinding: $calendarSelectedDate, displayMode: $calendarDisplayMode, todayTrigger: $calendarTodayTrigger, onAddEventRequested: { date in
                         addEventInitialDate = date
                         showingAddEvent = true
                     })
@@ -102,6 +105,9 @@ struct MainTabView: View {
             if activeView != targetView {
                 activeView = targetView
             }
+            if targetView == .calendar {
+                calendarDisplayMode = startCalendarInDayMode ? .day : .month
+            }
         }
     }
 
@@ -122,6 +128,31 @@ struct MainTabView: View {
             }, theme: theme)
             .accessibilityLabel(activeView == .events ? "Open calendar view" : "Return to event list")
             .accessibilityHint(activeView == .events ? "Switch to calendar grid" : "Switch to events list")
+
+            if activeView == .calendar {
+                SettingsControlButton(imageName: calendarDisplayMode == .month ? "calendar.day.timeline.left" : "calendar", action: {
+                    toggleCalendarDisplayMode()
+                }, theme: theme)
+                .accessibilityLabel("Toggle month or day view")
+            }
+
+            if activeView == .calendar {
+                Button(action: {
+                    calendarTodayTrigger = UUID()
+                }) {
+                    Text("Today")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(theme.accentFillStyle())
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Jump to today")
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -206,6 +237,12 @@ struct MainTabView: View {
             }
         }()
         switchToView(next)
+    }
+
+    private func toggleCalendarDisplayMode() {
+        withAnimation(.easeInOut) {
+            calendarDisplayMode = calendarDisplayMode == .month ? .day : .month
+        }
     }
 }
 
