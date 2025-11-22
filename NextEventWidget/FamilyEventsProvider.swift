@@ -8,6 +8,7 @@
 import WidgetKit
 import EventKit
 import CoreData
+import UIKit
 
 /// Timeline provider for family events widget
 struct FamilyEventsProvider: TimelineProvider {
@@ -215,6 +216,16 @@ struct FamilyEventsProvider: TimelineProvider {
                     continue
                 }
 
+                // Get calendar color from EKCalendar
+                var calendarColorHex = "#007AFF"  // Default blue
+                if let cgColor = ekEvent.calendar.cgColor,
+                   let components = cgColor.components, components.count >= 3 {
+                    let r = Int(components[0] * 255)
+                    let g = Int(components[1] * 255)
+                    let b = Int(components[2] * 255)
+                    calendarColorHex = String(format: "#%02X%02X%02X", r, g, b)
+                }
+
                 let eventItem = EventItem(
                     id: ekEvent.eventIdentifier,
                     title: ekEvent.title ?? "Event",
@@ -222,16 +233,23 @@ struct FamilyEventsProvider: TimelineProvider {
                     endDate: ekEvent.endDate,
                     memberName: memberInfo.name,
                     memberColorHex: memberInfo.colorHex,
+                    calendarColorHex: calendarColorHex,
                     location: ekEvent.location
                 )
                 eventItems.append(eventItem)
             }
 
+            // Read widget display settings
+            let showTime = defaults.object(forKey: "widgetShowTime") as? Bool ?? true
+            let showLocation = defaults.object(forKey: "widgetShowLocation") as? Bool ?? true
+            let showAttendees = defaults.object(forKey: "widgetShowAttendees") as? Bool ?? true
+            let showDrivers = defaults.object(forKey: "widgetShowDrivers") as? Bool ?? true
+
             if eventItems.isEmpty {
                 return FamilyEventsEntry(date: Date(), errorMessage: "No upcoming events")
             }
 
-            return FamilyEventsEntry(date: Date(), events: eventItems, maxEvents: actualMaxEvents)
+            return FamilyEventsEntry(date: Date(), events: eventItems, maxEvents: actualMaxEvents, showTime: showTime, showLocation: showLocation, showAttendees: showAttendees, showDrivers: showDrivers)
 
         } catch {
             let errorMsg = "Error: \(error.localizedDescription)"

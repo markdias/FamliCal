@@ -12,6 +12,11 @@ struct FamilyEventsWidgetView: View {
     let entry: FamilyEventsProvider.Entry
     @Environment(\.widgetFamily) var family
 
+    var showTime: Bool { entry.showTime }
+    var showLocation: Bool { entry.showLocation }
+    var showAttendees: Bool { entry.showAttendees }
+    var showDrivers: Bool { entry.showDrivers }
+
     var body: some View {
         Group {
             if #available(iOS 17.0, *), family == .accessoryRectangular {
@@ -48,23 +53,35 @@ struct FamilyEventsWidgetView: View {
                 let events = entry.events.prefix(3)
                 ForEach(events, id: \.id) { event in
                     HStack(spacing: 6) {
+                        // Use calendar color instead of member color
                         Circle()
-                            .fill(Color(UIColor(hex: event.memberColorHex)))
+                            .fill(Color(UIColor(hex: event.calendarColorHex)))
                             .frame(width: 4, height: 4)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(event.title)
                                 .font(.system(size: 11, weight: .semibold))
                                 .lineLimit(1)
-                            Text("\(Self.dateFormatter.string(from: event.startDate)) · \(Self.timeFormatter.string(from: event.startDate))–\(Self.timeFormatter.string(from: event.endDate))")
-                                .font(.system(size: 9))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                            if let location = event.location, !location.isEmpty {
-                                Text(location)
+
+                            // Conditional time display
+                            if showTime {
+                                Text("\(Self.dateFormatter.string(from: event.startDate)) · \(Self.timeFormatter.string(from: event.startDate))–\(Self.timeFormatter.string(from: event.endDate))")
                                     .font(.system(size: 9))
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
                             } else {
+                                Text(Self.dateFormatter.string(from: event.startDate))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+
+                            // Conditional location or attendee display
+                            if showLocation, let location = event.location, !location.isEmpty {
+                                Text(location)
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            } else if showAttendees {
                                 Text(event.memberName)
                                     .font(.system(size: 9))
                                     .foregroundColor(.secondary)
@@ -105,11 +122,12 @@ struct FamilyEventsWidgetView: View {
     }
 
     private func eventRow(_ event: EventItem, leadingDate: String? = nil) -> some View {
-        let memberColor = Color(UIColor(hex: event.memberColorHex))
+        let calendarColor = Color(UIColor(hex: event.calendarColorHex))
         let timeStr = Self.timeFormatter.string(from: event.startDate)
         let endTimeStr = Self.timeFormatter.string(from: event.endDate)
 
         return HStack(spacing: 8) {
+            // Date column (52pt width, only first event of day)
             if let leadingDate {
                 Text(leadingDate)
                     .font(.system(size: 12, weight: .semibold))
@@ -120,9 +138,9 @@ struct FamilyEventsWidgetView: View {
                     .frame(width: 52)
             }
 
-            // Member color indicator
+            // Calendar color indicator (using calendar color, not member color)
             Circle()
-                .fill(memberColor)
+                .fill(calendarColor)
                 .frame(width: 4, height: 4)
 
             // Event details
@@ -135,19 +153,24 @@ struct FamilyEventsWidgetView: View {
 
                     Spacer()
 
-                    // Time
-                    Text("\(timeStr)–\(endTimeStr)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.secondary)
+                    // Time (conditional based on settings)
+                    if showTime {
+                        Text("\(timeStr)–\(endTimeStr)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.secondary)
+                    }
                 }
 
-                // Member name
-                Text(event.memberName)
-                    .font(.system(size: 10, weight: .regular))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                // Member name (conditional based on settings)
+                if showAttendees {
+                    Text(event.memberName)
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
 
-                if let location = event.location, !location.isEmpty {
+                // Location (conditional based on settings)
+                if showLocation, let location = event.location, !location.isEmpty {
                     Text(location)
                         .font(.system(size: 10, weight: .regular))
                         .foregroundColor(.secondary)
@@ -274,6 +297,7 @@ struct FamilyEventsWidgetView: View {
         endDate: Date(timeIntervalSinceNow: 5400),
         memberName: "John Doe",
         memberColorHex: "#007AFF",
+        calendarColorHex: "#FF3B30",
         location: "Conference Room A"
     )
 
@@ -284,6 +308,7 @@ struct FamilyEventsWidgetView: View {
         endDate: Date(timeIntervalSinceNow: 9000),
         memberName: "Sarah Smith",
         memberColorHex: "#FF2D55",
+        calendarColorHex: "#34C759",
         location: "Cafeteria"
     )
 
@@ -301,6 +326,7 @@ struct FamilyEventsWidgetView: View {
         endDate: Date(timeIntervalSinceNow: 5400),
         memberName: "John Doe",
         memberColorHex: "#007AFF",
+        calendarColorHex: "#FF3B30",
         location: "Conference Room A"
     )
 
@@ -311,6 +337,7 @@ struct FamilyEventsWidgetView: View {
         endDate: Date(timeIntervalSinceNow: 9000),
         memberName: "Sarah Smith",
         memberColorHex: "#FF2D55",
+        calendarColorHex: "#34C759",
         location: "Cafeteria"
     )
 

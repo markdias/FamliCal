@@ -15,6 +15,7 @@ struct EventItem: Codable {
     let endDate: Date
     let memberName: String
     let memberColorHex: String
+    let calendarColorHex: String
     let location: String?
 }
 
@@ -24,13 +25,21 @@ struct FamilyEventsEntry: TimelineEntry {
     let events: [EventItem]
     let errorMessage: String?
     let maxEvents: Int
+    let showTime: Bool
+    let showLocation: Bool
+    let showAttendees: Bool
+    let showDrivers: Bool
 
     /// Initialize with event list
-    init(date: Date = Date(), events: [EventItem], maxEvents: Int = 10) {
+    init(date: Date = Date(), events: [EventItem], maxEvents: Int = 10, showTime: Bool = true, showLocation: Bool = true, showAttendees: Bool = true, showDrivers: Bool = true) {
         self.date = date
         self.events = events
         self.maxEvents = maxEvents
         self.errorMessage = nil
+        self.showTime = showTime
+        self.showLocation = showLocation
+        self.showAttendees = showAttendees
+        self.showDrivers = showDrivers
     }
 
     /// Initialize with error
@@ -39,6 +48,10 @@ struct FamilyEventsEntry: TimelineEntry {
         self.events = []
         self.maxEvents = 10
         self.errorMessage = errorMessage
+        self.showTime = true
+        self.showLocation = true
+        self.showAttendees = true
+        self.showDrivers = true
     }
 
     /// Initialize as placeholder
@@ -47,5 +60,9 @@ struct FamilyEventsEntry: TimelineEntry {
         self.events = []
         self.maxEvents = 10
         self.errorMessage = nil
+        self.showTime = true
+        self.showLocation = true
+        self.showAttendees = true
+        self.showDrivers = true
     }
 }
