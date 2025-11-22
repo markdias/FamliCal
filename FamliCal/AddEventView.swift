@@ -127,14 +127,14 @@ struct AddEventView: View {
     }
 
     private var theme: AppTheme { themeManager.selectedTheme }
-    private var primaryTextColor: Color { Color.black.opacity(0.9) }
-    private var secondaryTextColor: Color { Color.black.opacity(0.55) }
-    private var formBackground: Color { Color(red: 0.95, green: 0.95, blue: 0.97) }
-    private var cardBackground: Color { Color.white }
-    private var sectionBorder: Color { Color.black.opacity(0.04) }
-    private var fieldBackground: Color { Color.white }
-    private var chipBackground: Color { Color(red: 0.9, green: 0.9, blue: 0.93) }
+    private var primaryTextColor: Color { theme.textPrimary }
+    private var secondaryTextColor: Color { theme.textSecondary }
+    private var cardBackground: Color { theme.cardBackground }
+    private var sectionBorder: Color { theme.cardStroke }
+    private var fieldBackground: Color { theme.cardBackground }
+    private var chipBackground: Color { theme.chromeOverlay }
     private var accentColor: Color { theme.accentColor }
+    private var cardShadow: Color { Color.black.opacity(theme.prefersDarkInterface ? 0.35 : 0.05) }
 
     @ViewBuilder
     private func sectionHeading(_ text: String) -> some View {
@@ -173,7 +173,7 @@ struct AddEventView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                formBackground
+                theme.backgroundLayer()
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -836,7 +836,7 @@ struct AddEventView: View {
                         lineWidth: 1.5
                     )
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 12, y: 6)
+            .shadow(color: cardShadow, radius: 12, y: 6)
         }
     }
 

@@ -74,8 +74,8 @@ struct AddSharedCalendarView: View {
                                 ForEach(Array(calendarsBySource.keys.sorted()), id: \.self) { sourceTitle in
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text(sourceTitle)
-                                            .font(.system(size: 16, weight: .semibold, design: .default))
-                                            .foregroundColor(primaryTextColor)
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(secondaryTextColor)
                                             .padding(.horizontal, 16)
 
                                         VStack(spacing: 0) {
@@ -92,11 +92,11 @@ struct AddSharedCalendarView: View {
                                                             .fill(Color(uiColor: calendar.color))
                                                             .frame(width: 12, height: 12)
 
-                                                       VStack(alignment: .leading, spacing: 2) {
-                                                           Text(calendar.title)
-                                                               .font(.system(size: 16, weight: .semibold, design: .default))
+                                                        VStack(alignment: .leading, spacing: 2) {
+                                                            Text(calendar.title)
+                                                                .font(.system(size: 16, weight: .medium, design: .default))
                                                                 .foregroundColor(primaryTextColor)
-                                                       }
+                                                        }
 
                                                         Spacer()
 
@@ -105,23 +105,23 @@ struct AddSharedCalendarView: View {
                                                                 .font(.system(size: 20))
                                                                 .foregroundColor(.green)
                                                         } else {
-                                                           Image(systemName: "circle")
-                                                               .font(.system(size: 20))
+                                                            Image(systemName: "circle")
+                                                                .font(.system(size: 20))
                                                                 .foregroundColor(secondaryTextColor)
-                                                       }
-                                                   }
-                                                   .padding(.vertical, 12)
-                                                   .contentShape(Rectangle())
+                                                        }
+                                                    }
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 12)
+                                                    .contentShape(Rectangle())
                                                }
                                                 .disabled(isAlreadyAdded)
 
                                                 if index < (calendarsBySource[sourceTitle] ?? []).count - 1 {
                                                     Divider()
-                                                        .padding(.leading, 56)
+                                                        .padding(.leading, 44)
                                                 }
                                             }
                                         }
-                                        .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
                                         .background(theme.cardBackground)
                                         .overlay(

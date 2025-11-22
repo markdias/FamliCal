@@ -11,6 +11,7 @@ import WidgetKit
 struct FamilyEventsWidgetView: View {
     let entry: FamilyEventsProvider.Entry
     @Environment(\.widgetFamily) var family
+    private let cardCornerRadius: CGFloat = 26
 
     var showTime: Bool { entry.showTime }
     var showLocation: Bool { entry.showLocation }
@@ -30,16 +31,27 @@ struct FamilyEventsWidgetView: View {
 
     private func standardContent() -> some View {
         ZStack {
-            baseBackground
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .fill(cardBackground)
+                .shadow(color: shadowColor, radius: 10, x: 0, y: 6)
 
-            if !entry.events.isEmpty {
-                groupedEventList()
-            } else if let error = entry.errorMessage {
-                errorContent(error)
-            } else {
-                loadingContent()
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .stroke(cardStroke, lineWidth: 0.5)
+
+            Group {
+                if !entry.events.isEmpty {
+                    groupedEventList()
+                } else if let error = entry.errorMessage {
+                    errorContent(error)
+                } else {
+                    loadingContent()
+                }
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
     }
 
     @available(iOS 17.0, *)
@@ -149,7 +161,8 @@ struct FamilyEventsWidgetView: View {
                     Text(event.title)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.primary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
 
                     Spacer()
 
@@ -235,7 +248,34 @@ struct FamilyEventsWidgetView: View {
     }()
 
     private var baseBackground: Color {
-        Color(UIColor.systemBackground)
+        if #available(iOS 17.0, *), family == .accessoryRectangular {
+            return Color(UIColor.systemBackground)
+        }
+        return cardBackground
+    }
+
+    private var cardBackground: Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 0.08, alpha: 0.92)
+                : UIColor(white: 1.0, alpha: 1.0)
+        })
+    }
+
+    private var cardStroke: Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor.white.withAlphaComponent(0.08)
+                : UIColor.black.withAlphaComponent(0.05)
+        })
+    }
+
+    private var shadowColor: Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor.black.withAlphaComponent(0.35)
+                : UIColor.black.withAlphaComponent(0.12)
+        })
     }
 
     private var monthGroups: [(monthStart: Date, days: [(date: Date, events: [EventItem])])] {

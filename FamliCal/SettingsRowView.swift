@@ -23,19 +23,20 @@ struct SettingsRowView: View {
                 .font(.system(size: 20))
                 .foregroundColor(secondaryTextColor)
                 .frame(width: 24, height: 24)
-            
+
             Text(title)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(primaryTextColor)
-            
+
             Spacer()
-            
+
             if showChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(secondaryTextColor.opacity(0.6))
             }
         }
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
 }

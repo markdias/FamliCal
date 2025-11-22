@@ -59,7 +59,7 @@ struct FamilySettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Family Members")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(primaryTextColor)
+                                .foregroundColor(secondaryTextColor)
                                 .padding(.horizontal, 16)
 
                             if familyMembers.isEmpty {
@@ -225,7 +225,7 @@ struct FamilySettingsView: View {
                         .foregroundColor(primaryTextColor)
 
                     Text("\((member.memberCalendars?.count) ?? 0) calendar\((member.memberCalendars?.count) ?? 0 != 1 ? "s" : "")")
-                        .font(.system(size: 13))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(secondaryTextColor)
                 }
 
@@ -235,6 +235,7 @@ struct FamilySettingsView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(secondaryTextColor.opacity(0.6))
             }
+            .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .contentShape(Rectangle())
         }
