@@ -168,7 +168,9 @@ struct CalendarView: View {
 
     @ViewBuilder
     private var content: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        let isDayMode = calendarDisplayMode == .day
+
+        VStack(alignment: .leading, spacing: isDayMode ? 16 : 24) {
             // Header with month/year and Today button
             HStack {
                 Text(Self.monthFormatter.string(from: currentMonth))
@@ -215,9 +217,10 @@ struct CalendarView: View {
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, isDayMode ? 0 : 16)
         .padding(.top, 16)
-        .padding(.bottom, 120)
+        .padding(.bottom, isDayMode ? 0 : 120)
+        .frame(maxWidth: .infinity, maxHeight: isDayMode ? .infinity : nil, alignment: .top)
     }
 
     private var monthView: some View {
@@ -311,7 +314,7 @@ struct CalendarView: View {
             familyMembers: Array(familyMembers),
             memberColors: memberColors
         )
-        .frame(minHeight: 300)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .gesture(
             DragGesture()
                 .onEnded { value in

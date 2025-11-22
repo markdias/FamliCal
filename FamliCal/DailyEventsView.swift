@@ -3,6 +3,7 @@ import CoreData
 
 struct DailyEventsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     var events: [DayEventItem]
     var selectedDate: Date
     var selectedDateString: String
@@ -12,88 +13,107 @@ struct DailyEventsView: View {
     @State private var tappedEvent: DayEventItem?
     @State private var selectedMemberIDs: [NSManagedObjectID] = []
     @State private var currentTime = Date()
-    @State private var scrollPositioned = false
     @State private var timer: Timer?
 
+    private let timeColumnWidth: CGFloat = 60
     private let hourHeight: CGFloat = 60
+    private let overlappingEventSpacing: CGFloat = 4
+    private let memberColumnSpacing: CGFloat = 8
     private let allDayTitleLineHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight
     private let allDayRowHeight: CGFloat = UIFont.systemFont(ofSize: 13, weight: .semibold).lineHeight + 4
     private let calendar = Calendar.current
     private var theme: AppTheme { themeManager.selectedTheme }
 
     var body: some View {
-        let filteredEvents = events.filter { event in
-            if selectedMemberIDs.isEmpty {
-                return true // Show all if no filter is selected
+        GeometryReader { proxy in
+            let isLandscape = verticalSizeClass == .compact
+            let filteredEvents = events.filter { event in
+                if selectedMemberIDs.isEmpty {
+                    return true // Show all if no filter is selected
+                }
+                return !Set(selectedMemberIDs).isDisjoint(with: Set(event.memberIDs))
             }
-            return !Set(selectedMemberIDs).isDisjoint(with: Set(event.memberIDs))
-        }
-        let timedEvents = filteredEvents.filter { !$0.isAllDay }
-        let allDayEvents = filteredEvents.filter { $0.isAllDay }
+            let timedEvents = filteredEvents.filter { !$0.isAllDay }
+            let allDayEvents = filteredEvents.filter { $0.isAllDay }
+            let activeMembers = currentActiveMembers
 
-        return VStack(alignment: .leading, spacing: 0) {
-            Text(selectedDateString)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(theme.cardBackground)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(selectedDateString)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(theme.cardBackground)
 
-            memberFilterView
-                .padding(.bottom, 8)
+                    memberFilterView
+                        .padding(.bottom, 8)
 
-            if !allDayEvents.isEmpty {
-                allDayEventsSection(for: allDayEvents)
-            }
+                    if isLandscape && !activeMembers.isEmpty {
+                        memberColumnsHeader(for: activeMembers, totalWidth: proxy.size.width)
+                            .padding(.bottom, 8)
+                    }
+                }
 
-            ScrollViewReader { scrollProxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ZStack(alignment: .topLeading) {
-                            timelineView
-                            eventsView(for: timedEvents)
+                Divider()
 
-                            // Current time line
-                            if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
-                                VStack(spacing: 0) {
-                                    Spacer()
-                                        .frame(height: yOffset(for: currentTime))
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if !allDayEvents.isEmpty {
+                                allDayEventsSection(for: allDayEvents)
+                            }
 
-                                    HStack(spacing: 0) {
-                                        Circle()
-                                            .fill(Color.red)
-                                            .frame(width: 8, height: 8)
+                            ZStack(alignment: .topLeading) {
+                                timelineView
+                                eventsView(for: timedEvents, isLandscape: isLandscape, activeMembers: activeMembers)
 
-                                        Rectangle()
-                                            .fill(Color.red)
-                                            .frame(height: 0.5)
+                                // Current time line
+                                if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
+                                    VStack(spacing: 0) {
+                                        Spacer()
+                                            .frame(height: yOffset(for: currentTime))
+
+                                        HStack(spacing: 0) {
+                                            Circle()
+                                                .fill(Color.red)
+                                                .frame(width: 8, height: 8)
+
+                                            Rectangle()
+                                                .fill(Color.red)
+                                                .frame(height: 0.5)
+                                        }
+                                        .id("currentTime")
+
+                                        Spacer()
                                     }
-                                    .id("currentTime")
+                                }
+                            }
+                            .padding(.top, 10)
 
-                                    Spacer()
+                            Spacer(minLength: 24)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
+                                withAnimation {
+                                    scrollProxy.scrollTo("currentTime", anchor: .center)
                                 }
                             }
                         }
-                        .padding(.top, 10)
-                    }
-                }
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if calendar.isDate(selectedDate, inSameDayAs: currentTime) {
-                            withAnimation {
-                                scrollProxy.scrollTo("currentTime", anchor: .center)
-                            }
-                        }
                     }
                 }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .background(theme.cardBackground)
+            .cornerRadius(isLandscape ? 0 : 16)
+            .overlay(
+                RoundedRectangle(cornerRadius: isLandscape ? 0 : 16)
+                    .stroke(theme.cardStroke, lineWidth: 1)
+            )
         }
-        .background(theme.cardBackground)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(theme.cardStroke, lineWidth: 1)
-        )
         .onAppear {
             selectedMemberIDs = familyMembers.map { $0.objectID }
             startTimeUpdates()
@@ -101,6 +121,11 @@ struct DailyEventsView: View {
         .onDisappear {
             stopTimeUpdates()
         }
+    }
+
+    private var currentActiveMembers: [FamilyMember] {
+        let selectedIDs = selectedMemberIDs.isEmpty ? Set(familyMembers.map { $0.objectID }) : Set(selectedMemberIDs)
+        return familyMembers.filter { selectedIDs.contains($0.objectID) }
     }
 
     private var memberFilterView: some View {
@@ -131,6 +156,39 @@ struct DailyEventsView: View {
         }
     }
 
+    private func memberColumnsHeader(for members: [FamilyMember], totalWidth: CGFloat) -> some View {
+        let columnCount = max(1, members.count)
+        let contentWidth = max(0, totalWidth - timeColumnWidth)
+        let columnWidth = columnCount == 0 ? 0 : (contentWidth - CGFloat(max(0, columnCount - 1)) * memberColumnSpacing) / CGFloat(columnCount)
+
+        return HStack(alignment: .center, spacing: memberColumnSpacing) {
+            ForEach(members, id: \.objectID) { member in
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color(memberColors[member.objectID] ?? .gray))
+                        .frame(width: 8, height: 8)
+
+                    Text(member.name ?? "")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 10)
+                .frame(width: columnWidth, alignment: .leading)
+                .background(theme.cardBackground.opacity(0.7))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(theme.cardStroke, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(.leading, timeColumnWidth)
+        .padding(.horizontal, 8)
+    }
+
     private var timelineView: some View {
         VStack(spacing: 0) {
             ForEach(0..<24) { hour in
@@ -150,12 +208,18 @@ struct DailyEventsView: View {
         }
     }
 
-    private func eventsView(for events: [DayEventItem]) -> some View {
+    private func eventsView(for events: [DayEventItem], isLandscape: Bool, activeMembers: [FamilyMember]) -> some View {
         GeometryReader { geometry in
-            let eventLayouts = calculateEventLayouts(for: events, availableWidth: geometry.size.width)
+            let layouts: [EventLayout]
 
-            ZStack(alignment: .topLeading) {
-                ForEach(eventLayouts) { layout in
+            if isLandscape {
+                layouts = calculateMemberColumnLayouts(for: events, members: activeMembers, availableWidth: geometry.size.width)
+            } else {
+                layouts = calculateStackedLayouts(for: events, contentWidth: geometry.size.width - timeColumnWidth)
+            }
+
+            return ZStack(alignment: .topLeading) {
+                ForEach(layouts) { layout in
                     eventCell(for: layout.event, isTapped: tappedEvent == layout.event)
                         .frame(width: layout.width, height: layout.height)
                         .offset(x: layout.x, y: layout.y)
@@ -170,7 +234,7 @@ struct DailyEventsView: View {
                         }
                 }
             }
-            .padding(.leading, 60)
+            .padding(.leading, timeColumnWidth)
         }
     }
 
@@ -254,12 +318,33 @@ struct DailyEventsView: View {
         return formatter.string(from: date)
     }
 
-    private func calculateEventLayouts(for events: [DayEventItem], availableWidth: CGFloat) -> [EventLayout] {
+    private func calculateMemberColumnLayouts(for events: [DayEventItem], members: [FamilyMember], availableWidth: CGFloat) -> [EventLayout] {
+        guard !members.isEmpty else {
+            return calculateStackedLayouts(for: events, contentWidth: availableWidth - timeColumnWidth)
+        }
+
+        let contentWidth = max(0, availableWidth - timeColumnWidth)
+        let perMemberSpacing = memberColumnSpacing
+        let columnWidth = (contentWidth - CGFloat(max(0, members.count - 1)) * perMemberSpacing) / CGFloat(members.count)
+
+        var layouts: [EventLayout] = []
+        for (memberIndex, member) in members.enumerated() {
+            let memberEvents = events.filter { $0.memberIDs.contains(member.objectID) }
+            let xOffset = CGFloat(memberIndex) * (columnWidth + perMemberSpacing)
+            layouts.append(contentsOf: calculateStackedLayouts(for: memberEvents, contentWidth: columnWidth, xOffset: xOffset))
+        }
+
+        return layouts
+    }
+
+    private func calculateStackedLayouts(for events: [DayEventItem], contentWidth: CGFloat, xOffset: CGFloat = 0) -> [EventLayout] {
+        guard contentWidth > 0 else { return [] }
+
         var layouts: [EventLayout] = []
         let sortedEvents = events.sorted { $0.startDate < $1.startDate }
-        
+
         var columns: [[DayEventItem]] = []
-        
+
         for event in sortedEvents {
             var placed = false
             for (columnIndex, column) in columns.enumerated() {
@@ -273,20 +358,20 @@ struct DailyEventsView: View {
                 columns.append([event])
             }
         }
-        
-        let totalColumns = columns.count
-        let columnWidth = (availableWidth - 60 - CGFloat(totalColumns > 1 ? (totalColumns - 1) * 4 : 0)) / CGFloat(totalColumns)
+
+        let totalColumns = max(columns.count, 1)
+        let columnWidth = (contentWidth - CGFloat(max(0, totalColumns - 1)) * overlappingEventSpacing) / CGFloat(totalColumns)
 
         for (columnIndex, column) in columns.enumerated() {
             for event in column {
                 let yPosition = yOffset(for: event.startDate)
                 let height = max(20, yOffset(for: event.endDate) - yPosition)
-                let xPosition = CGFloat(columnIndex) * (columnWidth + 4)
-                
+                let xPosition = xOffset + CGFloat(columnIndex) * (columnWidth + overlappingEventSpacing)
+
                 layouts.append(EventLayout(event: event, x: xPosition, y: yPosition, width: columnWidth, height: height))
             }
         }
-        
+
         return layouts
     }
 
