@@ -61,6 +61,7 @@ struct NextEventWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .widgetURL(deepLinkURL)
         .widgetBackground()
     }
@@ -121,6 +122,8 @@ struct NextEventWidgetView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .edgesIgnoringSafeArea(.all) // Ensure it ignores safe area if needed for full bleed
     }
 
     private func getEventStatus(_ event: WidgetEventData) -> (status: String, color: Color) {

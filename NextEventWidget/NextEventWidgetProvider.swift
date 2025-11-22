@@ -178,23 +178,42 @@ struct NextEventProvider: AppIntentTimelineProvider {
             let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
             context.persistentStoreCoordinator = coordinator
 
-            // Try to fetch family members
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "FamilyMember")
-            fetchRequest.returnsObjectsAsFaults = false
-            fetchRequest.resultType = .dictionaryResultType
-
-            print("🔍 Widget: Fetching FamilyMember entities...")
-            let results = try context.fetch(fetchRequest) as? [[String: Any]] ?? []
-
-            print("📊 Widget: Fetch returned \(results.count) result(s)")
-
-            guard !results.isEmpty else {
-                print("❌ Widget: No family members found in database")
-                return NextEventEntry(errorMessage: "No family members configured")
+            // 1. Identify the target member
+            let targetName = (intent?.selectedMemberName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let useDefault = targetName.isEmpty
+            
+            var targetMemberObj: NSManagedObject? = nil
+            
+            // Convert results to objects for easier relationship handling
+            // We need to re-fetch as objects because we used dictionaryResultType above
+            let objectFetchRequest = NSFetchRequest<NSManagedObject>(entityName: "FamilyMember")
+            objectFetchRequest.returnsObjectsAsFaults = false
+            let memberObjects = try context.fetch(objectFetchRequest)
+            
+            if useDefault {
+                // Default to first member alphabetically
+                targetMemberObj = memberObjects.sorted {
+                    let name1 = ($0.value(forKey: "name") as? String) ?? ""
+                    let name2 = ($1.value(forKey: "name") as? String) ?? ""
+                    return name1.localizedCaseInsensitiveCompare(name2) == .orderedAscending
+                }.first
+            } else {
+                targetMemberObj = memberObjects.first {
+                    let name = ($0.value(forKey: "name") as? String) ?? ""
+                    return name.localizedCaseInsensitiveCompare(targetName) == .orderedSame
+                }
             }
-
-            print("✅ Widget: Found \(results.count) family member(s)")
-
+            
+            guard let member = targetMemberObj else {
+                return NextEventEntry(errorMessage: "Member '\(targetName)' not found")
+            }
+            
+            let memberName = (member.value(forKey: "name") as? String) ?? "Unknown"
+            let memberId = (member.value(forKey: "id") as? UUID) ?? UUID()
+            let memberColorHex = (member.value(forKey: "colorHex") as? String) ?? "#007AFF"
+            
+            print("✅ Widget: Selected member: \(memberName)")
+            
             // Get user preferences for event range
             let defaults = UserDefaults(suiteName: "group.com.markdias.famli") ?? UserDefaults.standard
             let pastDays = defaults.integer(forKey: "eventsPastDays")
@@ -203,171 +222,106 @@ struct NextEventProvider: AppIntentTimelineProvider {
             let startDate = Calendar.current.date(byAdding: .day, value: -(pastDays > 0 ? pastDays : 90), to: Date()) ?? Date()
             let endDate = Calendar.current.date(byAdding: .day, value: futureDays > 0 ? futureDays : 180, to: Date()) ?? Date()
 
-            // Collect all calendar IDs from family members and shared calendars
-            var memberCalendarMap: [String: (memberId: UUID, name: String, colorHex: String)] = [:]
-            var sharedCalendarIDs: Set<String> = []
-
-            for result in results {
-                let id = (result["id"] as? UUID) ?? UUID()
-                let name = (result["name"] as? String) ?? "Unknown"
-                let colorHex = (result["colorHex"] as? String) ?? "#007AFF"
-
-                print("✅ Widget: Family member '\(name)' has color: \(colorHex)")
-
-                // Add personal/linked calendars for this member
-                if let calendarID = result["linkedCalendarID"] as? String, !calendarID.isEmpty {
-                    memberCalendarMap[calendarID] = (memberId: id, name: name, colorHex: colorHex)
-                }
-
-                // Note: memberCalendarLinks relationship is handled via FamilyMemberCalendar
-                // but we need to query that separately since we're using dictionary results
+            // 2. Collect ALL calendar IDs for this member
+            var memberCalendarIDs = Set<String>()
+            
+            // A. Personal Linked Calendar
+            if let linkedID = member.value(forKey: "linkedCalendarID") as? String, !linkedID.isEmpty {
+                memberCalendarIDs.insert(linkedID)
             }
-
-            // Fetch FamilyMemberCalendar entities to get additional calendars and shared calendars
-            let memberCalendarRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "FamilyMemberCalendar")
-            memberCalendarRequest.returnsObjectsAsFaults = false
-            memberCalendarRequest.resultType = .dictionaryResultType
-
-            if let memberCalendarResults = try context.fetch(memberCalendarRequest) as? [[String: Any]] {
-                for result in memberCalendarResults {
-                    if let calendarID = result["calendarID"] as? String, !calendarID.isEmpty {
-                        // Find which family member this calendar belongs to
-                        if let memberIDObj = result["familyMember"] as? NSManagedObjectID {
-                            do {
-                                let memberObj = try context.existingObject(with: memberIDObj)
-                                let calendarColorHex = result["calendarColorHex"] as? String
-                                if let name = memberObj.value(forKey: "name") as? String,
-                                   let colorHex = (calendarColorHex ?? memberObj.value(forKey: "colorHex") as? String),
-                                   let id = memberObj.value(forKey: "id") as? UUID {
-                                    memberCalendarMap[calendarID] = (memberId: id, name: name, colorHex: colorHex)
-                                }
-                            } catch {
-                                // Skip if member object can't be fetched
-                            }
-                        }
+            
+            // B. Shared Calendars (Relationship)
+            if let sharedSet = member.value(forKey: "sharedCalendars") as? Set<NSManagedObject> {
+                for shared in sharedSet {
+                    if let calID = shared.value(forKey: "calendarID") as? String, !calID.isEmpty {
+                        memberCalendarIDs.insert(calID)
                     }
                 }
             }
-
-            // Fetch shared calendars
-            let sharedCalendarRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "SharedCalendar")
-            sharedCalendarRequest.returnsObjectsAsFaults = false
-            sharedCalendarRequest.resultType = .dictionaryResultType
-
-            if let sharedCalResults = try context.fetch(sharedCalendarRequest) as? [[String: Any]] {
-                for result in sharedCalResults {
-                    if let calendarID = result["calendarID"] as? String, !calendarID.isEmpty {
-                        sharedCalendarIDs.insert(calendarID)
-                        // Shared calendars should use a generic shared calendar color/name
-                        // Use the first member's color or a default if not already mapped
-                        if memberCalendarMap[calendarID] == nil {
-                            memberCalendarMap[calendarID] = (
-                                memberId: UUID(),
-                                name: (result["calendarName"] as? String) ?? "Shared Calendar",
-                                colorHex: (result["calendarColorHex"] as? String) ?? "#555555"
-                            )
-                        }
-                    }
+            
+            // C. FamilyMemberCalendar Links (Manual Fetch)
+            let linksRequest = NSFetchRequest<NSManagedObject>(entityName: "FamilyMemberCalendar")
+            linksRequest.predicate = NSPredicate(format: "familyMember == %@", member)
+            let links = try context.fetch(linksRequest)
+            for link in links {
+                if let calID = link.value(forKey: "calendarID") as? String, !calID.isEmpty {
+                    memberCalendarIDs.insert(calID)
                 }
             }
-
-            guard !memberCalendarMap.isEmpty else {
-                return NextEventEntry(errorMessage: "No calendars found")
+            
+            guard !memberCalendarIDs.isEmpty else {
+                return NextEventEntry(errorMessage: "No calendars linked for \(memberName)")
             }
-
-            let defaultMemberName = Set(memberCalendarMap.values.map { $0.name })
-                .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-                .first
-
-            let targetMemberName: String? = {
-                let selectedMode = intent?.mode ?? .familyNext
-                guard selectedMode == .memberNext else { return nil }
-                let name = intent?.selectedMemberName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                if !name.isEmpty { return name }
-                return defaultMemberName
-            }()
-
-            // Fetch next events for all calendars
+            
+            // 3. Fetch events for these calendars
             let eventStore = EKEventStore()
-
-            // Check calendar access
             let calendarAccess = EKEventStore.authorizationStatus(for: .event)
             if calendarAccess == .denied || calendarAccess == .restricted {
-                return NextEventEntry(errorMessage: "Calendar access required - enable in Settings")
+                return NextEventEntry(errorMessage: "Calendar access required")
             }
-
-            let calendarIDs = Array(memberCalendarMap.keys)
+            
             let calendars = eventStore.calendars(for: .event)
-                .filter { calendarIDs.contains($0.calendarIdentifier) }
-
+                .filter { memberCalendarIDs.contains($0.calendarIdentifier) }
+            
             guard !calendars.isEmpty else {
-                return NextEventEntry(errorMessage: "No calendars found")
+                // This might happen if the calendar was deleted from the device but still in CoreData
+                return NextEventEntry(errorMessage: "Calendars not found on device")
             }
-
+            
             let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
-            let ekEvents = eventStore.events(matching: predicate)
+            let events = eventStore.events(matching: predicate)
                 .filter { !$0.isAllDay }
                 .filter { $0.endDate > Date() }
                 .sorted { $0.startDate < $1.startDate }
-
-            let selectedEKEvent: EKEvent?
-            if let targetName = targetMemberName?.lowercased() {
-                // If a shared/family event exists, show it first
-                if let familyEvent = ekEvents.first(where: { sharedCalendarIDs.contains($0.calendar.calendarIdentifier) }) {
-                    selectedEKEvent = familyEvent
-                } else {
-                    let filtered = ekEvents.filter {
-                        if let calendarID = $0.calendar.calendarIdentifier as String?,
-                           let info = memberCalendarMap[calendarID] {
-                            return info.name.lowercased() == targetName
-                        }
-                        return false
-                    }
-                    selectedEKEvent = filtered.first
-                }
-
-                if selectedEKEvent == nil {
-                    return NextEventEntry(errorMessage: "No upcoming events for \(targetName)")
-                }
-            } else {
-                selectedEKEvent = ekEvents.first
+            
+            guard let nextEvent = events.first else {
+                return NextEventEntry(errorMessage: "No upcoming events for \(memberName)")
             }
-
-            guard let nextEKEvent = selectedEKEvent else {
-                return NextEventEntry(errorMessage: "No upcoming events")
-            }
-
-            // Find which family member has this event
-            guard let calendarID = nextEKEvent.calendar.calendarIdentifier as String?,
-                  let memberInfo = memberCalendarMap[calendarID] else {
-                return NextEventEntry(errorMessage: "Could not identify member")
-            }
-
-            let member = FamilyMemberData(
-                id: memberInfo.memberId,
-                name: memberInfo.name,
-                colorHex: memberInfo.colorHex
+            
+            // 4. Return Entry with MEMBER info
+            let memberData = FamilyMemberData(
+                id: memberId,
+                name: memberName,
+                colorHex: memberColorHex
             )
-
-            let event = WidgetEventData(
-                title: nextEKEvent.title ?? "Event",
-                startDate: nextEKEvent.startDate,
-                endDate: nextEKEvent.endDate,
-                location: nextEKEvent.location,
-                colorHex: memberInfo.colorHex
+            
+            // Use the CALENDAR'S color for the event bar, as requested
+            // "if the item is in the shared calendar it should be the shared calendars colour"
+            // "if its a members event it should be their colour" (which usually matches the personal cal color)
+            let calendarColor = nextEvent.calendar.cgColor ?? UIColor.gray.cgColor
+            let eventColorHex = UIColor(cgColor: calendarColor).hexString
+            
+            let eventData = WidgetEventData(
+                title: nextEvent.title ?? "Event",
+                startDate: nextEvent.startDate,
+                endDate: nextEvent.endDate,
+                location: nextEvent.location,
+                colorHex: eventColorHex // Use calendar color
             )
-
-            print("✅ Widget: Returning event for '\(member.name)' with color: \(member.colorHex)")
-            return NextEventEntry(date: Date(), event: event, familyMember: member)
-
+            
+            print("✅ Widget: Returning event '\(eventData.title)' for '\(memberData.name)' with color \(eventColorHex)")
+            return NextEventEntry(date: Date(), event: eventData, familyMember: memberData)
+            
         } catch {
             let errorMsg = "Error: \(error.localizedDescription)"
             print("❌ Widget Error: \(errorMsg)")
-            // Print more detailed error info
-            let nserror = error as NSError
-            print("   Domain: \(nserror.domain)")
-            print("   Code: \(nserror.code)")
             return NextEventEntry(errorMessage: errorMsg)
         }
+    }
+}
+
+// Helper for color conversion
+extension UIColor {
+    var hexString: String {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        
+        let rgb: Int = (Int)(r*255)<<16 | (Int)(g*255)<<8 | (Int)(b*255)<<0
+        
+        return String(format: "#%06x", rgb)
     }
 }
